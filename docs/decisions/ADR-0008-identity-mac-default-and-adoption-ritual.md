@@ -29,6 +29,8 @@ Criteria: one firmware for all (3), friction and ritual (3), robustness (2), KIS
 - The **adoption ritual** overrides it: tap cycles through a palette of 8–12 colours that render
   well on the OLED, a long stroke confirms, the choice is stored in NVS and survives OTA updates.
 - A **secret gesture** (touch held at boot) re-runs the adoption.
+  > Amended by ADR-0013: the entry is a hold during the post-boot invitation window (the
+  > TTP223 calibrates during its first 0.5 s, so a finger present at power-up may never be seen).
 - Two cubes may share a colour; the social layer keys on the MAC, humans on the colour.
 
 ## Consequences

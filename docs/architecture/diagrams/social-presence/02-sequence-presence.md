@@ -3,8 +3,8 @@
 > **Frame**: `sd — Presence and greeting`
 > **Feature**: `social-presence` — backlog item G1 in [docs/roadmap.md](../../../roadmap.md)
 > **Related ADRs**: ADR-0001 (social layer degrades to nothing when alone), ADR-0005 (ESP-NOW broadcast, versioned frames), ADR-0008 (MAC is the social key)
-> **Use case**: UC5 Bring a cube into the group in [cube-core/01-use-case.md](../cube-core/01-use-case.md)
-> **Modules and ports**: `Social protocol`, `Stimulus router`, `IRadio`, `IClock`, `IRng` in [cube-core/03-component.md](../cube-core/03-component.md)
+> **Use case**: UC7 Introduce a cube to the group in [cube-core/01-use-case.md](../cube-core/01-use-case.md)
+> **Modules and ports**: `Social protocol`, `Stimulus router`, `IRadio`, `IClock`, `Prng` in [cube-core/03-component.md](../cube-core/03-component.md)
 > **Frame layout**: [06-data-flow.md](06-data-flow.md)
 
 ## Context
@@ -25,7 +25,7 @@ sequenceDiagram
   participant XB as Stimulus router (cube B, lib)
 
   Note over SA,RA: Cube A alone — table empty, social layer inert
-  loop Every T_presence, jittered by IRng
+  loop Every T_presence, jittered by the Prng
     SA->>RA: broadcast(encode PRESENCE, 8 bytes — see 06)
     RA--xRA: no receiver in range — frame lost, nothing happens
   end
@@ -70,8 +70,9 @@ sequenceDiagram
   sight, which happens within one T_presence on both sides. Greeting is a local stimulus, not a
   frame type: no extra message and nothing to acknowledge (owner decision, validated 2026-10-14;
   a dedicated GREET frame is re-evaluated when G3 introduces the event frame).
-- **Greeting policy, so the cube is never loud under flapping or spoofing, yet never misses a
-  newcomer while Awake** (UC5 guarantee):
+- **Greeting policy** (this section is the single owner of the policy; [06](06-data-flow.md) and
+  ADR-0012 link here), so the cube is never loud under flapping or spoofing, yet never misses a
+  newcomer while Awake (UC7 guarantee):
   - greeting is decided on the tick, not on receive: an entry is greeted when it is present, not
     yet greeted, and at least `T_greet_cooldown` (proposal 10 s) has elapsed since the last
     greeting. Several cubes plugged in together are therefore greeted one after another, none is
@@ -82,12 +83,14 @@ sequenceDiagram
     the colleague has moved on),
   - an entry that goes absent and comes back is re-greeted only if it was absent for more than
     `T_regreet` (proposal 10 min, far above `T_ttl`). Three lost frames in a busy office do not
-    cause a second hello.
+    cause a second hello,
+  - a global budget caps greetings at 6 per 10 min (tunable), the ADR-0012 mitigation against a
+    forged stream of newcomers.
 - **One table, one rule**: entries are never deleted on expiry, only marked absent when
   `nowMs - lastSeen > T_ttl`; the `lastSeen` of an absent entry is what the re-greet rule reads.
   When the table is full, a newcomer evicts the absent entry with the oldest `lastSeen`, and is
   dropped if every entry is present.
-- **Timers**: T_presence 5 s with ±1 s jitter from IRng (so a fleet does not synchronise its
+- **Timers**: T_presence 5 s with ±1 s jitter from the Prng (so a fleet does not synchronise its
   broadcasts), T_ttl 3 × T_presence = 15 s. Tuning values; the G4 choir will need a tighter
   period and will revisit them.
 - **Alone means inert**: with an empty table, the only social activity is one broadcast every

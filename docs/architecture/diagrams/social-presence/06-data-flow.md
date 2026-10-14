@@ -34,7 +34,7 @@ frame content):
 
 | Stage | Rule |
 |-------|------|
-| Receive callback (Wi-Fi task) | `len != 8` → drop and count `dropLen`, before any copy. A length compare is not parsing. Otherwise copy into a fixed slot `{uint8_t[8], mac[6], nowMs}` |
+| Receive callback (Wi-Fi task) | `len != kFrameSize` (8, a constant included from `lib/`) → drop and count `dropLen`, before any copy. A length compare is not parsing. Otherwise copy into a fixed slot `{uint8_t[8], mac[6], nowMs}` |
 | RX queue | 8 fixed slots, single producer (callback) single consumer (tick). **Drop newest when full**, count `rxOverflow`. The callback never blocks |
 | Tick drain | at most 4 frames decoded per tick, the rest wait for the next tick, so a flood cannot starve gestures, eyes or display |
 | Decode (lib) | allowlist on every field, drop counted by reason: `dropMagic`, `dropVersion`, `dropType`, `dropRange` |
@@ -55,7 +55,7 @@ by the V1.5 mother-cube ADR, since a Wi-Fi station must follow its access point'
 flowchart LR
   subgraph TX ["Cube B — sender"]
     IdB["Identity {paletteIndex, adopted}"] -->|"palette index, adopted flag"| Enc["Social protocol — encode"]
-    MoodB["Sleep cycle — presenceMoodByte"] -->|"mood byte 0..5"| Enc
+    MoodB["Sleep cycle state + Mood engine mood"] -->|"moodByte(sleepState, mood) computed by the codec, 0..5"| Enc
     Enc -->|"8 bytes, v1 PRESENCE"| RadB["EspNowRadio — broadcast FF:FF:FF:FF:FF:FF"]
   end
 
@@ -100,8 +100,9 @@ flowchart LR
   newcomers, (2) impersonate a known cube's presence and mood byte (a nuisance today, mood
   injection the day G2 contagion ships), (3) trigger one greeting per cooldown while the cube is
   Awake. Accepted in V1 because the consequences are a nuisance on a desk toy: nothing is
-  persisted, nothing is actuated beyond eyes and a beep, and a global greeting budget (proposal:
-  at most 6 greetings per 10 min, a tunable in the Social protocol) caps the noise. Accepted by
+  persisted, nothing is actuated beyond eyes and a beep, and the greeting policy of
+  [02-sequence-presence.md](02-sequence-presence.md) (cooldown, re-greet hysteresis, global
+  budget of 6 per 10 min) caps the noise. Accepted by
   the owner on 2026-10-14 and recorded in ADR-0012 (amends ADR-0005). V2 hook: a fleet key
   provisioned at adoption into NVS, never in source (per-peer keys were scored out in ADR-0012).
 - **Decode in `lib/`, I/O in `src/`**: the allowlist checks are pure functions over a byte array,
