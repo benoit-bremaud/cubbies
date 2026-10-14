@@ -1,0 +1,61 @@
+# Static analysis (SAST) — results go to the GitHub Security tab (code scanning).
+# Two languages: the workflows themselves (`actions`) and the firmware (`c-cpp`). The C++
+# analysis traces the native host build of the behaviour logic and its tests, which is the code
+# CodeQL can reason about; the cross-compiled board builds are covered by the CI workflow.
+# Code scanning needs a public repository (or GitHub Advanced Security): the job is skipped while
+# the repository is private. Remove the `if:` guard in the public-release PR.
+name: CodeQL
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: '0 4 * * 1' # weekly, Monday 04:00 UTC
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    if: ${{ !github.event.repository.private }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - language: actions
+            build-mode: none
+          - language: c-cpp
+            build-mode: manual
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2 # v4.38.2
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
+          queries: security-extended
+      - if: matrix.build-mode == 'manual'
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+      - if: matrix.build-mode == 'manual'
+        name: Build the native test binaries under the CodeQL tracer
+        working-directory: firmware
+        run: |
+          pip install platformio==6.2.0 # keep in sync with ci.yml
+          pio test -e native --without-testing # compiles the test binaries, skips running them
+      - name: Analyze
+        uses: github/codeql-action/analyze@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2 # v4.38.2
+        with:
+          category: '/language:${{ matrix.language }}'

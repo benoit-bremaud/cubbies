@@ -1,0 +1,43 @@
+# Build and test gate: native unit tests of the behaviour logic, then a firmware build for every
+# board env. The heavy review runs locally before the push (review-local gate).
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+# Superseded PR runs are cancelled; runs on main always complete so every commit has a result.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  firmware:
+    name: Native tests and firmware builds
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: firmware
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+      - uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: |
+            ~/.platformio/platforms
+            ~/.platformio/packages
+            ~/.cache/pip
+          # The core version is part of the key: the cached tool packages depend on it.
+          key: pio-${{ runner.os }}-6.2.0-${{ hashFiles('firmware/platformio.ini') }}
+      - run: pip install platformio==6.2.0 # keep in sync with codeql.yml and the cache key above
+      - run: pio test -e native
+      - run: pio run -e xiao_c3 -e c3_supermini

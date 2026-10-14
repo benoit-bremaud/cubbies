@@ -62,4 +62,4 @@ hardware/case/            enclosure sources and exports (CC BY-SA 4.0)
 - PlatformIO with the **pioarduino** platform pinned to a release URL in `platformio.ini`
   (Arduino core 3.3.x on ESP-IDF 5.5). Never float the platform or a library version.
 - `pio test -e native` must be green before every push; `pio run` for both board envs must
-  build.
+  build. CI (`.github/workflows/ci.yml`) re-runs both on every pull request and push to `main`.
