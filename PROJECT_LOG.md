@@ -7,7 +7,17 @@ human context: what was done, why, and by which PR.
 
 ## 2026-10-14
 
-### Design dossier scaffolded (branch `docs/design-dossier`)
+### Architecture README restructured as arc42-lite (branch `docs/arc42-readme`)
+
+- Post-merge pass after PRs #1–#6: every 2026-10-14 entry now carries its PR number and merge
+  SHA; stale "next" sentences in merged entries updated in place.
+- Dependency bumps are not logged individually (PR #2, `0e2d7c1`, Dependabot `actions/cache`
+  5.1.0 → 6.1.0, is the first).
+- `docs/architecture/README.md` is now the arc42-lite map decided in ADR-0011 (goals,
+  constraints, C4 context, strategy, building blocks and ports, crosscutting concepts, quality,
+  risks, glossary) with the UML index kept at the end. Relative links checked, Mermaid rendered.
+
+### Design dossier scaffolded — **PR #4 merged** (`8b86ae8`)
 
 - Owner decisions after scored options (ADR-0011): dossier = arc42-lite overview + functional
   requirements (NF X50-151 style) + Cockburn textual use cases + UML + traceability matrix +
@@ -26,8 +36,9 @@ human context: what was done, why, and by which PR.
   gag, owner request, cartoon level, rate-limited) and T8–T10; CLAUDE.md non-negotiables updated.
 - The first UML study (eight diagrams, separate session, branch `docs/uml-study`) is kept as a
   first draft and re-validated against the requirements at the `cube-core` PDR. The arc42
-  restructure of `docs/architecture/README.md` waits for that branch to merge (same file).
-### First UML study drafted (branch `docs/uml-study`, PR pending owner validation)
+  restructure of `docs/architecture/README.md` followed in its own PR (entry above).
+
+### First UML study drafted — **PR #5 merged** (`a027977`)
 
 - Eight Mermaid diagrams under `docs/architecture/diagrams/`: `cube-core` (use case by domain,
   component lib-vs-adapters with eight ports, mood engine state, sleep/wake state), `identity`
@@ -56,16 +67,17 @@ human context: what was done, why, and by which PR.
   applied: `CLAUDE.md` "never loud" rule reworded, roadmap S4/S5/S8 reworded.
 - The accepted ESP-NOW residual risk and the V2 fleet-key hook are recorded in ADR-0012 (amends
   ADR-0005, PR #3). Double tap cycling backwards in the ritual stays open until the palette size.
-- Next: PR for this branch, then backlog items S1–S7 and G1 become issues with these diagrams as
+- Next: backlog items S1–S7 and G1 become issues with these diagrams as
   their contract.
-### Repository public, private-repository guards removed (branch `ci/remove-private-guards`)
+
+### Repository public, private-repository guards removed — **PR #6 merged** (`96d781f`)
 
 - The repository went public after PR #1 (security CI baseline) merged.
 - Removed the `if: ${{ !github.event.repository.private }}` guards from `codeql.yml`,
   `dependency-review.yml` and `scorecard.yml`; the three workflows now run for real (CodeQL on
   `actions` and `c-cpp`, dependency review on PRs, Scorecard on `main` after merge).
 
-### ADR-0012: unauthenticated ESP-NOW broadcast recorded as an accepted residual risk (amends ADR-0005)
+### ADR-0012: unauthenticated ESP-NOW broadcast recorded as an accepted residual risk (amends ADR-0005) — **PR #3 merged** (`c8649ae`)
 
 - The social-presence UML study (branch `docs/uml-study`, data-flow and sequence diagrams) found
   that ESP-NOW broadcast cannot be encrypted, that the source MAC is forgeable, and that V1 has
@@ -79,7 +91,7 @@ human context: what was done, why, and by which PR.
 - V2 hook recorded: fleet key in NVS, never in source. V1.5 relayed OTA must ship a signed image,
   not a hash alone.
 
-### Security CI baseline (branch `chore/security-ci-baseline`)
+### Security CI baseline — **PR #1 merged** (`9b54ecf`)
 
 - Owner decision: the repository goes public (free Copilot review and analysis tools) only
   after the public release checklist passes; the missing item was the CI secret-detection job.
@@ -94,6 +106,7 @@ human context: what was done, why, and by which PR.
 - Local gitleaks over history and working tree: no leaks. Pre-push `review-local` gate run:
   no Must Have; the Should Haves (private-repo guards, `cancel-in-progress` limited to pull
   requests, comment accuracy, CLAUDE.md mention of CI) applied before push.
+
 ### Project kick-off: scoped Q&A session, decisions recorded, repository scaffolded
 
 - Owner's intent: a fleet of small cube desk companions (OLED eyes, mic, buzzer) that interact
