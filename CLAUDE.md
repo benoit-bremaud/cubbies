@@ -1,0 +1,65 @@
+# CLAUDE.md — cubbies
+
+## Project overview
+
+**Name:** cubbies.
+**Type:** fleet of small cube desk companions on the Seeed XIAO ESP32-C3: colour OLED eyes
+(SSD1331, 96×64), passive buzzer, capacitive touch, I2S microphone, I2C IMU and extras. Each cube
+lives alone on a desk and gains group behaviours over ESP-NOW broadcast when other cubes are in
+range. Gift for a team: one cube per colleague, one colour per cube, 3D-printed enclosure.
+**Status:** conception. Decisions are ADRs under [docs/decisions/](docs/decisions/README.md);
+the UML study lives under [docs/architecture/](docs/architecture/README.md); the roadmap and
+prioritised backlog are in [docs/roadmap.md](docs/roadmap.md).
+**Language:** English only in the repository (code, comments, commits, docs, issues, PRs).
+
+Global rules (Conventional Commits, branch from `main`, pre-push review gate, private-first,
+security defaults, UML-first, Q&A pattern) are inherited from `~/.claude/CLAUDE.md` and
+`~/.agent-rules/common.md` — not duplicated here. Below are the rules that apply **only** to
+this repository.
+
+## Non-negotiables (project)
+
+- **Design before code.** A behaviour is implemented only after its UML views (use case, state,
+  sequence as relevant) are validated under `docs/architecture/diagrams/<feature>/`.
+- **Validated decisions are not reopened silently.** Changing an ADR requires a superseding ADR
+  in its own PR.
+- **One firmware for every cube.** Identity (colour) comes from NVS, defaulting from the MAC
+  address (ADR-0008). No per-cube build flags, ever.
+- **The 11-GPIO budget is a hard limit** (ADR-0007). Any new sensor goes on the I2C bus or
+  replaces an existing peripheral; the pin map lives in `firmware/include/pins.h`, one block per
+  board env.
+- **Behaviour logic is pure C++ and tested natively.** Moods, timers, the social protocol state
+  machine and the identity rules live in `firmware/lib/` with no Arduino includes, and are
+  tested with `pio test -e native`. Display, audio, radio and sensors are thin adapters in
+  `firmware/src/`. Mock the boundaries, never the domain.
+- **Time and randomness are injected.** No `millis()` or `random()` inside `lib/`; a clock and
+  an RNG are passed in, so behaviours replay in tests.
+- **The cube must never be loud.** Volume is a stored setting with quiet hours; every sound goes
+  through the single audio adapter that applies it.
+- **Radio frames are versioned and validated.** Every ESP-NOW frame carries a protocol version
+  and is parsed by allowlist; unknown or malformed frames are dropped silently (security policy
+  INPUT rules).
+- **No secrets in the firmware.** Wi-Fi credentials for the future "mother cube" (V1.5) live in
+  NVS, provisioned at runtime, never in source or build flags.
+
+## Repository layout
+
+```
+docs/bom.md               bill of materials
+docs/roadmap.md           versions and prioritised backlog
+docs/decisions/           ADRs (Nygard format, ADR-NNNN-<slug>.md)
+docs/architecture/        UML diagrams (Mermaid) and architecture notes
+firmware/platformio.ini   envs: xiao_c3 (series), c3_supermini (prototypes), native (tests)
+firmware/include/         pin maps and shared headers
+firmware/lib/             pure behaviour logic (no Arduino)
+firmware/src/             adapters and main
+firmware/test/            native unit tests (Unity)
+hardware/case/            enclosure sources and exports (CC BY-SA 4.0)
+```
+
+## Toolchain
+
+- PlatformIO with the **pioarduino** platform pinned to a release URL in `platformio.ini`
+  (Arduino core 3.3.x on ESP-IDF 5.5). Never float the platform or a library version.
+- `pio test -e native` must be green before every push; `pio run` for both board envs must
+  build.

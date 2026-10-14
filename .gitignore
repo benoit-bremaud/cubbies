@@ -1,0 +1,24 @@
+# PlatformIO
+firmware/.pio/
+firmware/.vscode/
+firmware/*.bin
+firmware/*.elf
+
+# Environment variables — only the placeholder template is committed
+.env
+.env.*
+!.env.example
+
+# CAD / slicer scratch
+hardware/**/*.bak
+hardware/**/*.gcode
+
+# Editors and operating systems
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Claude Code local overrides
+CLAUDE.local.md
+.claude/worktrees/

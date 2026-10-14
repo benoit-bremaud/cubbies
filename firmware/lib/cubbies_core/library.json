@@ -1,0 +1,8 @@
+{
+  "name": "cubbies_core",
+  "version": "0.0.1",
+  "description": "Pure behaviour logic of a cubbies cube: moods, identity, social protocol. No Arduino includes.",
+  "license": "MIT",
+  "frameworks": "*",
+  "platforms": "*"
+}
