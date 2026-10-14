@@ -78,10 +78,10 @@ flowchart LR
   the social-presence sequence and data-flow.
 - **UC4 with a single microphone**: the INMP441 gives a level, not a direction, so the cube
   cannot look *towards* a sound. The guarantee is "widen and look up".
-- **Quiet hours are out of V1** (owner decision pending, see the Q&A in the study's PR): V1 has
-  no time source (no RTC, no Wi-Fi, ADR-0002). If confirmed, the project rule "volume is a stored
-  setting with quiet hours" in `CLAUDE.md` and backlog item S4 must be amended in the same PR.
-  Quiet hours return with the ambient-light sensor (S8, tier B) or the mother cube's clock (V1.5).
+- **Quiet hours are out of V1** (owner decision, validated 2026-10-14): V1 has no time source
+  (no RTC, no Wi-Fi, ADR-0002). The cube is silent while it sleeps (S5), which is the V1 form of
+  quiet hours, and silent when the office is dark from S8 (light sensor, tier B). The `CLAUDE.md`
+  rule and backlog items S4, S5, S8 were reworded accordingly in this branch.
 - **Open question (Settings)**: V1 has no screen UI, so how the Colleague adjusts the volume is
   undecided (touch gesture, boot-time gesture, or Maker-only through the mother cube in V1.5). UC6
   stays as a goal; until a gesture is chosen the firmware ships a constant default volume and

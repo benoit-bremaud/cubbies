@@ -68,8 +68,8 @@ sequenceDiagram
 
 - **Symmetry**: there is no leader and no handshake. Each cube greets the other on *its own* first
   sight, which happens within one T_presence on both sides. Greeting is a local stimulus, not a
-  frame type: no extra message and nothing to acknowledge (owner decision taken by default,
-  alternative in the PR Q&A: a dedicated GREET frame).
+  frame type: no extra message and nothing to acknowledge (owner decision, validated 2026-10-14;
+  a dedicated GREET frame is re-evaluated when G3 introduces the event frame).
 - **Greeting policy, so the cube is never loud under flapping or spoofing, yet never misses a
   newcomer while Awake** (UC5 guarantee):
   - greeting is decided on the tick, not on receive: an entry is greeted when it is present, not

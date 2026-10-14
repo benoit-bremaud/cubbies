@@ -96,9 +96,9 @@ ADR.
 - **Why discrete states rather than a valence/arousal vector**: five moods map one-to-one to the
   eye animations of S2 and to the beeps of S4, and the roadmap's social behaviours (G2 contagious
   mood) only need to publish one mood byte in the presence frame. A continuous model is deferred
-  until a behaviour needs it. This choice is submitted to the owner with the study.
-- **Wake always restarts in Curious** (owner decision taken by default): resuming in Tired would
-  send a just-woken cube back to Dozing two minutes later.
+  until a behaviour needs it. Owner decision, validated 2026-10-14.
+- **Wake always restarts in Curious** (owner decision, validated 2026-10-14): resuming in Tired
+  would send a just-woken cube back to Dozing two minutes later.
 - **Shake is not a V1 trigger**: it needs the IMU (P2, backlog S9, tier B). When S9 enters, it
   adds "shake → Annoyed" from Curious and Happy to this table, nothing else changes.
 - **G2 hook**: `NewcomerSeen` is already a stimulus in V1 (greeting). Contagious mood (G2) will add

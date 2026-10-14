@@ -26,14 +26,18 @@ human context: what was done, why, and by which PR.
   correctness): four Must (receive-path rate budget and length check in the callback, spoofing
   risk stated honestly, one stale reference), all applied; report in
   `docs/architecture/review-local.md`.
-- Defaults taken pending the owner's decision, each flagged in the diagram notes and submitted
-  as scored options with the study: quiet hours out of V1 (no time source), discrete moods,
-  wake restarts in Curious, greeting as a local rate-limited stimulus rather than a frame,
-  palette index on the air with a version bump on palette change, ritual entered only by the
+- Design choices submitted as scored options (Q&A, two rounds with deeper analysis) and
+  **validated by the owner**: quiet hours out of V1 (no time source; silence comes from sleep,
+  then from the light sensor in S8), discrete moods, wake restarts in Curious, greeting as a
+  local rate-limited stimulus (GREET frame re-evaluated with G3), palette index on the air with
+  a version bump on palette change (RGB565 revisited in V1.5), ritual entered only by the
   held-at-boot gesture, derived MAC colour not persisted, constant default volume until a UC6
-  gesture is chosen.
-- Next: owner validates the conception, PR opened, then backlog items S1–S7 and G1 become
-  issues with these diagrams as their contract.
+  gesture is chosen, unauthenticated ESP-NOW broadcast accepted as residual risk. Consequences
+  applied: `CLAUDE.md` "never loud" rule reworded, roadmap S4/S5/S8 reworded.
+- Follow-up: a superseding ADR recording the accepted ESP-NOW residual risk and the V2 key hook,
+  in its own PR. Double tap cycling backwards in the ritual stays open until the palette size.
+- Next: PR for this branch, then backlog items S1–S7 and G1 become issues with these diagrams as
+  their contract.
 
 ### Project kick-off: scoped Q&A session, decisions recorded, repository scaffolded
 

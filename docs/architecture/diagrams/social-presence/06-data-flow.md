@@ -44,8 +44,9 @@ budget and the counters.
 
 **Palette index on the air** means every cube in range must share the palette table. A firmware
 that changes the palette bumps the protocol version, so older cubes drop its frames rather than
-show the wrong colour (owner decision taken by default, alternative in the PR Q&A: 2 bytes of
-RGB565 instead of the index). The radio channel is a fixed constant in V1 and will be revisited
+show the wrong colour (owner decision, validated 2026-10-14; 2 bytes of RGB565 become preferable
+once relayed OTA makes mixed fleets normal, to be revisited in the V1.5 ADR). The radio channel
+is a fixed constant in V1 and will be revisited
 by the V1.5 mother-cube ADR, since a Wi-Fi station must follow its access point's channel.
 
 ## Diagram
@@ -100,8 +101,8 @@ flowchart LR
   injection the day G2 contagion ships), (3) trigger one greeting per cooldown while the cube is
   Awake. Accepted in V1 because the consequences are a nuisance on a desk toy: nothing is
   persisted, nothing is actuated beyond eyes and a beep, and a global greeting budget (proposal:
-  at most 6 greetings per 10 min, a tunable in the Social protocol) caps the noise. This accepted
-  risk is submitted to the owner for recording in an amendment to ADR-0005, with the V2 hook: a
+  at most 6 greetings per 10 min, a tunable in the Social protocol) caps the noise. Accepted by
+  the owner on 2026-10-14; to be recorded in a superseding ADR (own PR) with the V2 hook: a
   fleet key provisioned at adoption into NVS (never in source), or per-peer keys on unicast.
 - **Decode in `lib/`, I/O in `src/`**: the allowlist checks are pure functions over a byte array,
   so they are fuzzed and unit-tested natively. The adapter only compares the length and moves

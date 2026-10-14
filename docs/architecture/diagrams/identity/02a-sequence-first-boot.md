@@ -38,7 +38,7 @@ sequenceDiagram
   I-->>M: Identity {mac, paletteIndex, adopted}
 
   M->>G: heldAtBoot()
-  Note over G: Boot only — blocks up to T_secret while sampling ITouchSource against the injected clock
+  Note over G,E: Boot only — blocks up to T_secret while sampling ITouchSource against the injected clock. Eyes show a filling gauge while held
   alt Touch pad held for T_secret
     G-->>M: true
     M->>I: runRitual()
@@ -54,7 +54,7 @@ sequenceDiagram
 
 - **Never an empty identity**: the MAC path is the fallback, so the eyes always have a colour,
   even on a cube that was never adopted. This is the testable guarantee of ADR-0008.
-- **The derived default is not persisted** (owner decision taken by default). Writing it would
+- **The derived default is not persisted** (owner decision, validated 2026-10-14). Writing it would
   make "adopted" indistinguishable from "defaulted", and would freeze defaults across a future
   palette change. The `adopted` flag tells the Maker which cubes are still spare.
 - **NVS is input**: the key is exactly one `uint8`. A missing key, a value of another size or
@@ -66,8 +66,10 @@ sequenceDiagram
 - **Hash stability matters**: `hash(mac) mod paletteSize` is a fixed, documented function so that
   the same cube always defaults to the same colour across reflashes. A palette resize changes
   defaults, which is acceptable only for unadopted cubes.
-- **An unadopted cube boots normally** (owner decision taken by default, alternatives in the PR
-  Q&A): the ritual is entered only through the held-at-boot gesture, on adoption day as well as
-  for re-adoption. Spare cubes and test cubes do not spend a minute in the ritual at each power-up.
+- **An unadopted cube boots normally** (owner decision, validated 2026-10-14): the ritual is
+  entered only through the held-at-boot gesture, on adoption day as well as for re-adoption.
+  Spare cubes and test cubes do not spend a minute in the ritual at each power-up.
 - **`heldAtBoot` is lib logic**: the Gesture classifier samples `ITouchSource` against the
-  injected clock for T_secret, so the guard replays in a native test.
+  injected clock for T_secret, so the guard replays in a native test. While the pad is held the
+  eyes show a filling gauge, so the gesture is discoverable and the colleague knows how long to
+  hold (the Eyes renderer is set up before the guard).

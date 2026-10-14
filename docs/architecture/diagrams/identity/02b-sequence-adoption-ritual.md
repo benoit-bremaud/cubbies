@@ -75,6 +75,7 @@ sequenceDiagram
 - **Why the ritual is in the Identity module and not a UI layer**: it is a small state machine
   (cycling, confirm, timeout) and the project rule puts state machines in `lib/`. The Gesture
   classifier delivers gestures, the Eyes renderer draws frames, the Sound gate plays.
-- **Owner decisions pending** (PR Q&A): ritual entry only by gesture versus an automatic offer on
-  the very first boot; whether a double tap cycles backwards (friendlier for 12 colours, at the
-  price of overloading the "joy" gesture of the mood domain).
+- **Ritual entry only by the held-at-boot gesture**: owner decision, validated 2026-10-14 (an
+  automatic offer on the first boot was rejected because the Maker's tests would consume it).
+- **Open**: whether a double tap cycles backwards (friendlier for 12 colours, at the price of
+  overloading the "joy" gesture of the mood domain). To be decided with the palette size.
