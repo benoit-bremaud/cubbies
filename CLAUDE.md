@@ -38,11 +38,12 @@ this repository.
   machine and the identity rules live in `firmware/lib/` with no Arduino includes, and are
   tested with `pio test -e native`. Display, audio, radio and sensors are thin adapters in
   `firmware/src/`. Mock the boundaries, never the domain.
-- **Time and randomness are injected.** No `millis()` or `random()` inside `lib/`; a clock and
-  an RNG are passed in, so behaviours replay in tests.
+- **Time and randomness are injected.** No `millis()` or `random()` inside `lib/`; a clock is
+  passed in and each consumer gets a lib-owned `Prng` seeded by `main.cpp` after the Wi-Fi
+  driver is up (ADR-0013), so behaviours replay in tests.
 - **The cube must never be loud.** Every sound goes through the single Sound gate in `lib/`,
-  which applies the volume (a constant in V1, a stored setting once a gesture exists) and
-  forwards a duty level to the one audio adapter. The cube is silent when it sleeps and, from
+  which applies the volume (a constant in V1, the ritual's stored step from V1.x, ADR-0013) and
+  forwards a volume level to the one audio adapter, which alone converts it to a PWM duty. The cube is silent when it sleeps and, from
   S8 on, when the office is dark; clock-based quiet hours are out of V1 (no time source,
   ADR-0002, UML study 2026-10-14).
 - **Radio frames are versioned and validated.** Every ESP-NOW frame carries a protocol version

@@ -2,7 +2,7 @@
 
 > **Frame**: `stm — Mood engine`
 > **Feature**: `cube-core` — backlog items S2, S3, S7, G2 (hook only) in [docs/roadmap.md](../../../roadmap.md)
-> **Related ADRs**: ADR-0001 (solo layer is the daily use), ADR-0006 (eyes drift against burn-in)
+> **Related ADRs**: ADR-0001 (solo layer is the daily use), ADR-0006 (eyes drift against burn-in), ADR-0013 (timings, touch-down, calls never annoy)
 > **Module**: `Mood engine` in [03-component.md](03-component.md)
 
 ## Context
@@ -23,16 +23,16 @@ stateDiagram-v2
 
   Curious --> Happy: tap or double tap
   Curious --> Bored: no stimulus for T_bored
-  Curious --> Annoyed: loud noise
+  Curious --> Annoyed: loud (sustained)
 
   Happy --> Curious: calm for T_settle
   Happy --> Happy: long stroke (purr, eyes close)
-  Happy --> Annoyed: loud noise
+  Happy --> Annoyed: loud (sustained)
 
   Bored --> Curious: any stimulus
   Bored --> Tired: no stimulus for T_tired
 
-  Tired --> Curious: tap or clap
+  Tired --> Curious: any stimulus
   Tired --> Tired: yawn every T_yawn
 
   Annoyed --> Curious: calm for T_calm
@@ -58,24 +58,28 @@ stateDiagram-v2
 | — | machine entered at boot, and re-entered at every wake | Curious | none (the wake-up melody is owned by 05b Waking and by the boot sequence 02a) |
 | Curious | tap, double tap | Happy | surprise or joy beep |
 | Curious | idle ≥ T_bored | Bored | none |
-| Curious, Happy | loud noise | Annoyed | grumpy beep |
+| Curious, Happy | loud (sustained, never a voice or a clap) | Annoyed | grumpy beep |
 | Happy | long stroke | Happy | purr, eyes close while touched |
 | Happy | calm ≥ T_settle | Curious | none |
 | Bored | any stimulus | Curious | none |
 | Bored | idle ≥ T_tired | Tired | first yawn |
 | Tired | every T_yawn | Tired | yawn (sound + eyes) |
-| Tired | tap, clap | Curious | none |
+| Tired | any stimulus (gesture, voice, clap, NewcomerSeen) | Curious | none — a cube being petted or spoken to never dozes off |
 | Annoyed | calm ≥ T_calm | Curious | none |
 | Annoyed | long stroke | Happy | purr |
+| any | touch-down (pressed edge) | unchanged | eyes widen within one tick (REQ-NF-01); the classified gesture follows |
+| any | voice, clap (a call, UC4) | unchanged unless Bored or Tired | eyes widen and look up |
+| Curious, Happy, Annoyed | NewcomerSeen (UC7 greeting) | unchanged | glance toward nothing in particular + hello beep through the Sound gate |
 
 **Stimuli not listed for a state leave the mood unchanged.** They still produce the reaction
 animation and beep of S3 (a tap in Happy is a surprise, a stroke in Curious is a purr), which is
-how UC2 guarantees a visible reaction in every mood. "Any stimulus" in Bored means every gesture,
+how UC3 guarantees a visible reaction in every mood. "Any stimulus" in Bored means every gesture,
 sound or `NewcomerSeen`. "Calm" means no gesture and no sound above the voice threshold.
 
-Durations are constants of the Mood engine, set in one header and overridden in tests through
-the injected clock. Proposed starting values: T_settle 10 s, T_calm 20 s, T_bored 3 min,
-T_tired 10 min, T_yawn 45 s. These are tuning parameters, not decisions, and change without an
+Durations are constants of the Mood engine, set in one header; tests advance the injected clock
+to exercise them. Starting values (ADR-0013, chained with 05b so that the cube dozes 10 min and
+sleeps 30 min after the last attention, FS5): T_settle 10 s, T_calm 20 s, T_bored 3 min,
+T_tired 5 min, T_yawn 45 s. These are tuning parameters, not decisions, and change without an
 ADR.
 
 ## Mood encoding (shared with the presence frame)
@@ -101,8 +105,10 @@ ADR.
   would send a just-woken cube back to Dozing two minutes later.
 - **Shake is not a V1 trigger**: it needs the IMU (P2, backlog S9, tier B). When S9 enters, it
   adds "shake → Annoyed" from Curious and Happy to this table, nothing else changes.
-- **G2 hook**: `NewcomerSeen` is already a stimulus in V1 (greeting). Contagious mood (G2) will add
-  a transition "neighbour majority mood for T_contagion → that mood", in a follow-up revision of
-  this diagram, not a new machine.
+- **G2 hook**: `NewcomerSeen` is already a stimulus in V1 (greeting). Contagious mood (G2,
+  REQ-F-11) will add a transition "neighbour majority mood for T_contagion → that mood" at the
+  `social-group` PDR, not a new machine. Until then REQ-F-11 is **deferred**, not realised here.
+- **Rare gag (REQ-F-13)**: an extension of this machine (an awake-time accumulator and a rate
+  limiter, output through the Sound gate), deferred to the `social-group` PDR with G2/G3.
 - **Not in this diagram**: the long-term "sulks when ignored for two days" (S10) needs persisted
   counters and will extend Bored when it enters a version.

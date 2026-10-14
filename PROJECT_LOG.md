@@ -7,7 +7,30 @@ human context: what was done, why, and by which PR.
 
 ## 2026-10-14
 
-### Architecture README restructured as arc42-lite (branch `docs/arc42-readme`)
+### cube-core PDR passed (branch `docs/pdr-cube-core`, ADR-0013)
+
+- Four-pass review of the eight diagrams against the requirements: five blocking
+  contradictions (use-case numbering, ritual entry, touch latency vs double-tap window, sleep
+  timings vs FS5, three tier-A requirements neither modelled nor deferred) and 14 Should Haves.
+- **Decisions** (ADR-0013, scored options and two deeper analyses):
+  - `randomness: lib-owned PCG32` — seeded from `esp_random()` after Wi-Fi init; the `IRng`
+    port was a single-implementation port whose fake re-implemented a PRNG.
+  - `ritual entry: post-boot invitation window` — the TTP223 calibrates during its first 0.5 s,
+    so "hold while plugging in" may never be detected; rejected as unreliable.
+  - `volume: second step of the adoption ritual (V1.x)` — discoverable, no collision with the
+    awake gestures; triple tap rejected (lengthens tap classification), mother cube rejected
+    (takes the setting away from the colleague).
+  - `sleep timings: doze 10 min, sleep 30 min` — matches FS5 and distinguishes a coffee break
+    from a meeting; any stimulus leaves Tired.
+  - `REQ-F-11/12/13: deferred` — their own `social-group` PDR so cube-core firmware can start.
+- Diagrams 01, 02a, 02b, 03, 05a, 05b, presence and data-flow amended (MAC by value, mood byte in
+  the codec, tick-driven ritual, entry press consumed, touch-down stimulus, sound classes, tick
+  budget, mic privacy note, greeting policy owned by the presence sequence); specs UC1/UC3/UC4/UC6
+  rewritten, UC2 retired, matrix corrected, CLAUDE.md rules aligned. Pre-push gate: design and
+  docs reviews, 6 Must Haves (ADR totals, entry press, codec edge, stale wording) applied.
+  Next: firmware T1/T2/T8 can start.
+
+### Architecture README restructured as arc42-lite — **PR #7 merged** (`83a4ae2`)
 
 - Post-merge pass after PRs #1–#6: every 2026-10-14 entry now carries its PR number and merge
   SHA; stale "next" sentences in merged entries updated in place.

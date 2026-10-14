@@ -9,53 +9,65 @@
 
 ## Domain: Identity
 
-### UC1 — Adopt a cube
-- Primary actor: Owner. Requirements: REQ-F-07, REQ-F-08.
-- Preconditions: the cube is powered and not yet adopted (or the secret gesture was performed).
-- Minimal guarantee: the cube always has a colour (MAC-derived).
+### UC1 — Adopt or re-adopt a cube
+- Primary actor: Owner (Maker during pre-adoption tests). Requirements: REQ-F-07, REQ-F-08.
+- Preconditions: the cube was just plugged in; every boot resolves a colour first (stored, else
+  MAC-derived) and then shows an invitation for 4 s (question mark and an empty gauge). First
+  adoption and re-adoption are the same scenario (ADR-0013).
+- Minimal guarantee: the cube always has a colour (MAC-derived); an abandoned ritual changes
+  nothing.
 - Success guarantee: the chosen colour is stored and shown.
 - Main success scenario:
-  1. The cube shows its default colour with a "waiting for adoption" expression.
-  2. The owner taps; the eyes take the next colour of the palette.
+  1. During the invitation, the owner holds the pad; the gauge fills in 2 s and the ritual starts
+     with a chime, eyes wide open in the candidate colour. Releasing that entry hold does nothing:
+     the first ritual gesture is the next touch.
+  2. The owner taps; the eyes take the next colour of the palette, with a tick whose pitch follows
+     the index.
   3. The owner repeats step 2 until the colour pleases them.
-  4. The owner strokes the cube for two seconds; the cube confirms with a happy expression and a
+  4. The owner strokes the cube for 1.5 s; the cube confirms with an adoption animation and a
      short melody, and stores the colour.
+  5. (V1.x, UC6) A second step offers the volume the same way; V1 skips it.
 - Extensions:
-  - 2a. No tap for 60 s: the cube keeps the current colour as provisional and continues living;
-    the ritual resumes at the next tap until a confirmation happens.
-  - 4a. Power lost before confirmation: on reboot the default colour returns (REQ-F-07).
+  - 1a. No hold during the invitation: the cube starts normally with its current colour.
+  - 2a. No gesture for 60 s: ritual abandoned, previous colour kept, nothing written.
+  - 4a. NVS write fails: error blink, identity unchanged (fail closed).
+  - 4b. Power lost before confirmation: on reboot the previous colour returns.
+- Note: the invitation replaces "hold while plugging in" because the TTP223 calibrates during
+  its first 0.5 s and a finger present at power-up may never be detected (ADR-0013).
 
-### UC2 — Re-adopt a cube
-- Primary actor: Owner or Maker. Requirements: REQ-F-07.
-- Main success scenario: hold the touch pad while plugging the cube; the cube enters UC1.
+### UC2 — retired
+- Merged into UC1 (re-adoption uses the same invitation and steps). The number is not reused.
 
 ## Domain: Mood
 
 ### UC3 — Pet the cube
 - Primary actor: Owner. Requirements: REQ-F-03, REQ-NF-01.
 - Main success scenario:
-  1. The owner taps / double taps / strokes the cube.
-  2. Within 150 ms the cube reacts (surprise / joy / purr with closed eyes) and its mood shifts
-     toward happy.
+  1. The owner touches the cube; within 150 ms the eyes widen (touch-down reaction, the same in
+     every mood).
+  2. Once the gesture is classified (tap, double tap, stroke; a tap needs the 250 ms double-tap
+     window to elapse) the cube reacts specifically (surprise / joy / purr with closed eyes) and
+     its mood shifts toward happy.
 - Extensions: 1a. The cube is asleep: it wakes first (UC5), then reacts.
 
 ### UC4 — Call the cube
 - Primary actor: Owner. Requirements: REQ-F-09.
-- Main success scenario: the owner claps or speaks loudly near the cube; the cube looks up,
-  reacts according to its mood, and wakes if it was dozing.
-- Extensions: 1a. Sustained office noise: ignored (threshold adapts to the ambient level).
+- Main success scenario: the owner claps or speaks near the cube; the cube widens its eyes and
+  looks up, a Bored or Tired cube returns to Curious, a dozing cube wakes. A call never annoys the
+  cube: only a sustained loud level does.
+- Extensions: 1a. Sustained office noise: ignored (the threshold adapts to the ambient level).
 
 ### UC5 — Let the cube sleep and wake it
-- Primary actor: Owner (by inaction, then by attention). Requirements: REQ-F-06, REQ-NF-08.
+- Primary actor: Owner (by inaction, then by attention). Requirements: REQ-F-06, REQ-F-05, REQ-NF-08.
 - Main success scenario: no interaction for 10 min, the cube dozes (half-closed eyes, dimmed);
   after 30 min it sleeps (dream animation, screen dim); a touch or a sound wakes it with a yawn.
 
-### UC6 — Adjust the volume (deferred: volume is a constant in V1)
-- Primary actor: Owner. Requirements: REQ-F-05.
-- Main success scenario (once a gesture is defined): the gesture cycles the four volume steps;
-  the eyes show the level; the setting is stored.
-- Open question: the gesture must not collide with UC1 and UC3 gestures; decided at the PDR of
-  the feature that introduces it, not in V1.
+### UC6 — Adjust the volume (V1.x: second step of the adoption ritual; V1 ships a constant)
+- Primary actor: Owner. Requirements: REQ-F-05. Decision: ADR-0013.
+- Main success scenario: after confirming the colour in UC1, the cube plays a sample beep at the
+  current level; a tap cycles the four levels (each with its sample beep), a long stroke confirms
+  and stores the level, read by the Sound gate from then on.
+- Extensions: 1a. No gesture for 60 s: the previous level is kept.
 
 ## Domain: Social
 
@@ -64,7 +76,7 @@
 - Main success scenario:
   1. The cube hears presence frames from neighbours and adds them to its table.
   2. Neighbours see the newcomer and greet (short look + beep); the newcomer greets back.
-- Extensions: 1a. A neighbour falls silent for 30 s: it leaves the table without ceremony.
+- Extensions: 1a. A neighbour falls silent for T_ttl (15 s): it is marked absent without ceremony.
 
 ### UC8 — Let moods spread
 - Primary actor: Team (by being together). Requirements: REQ-F-11.
@@ -93,4 +105,4 @@
 ### UC11 — Build and flash a cube
 - Primary actor: Maker. Requirements: REQ-NF-09, REQ-NF-10.
 - Main success scenario: follow `docs/hardware/assembly.md`; flash the single image; the cube
-  boots into UC1.
+  boots, shows the invitation, and the end-of-line check adopts it once (UC1) to prove the pad.

@@ -1,106 +1,82 @@
 # Local review — cubbies (branch diff)
 
 - Date: 2026-10-14
-- Commit: b5a7449 (findings applied in the amended commit that replaces it)
-- Scope: branch diff `main...HEAD` on `docs/design-dossier` (design dossier: requirements, use
-  cases, verification plan, gates, traceability matrix, hardware specs, ADR-0010/0011, research,
-  roadmap, CLAUDE.md, pins.h comments)
-- Checks run: design (architecture-guardian) · docs (doc-auditor) · correctness (technical
-  fact-check of every hardware value against datasheets) · security: not applicable (no code; the
-  privacy constraint C7 was reviewed by the design pass) · tests: not applicable
-- Verdict: fix Must Have first, then ship · Must 8 · Should 14 · Nice 9 — **all Must and Should
-  applied before push**, Nice applied where one line sufficed
+- Commit: b28246c (findings applied in this amended commit)
+- Scope: branch diff `main...HEAD` on `docs/pdr-cube-core` (cube-core PDR: eight diagrams, specs,
+  traceability matrix, ADR-0013, ADR-0008 amendment note, roadmap, assembly check, CLAUDE.md rules,
+  PROJECT_LOG)
+- Checks run: design (architecture-guardian) · docs (doc-auditor) · correctness: datasheet facts
+  of the decisions verified in the PDR session (ESP32-C3 RNG, TTP223 calibration, PCG32) ·
+  security: not applicable (no code) · tests: not applicable
+- Verdict: fix Must Have first, then ship · Must 6 · Should 15 · Nice 7 — **all Must and Should
+  applied before push**
 
 ## 🔴 Must Have
 
-- `docs/architecture/traceability-matrix.md` `[design|docs]` · Links to diagrams that exist only
-  on `docs/uml-study`; broken on `main` if merged first. · Applied: header states the dependency;
-  merge order decided: `docs/uml-study` merges first.
-- `traceability-matrix.md` `[design]` · Port names drifted from the UML component diagram
-  (`ITouch`, `ISensors` grab-bag). · Applied: `ITouchSource`, `IMic`, `IMotion` (created at S9),
-  one port per source.
-- `firmware/include/pins.h:27` `[design]` · Comment claimed GPIO20/21 free while SCL is on
-  GPIO21. · Applied: comment corrected.
-- `electronics-spec.md`, `calculations.md` `[design|correctness]` · Buzzer on strapping pins
-  (GPIO2 XIAO, GPIO8 Super Mini) with a gate pull-down, undiscussed. · Applied: datasheet facts
-  recorded, CDR checklist item added, swap plan stated.
-- `electronics-spec.md:55` `[correctness]` · SPI 8 MHz exceeds the SSD1331 maximum (6.67 MHz).
-  · Applied: 6 MHz.
-- `calculations.md:10` `[correctness]` · Wi-Fi TX peak 300 mA not in the datasheet (335 mA at
-  1 Mbps). · Applied, total peak ≈ 420 mA.
-- `calculations.md:28` `[correctness]` · R_s = 47 Ω drives 52 mA into a buzzer rated 40 mA. ·
-  Applied: 68 Ω → 39 mA; AO3400 only (2N7002 unspecified at 3.3 V gate drive).
-- `CLAUDE.md:43`, `roadmap.md` S4/S8 `[docs]` · Stale "quiet hours" wording. · Intentional:
-  those lines are rewritten on `docs/uml-study` (owner-validated); duplicating the edit would
-  conflict. They arrive with that merge.
+- `ADR-0013:53,66` `[design|docs]` · Two scoring totals wrong (D2 option D = 26 not 23, D3
+  option C = 19 not 20); E now beats D by one point. · Applied, with a sentence on why E still
+  wins (ships in V1.x without V1.5 infrastructure).
+- `identity/02a:44-50`, `02b`, `use-cases.md` UC1 `[design]` · The 2 s entry hold could be read
+  as the 1.5 s confirming stroke and write the MAC-default colour to NVS. · Applied: the entry
+  press is consumed by the Gesture classifier; first ritual gesture is the next pressed edge
+  (diagram step, notes, UC1 step 1).
+- `cube-core/03:66-67` `[design]` · The codec computes `moodByte(sleepState, wakeOrigin, mood)`
+  but no `Social --> MoodE` edge was drawn; Waking's origin was not exposed. · Applied: edge
+  added, `wakeOrigin` named in 03 and 05b.
+- `cube-core/03:166` `[docs]` · "until the UC6 gesture is decided" after the decision. ·
+  Applied.
+- `docs/architecture/README.md:29` `[docs]` · Index still named "held-at-boot" as the only
+  entry. · Applied.
+- `CLAUDE.md:41-46` `[docs|design]` · Rules contradicted ADR-0013 (RNG injected, duty level,
+  volume gesture). · Applied.
 
 ## 🟡 Should Have
 
-- `ADR-0011` totals `[docs]` · Two scoring totals wrong (G 26, E 32). · Applied.
-- `requirements.md` `[design]` · Solutions leaking into requirements (buzzer, Sound gate,
-  neighbour table, audio adapter, 96×64). · Applied: reworded solution-neutral; the Sound gate
-  lives in the matrix and the component diagram.
-- `requirements.md` `[design|docs]` · IMU fitted without a requirement. · Applied: REQ-F-15
-  (tier B, S9) with the "fitted in V1" rationale.
-- `gates.md` `[design]` · Full PDR on every backlog item. · Applied: scoped to features that add
-  a requirement, port, frame field or state.
-- `verification-plan.md`, `calculations.md` `[design]` · ngspice for an RC with 500× margin and
-  for decoupling. · Applied: ngspice kept for the buzzer stage only; RESET verified by hand
-  calculation + 10 cold boots.
-- `use-cases.md` `[docs]` · UC11/UC12 were not actor-initiated goals; UC11 cited C8. · Applied:
-  "not use cases" list B1–B3, UC13 renumbered UC11.
-- `requirements.md` C10 `[docs]` · `IClock` could read as a wall clock. · Applied: monotonic
-  uptime stated.
-- `electronics-spec.md:32` `[docs]` · "confirmed by simulation" before any simulation. ·
-  Applied.
-- `electronics-spec.md:62` `[docs]` · Garbled sentence on RESET. · Applied.
-- `calculations.md:16` `[docs|correctness]` · Buzzer peak 30 mA vs 52 mA computed. · Applied
-  (39 mA after resizing).
-- `calculations.md` `[correctness]` · LDO part and dissipation missing; INMP441 1.5 mA is the
-  1.8 V figure; OLED typical overstated; reset pulse ≥ 3 µs not 2; GPIO drive default 10/20 mA.
-  · Applied.
-- `mechanical-spec.md` `[correctness]` · Window 20.5 × 14 mm below print tolerance over the
-  active area; module size unverifiable. · Applied: window on the viewing area 22.2 × 15.5 mm,
-  SKU to name at the CDR.
-- `PROJECT_LOG.md` `[docs]` · Counts wrong (constraints, UCs); KiCad method claim without source.
-  · Applied (10 constraints, 11 UCs + 3 behaviours; "provisional, no ADR yet").
-- `requirements.md`, matrix, verification plan `[design]` · REQ↔UC mapping written three times.
-  · Applied: the Acceptance column removed from requirements; UCs own UC→REQ, the matrix owns
-  REQ→design→verification.
+- ADR-0013 amends ADR-0008 without saying so · Applied: status line, index row, forward note in
+  ADR-0008.
+- `03:78` BuzzerAudio "duty level" · Applied: "volume level → duty → tone".
+- `README.md` "Maintenance" domain vs "Making" · Applied.
+- `02a` hold starting late in the window undefined · Applied: a hold in progress extends the
+  window by up to T_secret, gauge never resets mid-hold.
+- `use-cases.md:78` UC7 "30 s" vs T_ttl 15 s · Applied.
+- UC5 requirement lists differ between 01 and the spec · Applied: REQ-F-06, F-05, NF-08 in both.
+- ADR-0013 D4 called the rare gag tier A while S12 is tier C · Applied: wording fixed.
+- `requirements.md:59` "secret gesture" · Applied.
+- `02b` confirm path lacked the tick plumbing · Applied: `M->>I: tick(stroke, nowMs)`.
+- `02a`/`02b` colour applied before the ritual, not re-applied after · Applied: setColour
+  re-applied with the final identity, 02b note reworded.
+- PROJECT_LOG entry as prose · Applied: decisions as labelled bullets with rejected alternatives.
+- `03` sound table: loud also wakes from Dozing · Applied.
+- `03` tick budget 16 + 24 ms · Applied.
+- `traceability-matrix.md` "sleep controller" → "Sleep cycle" · Applied.
+- `ADR-0013` link to gates.md, T_settle_touch rationale, T_doubletap listed with the other
+  gesture durations · Applied.
 
 ## 🔵 Nice to Have
 
-- `requirements.md` C9/C10 order and C9 criterion · Applied.
-- `ADR-0011` option letters A/E/F/G · Applied: note on discarded variants.
-- `ADR-0010` heaviest weight is a tooling convenience · Applied: stated in Context.
-- `assembly.md` "3 V tone" · Applied: 3.3 V square wave at 2 kHz on the gate.
-- `electronics-spec.md` "NPN or N-MOSFET" vs calculations · Applied: N-MOSFET.
-- `calculations.md` wall thickness 1.5–2 mm vs 1.6 mm · Applied.
-- `traceability-matrix.md` `IRng` port vs lib-owned seeded generator · Deferred: recorded as a
-  PDR gap; the UML study owns the component diagram.
-- `calculations.md` TTP223 "3 mm of plastic" unverifiable · Applied: "measured on the prototype".
-- `docs/hardware/measurements.md` cited but absent · Intentional: filled at bench time.
+- `03` Prng node without edges · Intentional (cross-cutting like `IClock`), label says so.
+- Historical mentions of `IRng`, `localMac`, UC2, "held while plugging in" in explanatory or
+  dated sentences · Kept, they record the change.
+- The previous report (design dossier) mentioned UC12/UC13 · Superseded by this file (git keeps
+  it).
 
 ## ⚪ Disagree / Intentional
 
-- The Sound gate in `lib/` `[design]` · Domain policy (volume, silence asleep/dark, gag rate
-  limits) at the single exit point for sound; one plain class calling `IAudio`, no interface of
-  its own. Kept.
-- The CDR gate `[design]` · Runs once before ordering parts for > 10 units; proportionate. Kept.
-- Constraints C3/C5/C6 restating ADRs `[design]` · Accepted decisions are constraints, not
-  solutions in disguise. Kept.
-- Five hardware/architecture documents for a scaffold `[design]` · The owner required a formal
-  design dossier before any code; each file has one role and is short. Kept.
+- Deferred ovals UC8/UC9 and the `Team` actor in the use-case diagram `[design]` · Justified:
+  the matrix needs a target for explicitly deferred tier-A goals.
+- One `Prng` instance per consumer `[design]` · Keeps test sequences independent; ADR-0013 D1.
+- `kFrameSize` included by the adapter from `lib/` `[design]` · src → lib is the allowed
+  direction and removes a duplicated constant.
+- Touch-down stimulus as a second gesture output `[design]` · Smallest change meeting REQ-NF-01
+  with a 250 ms double-tap window.
 
 ## Per-dimension summary
 
-- Design: ports aligned with the UML study, PDR scoped, no dependency-rule violation found,
-  one speculative port (`ISensors`) removed, `IRng` flagged for the next PDR.
-- Docs: 100 % of planned artefacts present, 6 accuracy fixes, counts corrected, no doc-noise.
-- Tests: not applicable (no code); firmware builds re-run after the `pins.h` comment edits
-  (both envs succeed).
-- Security: not applicable to this diff; privacy constraint C7 and REQ-NF-07 carried into the
-  matrix.
-- Correctness: 17 hardware claims checked against datasheets; 6 wrong values corrected (SPI
-  clock, TX peak, buzzer current, reset pulse, INMP441 current, GPIO drive), 3 unverifiable
-  deferred to the CDR with the SKU choice.
+- Design: dependency rule holds (no lib → src edge, Identity no longer depends on `IRadio`);
+  one behavioural defect (entry press) and one missing edge fixed; no over-engineering.
+- Docs: numbers consistent everywhere (1 s / 4 s / 2 s invitation, 250 ms double tap, 40 ms
+  tick, 10 / 30 min sleep chain), UC numbering unified, every diagram keeps the template, all
+  blocks render with `mmdc`, no broken relative link.
+- Tests: not applicable; the native test seams (fakes per port, seeded Prng) are named in 03.
+- Security: privacy boundary of the microphone written into 03; nothing else in scope.
+- Correctness: facts behind the decisions verified against primary sources during the PDR.

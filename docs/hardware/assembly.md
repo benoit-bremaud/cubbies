@@ -42,7 +42,8 @@
 ## End-of-line checklist
 
 - [ ] Eyes render in all palette colours
-- [ ] Touch detected through the shell at every corner of the pad
+- [ ] Touch detected through the shell at every corner of the pad, and the invitation window
+      after a cold boot detects a hold (TTP223 calibration, ADR-0013)
 - [ ] Tone audible at the V1 constant volume; silent while asleep
 - [ ] Sound level reacts to a clap at 1 m
 - [ ] IMU wiring check: serial log shows tilt on the expected axis (behaviour is tier B, S9)

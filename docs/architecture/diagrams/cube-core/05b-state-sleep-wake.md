@@ -2,7 +2,7 @@
 
 > **Frame**: `stm — Sleep cycle`
 > **Feature**: `cube-core` — backlog items S5, S7, with hooks for S8 (day rhythm) and T7 (V2 power) in [docs/roadmap.md](../../../roadmap.md)
-> **Related ADRs**: ADR-0002 (no power management in V1), ADR-0006 (screen dims during sleep)
+> **Related ADRs**: ADR-0002 (no power management in V1), ADR-0006 (screen dims during sleep), ADR-0013 (timings, mood byte in the codec)
 > **Module**: `Sleep cycle` in [03-component.md](03-component.md)
 
 ## Context
@@ -64,13 +64,18 @@ The wake-up melody has one owner: this machine, on the Asleep → Waking path (a
 sequence in [identity/02a](../identity/02a-sequence-first-boot.md)). The mood engine plays nothing
 when it restarts in Curious.
 
-Proposed starting values: T_doze 2 min, T_fall_asleep 5 min. The two sound thresholds are higher
+Starting values (ADR-0013): T_doze 2 min, T_fall_asleep 20 min. Chained with 05a (T_bored 3 min +
+T_tired 5 min + T_doze 2 min) the cube dozes 10 min after the last attention and sleeps 30 min
+after it, as FS5 requires: a coffee break meets a dozing cube that yawns awake, a meeting meets a
+sleeping cube that plays its wake-up melody. The two sound thresholds are higher
 for Asleep than for Dozing so that office background noise does not wake a sleeping cube (S7). A
 sound below the Dozing threshold does not reset T_fall_asleep.
 
 ## What the presence frame carries per state
 
-The Sleep cycle derives the byte (`presenceMoodByte`) and the Social protocol reads it.
+The Social protocol's codec computes the byte, `moodByte(sleepState, wakeOrigin, mood)`, from
+the two machines' states (ADR-0013): this machine exposes its state and, in Waking, where it came
+from (`wakeOrigin`), and knows nothing about the wire format.
 
 | State | Mood byte on the air |
 |-------|----------------------|

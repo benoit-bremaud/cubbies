@@ -54,9 +54,9 @@ are not makers: the cube works from the moment it is plugged in.
 | REQ-F-02 | The cube has at least five moods (happy, curious, tired, bored, annoyed) with smooth transitions. | FS1 | FW |
 | REQ-F-03 | The cube recognises tap, double tap and long stroke on its touch surface and reacts to each. | FS2 | FW, EL |
 | REQ-F-04 | The cube emits expressive sounds per mood and a wake-up melody. | FS4 | FW, EL |
-| REQ-F-05 | Every sound the cube emits respects the current volume (a constant in V1; four stored steps set by a touch gesture with visual feedback once that gesture exists), and the cube is silent while asleep and, from S8, in the dark. | FS4, C10 | FW |
+| REQ-F-05 | Every sound the cube emits respects the current volume (a constant in V1; four stored steps chosen in a second step of the adoption ritual from V1.x, ADR-0013), and the cube is silent while asleep and, from S8, in the dark. | FS4, C10 | FW |
 | REQ-F-06 | The cube dozes after inactivity, sleeps, yawns, and wakes on touch or sound. | FS5 | FW |
-| REQ-F-07 | On first boot the cube derives a colour from its MAC; the adoption ritual overrides it; a secret gesture re-runs it. | FS6 | FW |
+| REQ-F-07 | On first boot the cube derives a colour from its MAC; the adoption ritual overrides it; holding the pad during the post-boot invitation re-runs it (ADR-0013). | FS6 | FW |
 | REQ-F-08 | The identity survives power cycles and OTA updates. | FS6 | FW |
 | REQ-F-09 | The cube wakes on a loud sound and reacts to voice level. | FS3 | FW, EL |
 | REQ-F-10 | The cube announces its identity and mood to companions in range, knows which are present, and greets a newcomer. | FS7 | FW |
