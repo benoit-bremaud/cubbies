@@ -21,12 +21,16 @@ human context: what was done, why, and by which PR.
   a system event modelled as a use case, shake needing the tier-B IMU). Second pass: four Must
   (wake-up melody owned by three diagrams, a Sleep/Mood circular dependency, a Router → Identity
   edge the ritual never uses, a storage edge with nothing stored) and a greeting policy that
-  could skip a newcomer. All fixed; the third pass confirmed the fixes.
+  could skip a newcomer. All fixed. Third pass: no Must left, two stale use-case numbers from the renumbering and
+  the "greet while awake" wording fixed. `review-local` gate (design, docs, security,
+  correctness): four Must (receive-path rate budget and length check in the callback, spoofing
+  risk stated honestly, one stale reference), all applied; report in
+  `docs/architecture/review-local.md`.
 - Defaults taken pending the owner's decision, each flagged in the diagram notes and submitted
   as scored options with the study: quiet hours out of V1 (no time source), discrete moods,
   wake restarts in Curious, greeting as a local rate-limited stimulus rather than a frame,
   palette index on the air with a version bump on palette change, ritual entered only by the
-  held-at-boot gesture, derived MAC colour not persisted, constant default volume until a UC8
+  held-at-boot gesture, derived MAC colour not persisted, constant default volume until a UC6
   gesture is chosen.
 - Next: owner validates the conception, PR opened, then backlog items S1–S7 and G1 become
   issues with these diagrams as their contract.

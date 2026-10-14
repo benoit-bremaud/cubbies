@@ -71,7 +71,7 @@ sequenceDiagram
   frame type: no extra message and nothing to acknowledge (owner decision taken by default,
   alternative in the PR Q&A: a dedicated GREET frame).
 - **Greeting policy, so the cube is never loud under flapping or spoofing, yet never misses a
-  newcomer** (UC5 guarantee):
+  newcomer while Awake** (UC5 guarantee):
   - greeting is decided on the tick, not on receive: an entry is greeted when it is present, not
     yet greeted, and at least `T_greet_cooldown` (proposal 10 s) has elapsed since the last
     greeting. Several cubes plugged in together are therefore greeted one after another, none is
@@ -92,13 +92,17 @@ sequenceDiagram
   period and will revisit them.
 - **Alone means inert**: with an empty table, the only social activity is one broadcast every
   T_presence. No mood effect, no sound, which is ADR-0001's "degrades to nothing" requirement.
-- **Table bounds**: fixed capacity of 16 entries (more than the planned fleet). A stream of forged
-  MACs fills the table once, then evicts only absent entries, so it cannot push a present
-  neighbour out. Fixed arrays, no heap, so it is testable natively and safe on the C3.
+- **Table bounds**: fixed capacity of 16 entries (more than the planned fleet). Eviction only
+  replaces absent entries, so a burst of forged MACs cannot push a present neighbour out. A
+  *sustained* stream of 16 forged MACs re-sent within `T_ttl` does keep every slot present and
+  hides real newcomers: this is part of the accepted residual risk stated in
+  [06](06-data-flow.md). Fixed arrays, no heap, so it is testable natively and safe on the C3.
 - **The sender MAC is unauthenticated**: it comes from the 802.11 header through the receive
-  callback, not from the payload, so a frame cannot carry a MAC different from the one the radio
-  saw, but any ESP32 can transmit with a forged source MAC. Spoofing is accepted in V1: its effect
-  is bounded by the cooldown, the table capacity and the allowlist (see [06](06-data-flow.md)).
+  callback, not from the payload, but any ESP32 can transmit with a forged source MAC. Forging a
+  known neighbour's MAC overwrites its mood byte and refreshes `lastSeen`. Spoofing is accepted in
+  V1 with its consequences listed honestly in [06](06-data-flow.md) and submitted to the owner.
+- **Time arithmetic**: all ages use modular unsigned subtraction on `nowMs` (wrap at 49.7 days),
+  see [06](06-data-flow.md).
 - **Native test**: `LoopbackRadio` fake connects two `Social protocol` instances with a scripted
   `FakeClock`, so insert, update, greet-once, cooldown, re-greet hysteresis and expiry are
   asserted without hardware.

@@ -70,7 +70,7 @@ stateDiagram-v2
 
 **Stimuli not listed for a state leave the mood unchanged.** They still produce the reaction
 animation and beep of S3 (a tap in Happy is a surprise, a stroke in Curious is a purr), which is
-how UC3 guarantees a visible reaction in every mood. "Any stimulus" in Bored means every gesture,
+how UC2 guarantees a visible reaction in every mood. "Any stimulus" in Bored means every gesture,
 sound or `NewcomerSeen`. "Calm" means no gesture and no sound above the voice threshold.
 
 Durations are constants of the Mood engine, set in one header and overridden in tests through

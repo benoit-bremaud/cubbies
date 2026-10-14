@@ -44,11 +44,17 @@ sequenceDiagram
   alt Long stroke — confirm
     C->>G: long stroke (≥ T_stroke)
     G-->>I: gesture stroke
-    I->>S: put("identity.colour", paletteIndex)
-    S-->>I: ok
-    I->>E: playAdoptionAnimation(palette[paletteIndex])
-    I->>A: play(adoption melody)
-    I->>I: adopted = true
+    I->>S: put("identity.colour", paletteIndex as one uint8)
+    alt Write succeeded
+      S-->>I: ok
+      I->>E: playAdoptionAnimation(palette[paletteIndex])
+      I->>A: play(adoption melody)
+      I->>I: adopted = true
+    else Write failed
+      S-->>I: error
+      I->>E: showErrorBlink()
+      I->>I: identity unchanged, adopted unchanged — fail closed
+    end
   else No gesture for T_ritual_timeout
     I->>I: ritual abandoned — identity unchanged
     Note over I: Re-adoption keeps the stored colour. First adoption keeps the MAC default, adopted stays false

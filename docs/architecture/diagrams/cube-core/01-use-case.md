@@ -62,7 +62,7 @@ flowchart LR
 | UC2 Pet the cube | Colleague | Visible reaction within one frame in every mood: surprise, joy, purr with eyes closed | S3 |
 | UC3 Wake the cube | Colleague | The cube opens its eyes. From deep sleep it also plays the wake-up melody | S5, S7 |
 | UC4 Get the cube's attention | Colleague | Eyes widen and look up, mood shifts to curious | S7 |
-| UC5 Bring a cube into the group | Colleague, with the Neighbour cubes as secondary actors | The cubes already present greet the newcomer and it greets back, each at most once per arrival, as soon as the greeting policy allows | G1 |
+| UC5 Bring a cube into the group | Colleague, with the Neighbour cubes as secondary actors | The awake cubes already present greet the newcomer, and it greets back if awake, each at most once per arrival, as soon as the greeting policy allows. A cube not awake at that moment skips the greeting | G1 |
 | UC6 Adjust the volume | Colleague | Volume level persisted in NVS and applied to every sound | S4 |
 | UC7 Flash the common firmware | Maker | Same binary on every cube, identity untouched (NVS survives) | T1, T2 |
 

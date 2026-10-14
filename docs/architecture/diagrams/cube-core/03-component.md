@@ -43,7 +43,7 @@ flowchart LR
       PAudio["IAudio<br/>play tone sequence at duty level"]
       PRadio["IRadio<br/>localMac, broadcast bytes, receive → bytes + sender MAC"]
       PStore["IStorage<br/>get key, put key value"]
-      PClock["IClock<br/>nowMs"]
+      PClock["IClock<br/>nowMs — uint32 ms, wraps"]
       PRng["IRng<br/>next"]
     end
     Gest --> PTouch
@@ -77,7 +77,7 @@ flowchart LR
     AMic["I2sMic<br/>INMP441, RMS level per tick"]
     ADisp["Ssd1331Display<br/>SPI, 4 pins, contrast command for brightness"]
     AAudio["BuzzerAudio<br/>LEDC PWM, duty level → tone"]
-    ARadio["EspNowRadio<br/>broadcast MAC, bounded RX queue from the Wi-Fi task"]
+    ARadio["EspNowRadio<br/>broadcast MAC, length check in the callback, 8-slot SPSC queue from the Wi-Fi task"]
     AStore["NvsStorage<br/>Preferences"]
     AClock["MillisClock"]
     ARng["EspRng<br/>esp_random"]
@@ -100,6 +100,8 @@ flowchart LR
   Fakes -. implements .-> PORTS
 ```
 
+### Runtime rules
+
 Cross-cutting ports, left out of the arrows for readability: `IClock` is injected into the
 Gesture classifier, Sound classifier, Mood engine, Sleep cycle, Identity rules (ritual timeouts)
 and Social protocol (presence period, expiry, greeting cooldown). `IRng` is injected into the Eyes
@@ -109,8 +111,8 @@ jitter). The Identity rules use no randomness: the MAC hash is deterministic.
 Tick fan-out from `main.cpp`, each tick in this order: Gesture classifier, Sound classifier,
 Social protocol (drain RX queue, expire, broadcast if due), Stimulus router, Sleep cycle, Mood
 engine, Eyes renderer, then `IDisplay.present`. Identity rules run at boot only: `main.cpp`
-resolves the identity, then, if the pad is held, runs the ritual loop in which gestures go
-straight from the Gesture classifier to Identity rules. The Stimulus router, Sleep cycle and
+resolves the identity, then, if the pad is held, calls `runRitual()`, which loops on its own:
+Identity rules poll the Gesture classifier each iteration and consume gestures directly. The Stimulus router, Sleep cycle and
 Social protocol start ticking only after the ritual ends.
 
 Routing rule of the Stimulus router: while the Sleep cycle is Awake, gestures, sounds and
@@ -125,6 +127,10 @@ the `IDisplay` port.
 
 ## Notes
 
+- **Clock contract**: `IClock.nowMs` is an unsigned 32-bit millisecond counter that wraps every
+  49.7 days. Consumers compare ages only through `(uint32)(now - then)`; a native test runs every
+  timer across the wrap. The radio adapter's queue is a single-producer (callback) single-consumer
+  (tick) ring or FreeRTOS queue: "adapters are dumb" means no policy, not no synchronisation.
 - **Dependency direction**: every arrow from `src/` points into `lib/`, never the reverse. The
   only way for `lib/` to reach hardware is through a port it declares itself. A direct call to
   `millis()`, `random()`, `tone()` or `esp_now_send()` inside `lib/` is a review blocker.

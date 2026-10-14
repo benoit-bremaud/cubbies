@@ -1,7 +1,7 @@
 # State diagram — cube-core — sleep and wake cycle
 
 > **Frame**: `stm — Sleep cycle`
-> **Feature**: `cube-core` — backlog items S5, S7, with hooks for S8 (day rhythm) and T7 (V2 power)
+> **Feature**: `cube-core` — backlog items S5, S7, with hooks for S8 (day rhythm) and T7 (V2 power) in [docs/roadmap.md](../../../roadmap.md)
 > **Related ADRs**: ADR-0002 (no power management in V1), ADR-0006 (screen dims during sleep)
 > **Module**: `Sleep cycle` in [03-component.md](03-component.md)
 

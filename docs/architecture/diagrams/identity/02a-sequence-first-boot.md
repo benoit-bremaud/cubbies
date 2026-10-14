@@ -27,10 +27,10 @@ sequenceDiagram
   I->>R: localMac()
   R-->>I: 6 bytes
   I->>S: get("identity.colour")
-  alt Stored index present and in range 0..paletteSize-1
+  alt Stored value is exactly one byte and in range 0..paletteSize-1
     S-->>I: palette index
     Note over I: adopted = true
-  else Not found, or out of range after a palette change
+  else Not found, wrong size or type, or out of range after a palette change
     S-->>I: not found or invalid
     I->>I: paletteIndex = hash(mac) mod paletteSize
     Note over I: adopted = false — the derived default is not written to NVS
@@ -57,9 +57,10 @@ sequenceDiagram
 - **The derived default is not persisted** (owner decision taken by default). Writing it would
   make "adopted" indistinguishable from "defaulted", and would freeze defaults across a future
   palette change. The `adopted` flag tells the Maker which cubes are still spare.
-- **NVS is input**: a stored index is range-checked against the current palette, and an invalid
-  value falls back to the MAC default rather than indexing out of bounds. Relevant after a
-  firmware update shrinks the palette.
+- **NVS is input**: the key is exactly one `uint8`. A missing key, a value of another size or
+  type (the Preferences API would otherwise return a default that looks like index 0), or an
+  index out of range after a palette change all fall back to the MAC default rather than being
+  trusted. Relevant after a firmware update shrinks the palette or after NVS corruption.
 - **MAC comes through `IRadio.localMac`**, the one adapter that already knows it, rather than a
   dedicated port. If a non-radio build ever needs the MAC, add a port then (YAGNI).
 - **Hash stability matters**: `hash(mac) mod paletteSize` is a fixed, documented function so that
