@@ -1,8 +1,9 @@
 # Roadmap and prioritised backlog
 
 Versions are incremental: the simplest working cube first, then behaviours added in order of
-implementation difficulty. Each item becomes an issue with acceptance criteria and its UML views
-before it is coded (conception gate).
+implementation difficulty. Each item becomes an issue with acceptance criteria, cites its
+requirements (`docs/architecture/specs/requirements.md`) and passes the PDR checklist
+(`docs/architecture/gates.md`) before it is coded.
 
 ## Versions
 
@@ -35,6 +36,7 @@ Within a tier, the order is the implementation order.
 | S9 | Eyes follow tilt; shake = annoyed; upside down = sleeps | B | P2 |
 | S10 | Sulks when ignored for two days | B | S2, persisted counters |
 | S11 | Dream animation while asleep; "reads" when the owner types for long | C | S5, S7 |
+| S12 | Rare gag: a discreet "toot" with embarrassed eyes, neighbours in range react; rate-limited on awake time, never while asleep or in the dark (REQ-F-13) | C | S4, G1 |
 
 ### Social behaviours (ESP-NOW broadcast)
 
@@ -63,3 +65,6 @@ Within a tier, the order is the implementation order.
 | T5 | Enclosure v1: 40 mm cube, snap-fit, OLED window, touch pad on top, USB-C at the back | A |
 | T6 | OTA relayed by the mother cube (ESP-NOW OTA) | V1.5 |
 | T7 | Power management: light sleep, screen off, battery gauge | V2 |
+| T8 | Native display adapter rendering the framebuffer to PNG; golden-image tests of every expression (verification plan) | A |
+| T9 | Calculations and ngspice simulations of the buzzer stage and display RESET filter, committed with plots | A |
+| T10 | Parametric FreeCAD script of the enclosure, generated STL/STEP, print trial (ADR-0010) | A |

@@ -7,6 +7,26 @@ human context: what was done, why, and by which PR.
 
 ## 2026-10-14
 
+### Design dossier scaffolded (branch `docs/design-dossier`)
+
+- Owner decisions after scored options (ADR-0011): dossier = arc42-lite overview + functional
+  requirements (NF X50-151 style) + Cockburn textual use cases + UML + traceability matrix +
+  hardware specs with a signed GPIO contract + OSHWA assembly guide + PDR/CDR gates;
+  verification = calculations and targeted ngspice simulations committed with plots, native
+  tests, golden-image tests of the eyes through a native display adapter, bench measurements;
+  Wokwi for exploration only (no SSD1331, no I2S mic in its catalogue).
+- Enclosure tooling (ADR-0010): FreeCAD 1.1 driven by a versioned Python script, generated
+  `.FCStd`/STEP/STL as artefacts, `freecad-mcp` for inspection; `.FCStd` is a binary zip, so the
+  script is the reviewable source. KiCad follows the V-SEA method (KiUtils + `kicad-cli` ERC,
+  no MCP; provisional, no ADR yet).
+- Written: `specs/requirements.md` (9 service functions, 10 constraints, 15 functional and 11
+  non-functional requirements), `specs/use-cases.md` (11 UCs + 3 traced system behaviours), `verification-plan.md`,
+  `gates.md`, `traceability-matrix.md`, `docs/hardware/{electronics-spec, calculations,
+  mechanical-spec, assembly}.md`, `docs/research/state-of-the-art.md`; roadmap gains S12 (rare
+  gag, owner request, cartoon level, rate-limited) and T8–T10; CLAUDE.md non-negotiables updated.
+- The first UML study (eight diagrams, separate session, branch `docs/uml-study`) is kept as a
+  first draft and re-validated against the requirements at the `cube-core` PDR. The arc42
+  restructure of `docs/architecture/README.md` waits for that branch to merge (same file).
 ### First UML study drafted (branch `docs/uml-study`, PR pending owner validation)
 
 - Eight Mermaid diagrams under `docs/architecture/diagrams/`: `cube-core` (use case by domain,
@@ -74,7 +94,6 @@ human context: what was done, why, and by which PR.
 - Local gitleaks over history and working tree: no leaks. Pre-push `review-local` gate run:
   no Must Have; the Should Haves (private-repo guards, `cancel-in-progress` limited to pull
   requests, comment accuracy, CLAUDE.md mention of CI) applied before push.
-
 ### Project kick-off: scoped Q&A session, decisions recorded, repository scaffolded
 
 - Owner's intent: a fleet of small cube desk companions (OLED eyes, mic, buzzer) that interact
