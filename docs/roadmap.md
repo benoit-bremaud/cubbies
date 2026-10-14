@@ -27,11 +27,11 @@ Within a tier, the order is the implementation order.
 | S1 | Procedural eyes in the cube's colour: idle, blink, look around | A | P0 |
 | S2 | Mood engine: happy, curious, tired, bored, annoyed, with smooth transitions | A | S1 |
 | S3 | Touch reactions: tap (surprise), double tap (joy), long stroke (purr, eyes close) | A | S2 |
-| S4 | Expressive beeps per mood, wake-up melody, volume setting with quiet hours | A | S2 |
-| S5 | Sleep / wake: dozes after inactivity, yawns, wakes on touch | A | S2 |
+| S4 | Expressive beeps per mood, wake-up melody, volume through the single Sound gate (constant in V1, gesture-set later) | A | S2 |
+| S5 | Sleep / wake: dozes after inactivity, yawns, wakes on touch, silent while asleep (the V1 "quiet hours") | A | S2 |
 | S6 | Identity: MAC-derived default colour, adoption ritual, secret reset gesture | A | S1 |
 | S7 | Sound reactions: wakes on noise, reacts to voice level, clap | A | P1, S5 |
-| S8 | Day rhythm: yawns in the evening, lullaby when the office goes dark, Friday mood | B | S5, P3 |
+| S8 | Day rhythm: yawns in the evening, lullaby and silence when the office goes dark (light-based quiet hours), Friday mood | B | S5, P3 |
 | S9 | Eyes follow tilt; shake = annoyed; upside down = sleeps | B | P2 |
 | S10 | Sulks when ignored for two days | B | S2, persisted counters |
 | S11 | Dream animation while asleep; "reads" when the owner types for long | C | S5, S7 |
