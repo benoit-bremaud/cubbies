@@ -1,7 +1,6 @@
 # Dependency review — blocks a PR that introduces a dependency with a known vulnerability of
 # severity high or critical. Covers what GitHub's dependency graph sees (GitHub Actions today;
-# PlatformIO libraries are pinned by hand in firmware/platformio.ini). Needs a public repository
-# (or GitHub Advanced Security): skipped while private, guard removed in the public-release PR.
+# PlatformIO libraries are pinned by hand in firmware/platformio.ini).
 name: Dependency review
 
 on:
@@ -14,7 +13,6 @@ permissions:
 jobs:
   dependency-review:
     name: Dependency review
-    if: ${{ !github.event.repository.private }}
     runs-on: ubuntu-latest
     permissions:
       contents: read

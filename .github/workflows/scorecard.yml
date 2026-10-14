@@ -1,8 +1,7 @@
 # OSSF Scorecard — weekly audit of the repository's security hygiene (security-ci-baseline).
 # Non-blocking: runs on main and weekly, never on pull requests, publishes to the Security tab.
 # Follows the official ossf/scorecard template: no top-level env or defaults, no workflow-level
-# write permission, only approved actions in this job. Publishing results needs a public
-# repository: the job is skipped while private, guard removed in the public-release PR.
+# write permission, only approved actions in this job.
 name: Scorecard
 
 on:
@@ -16,7 +15,6 @@ permissions: read-all
 jobs:
   analysis:
     name: Scorecard analysis
-    if: ${{ !github.event.repository.private }}
     runs-on: ubuntu-latest
     permissions:
       security-events: write # upload to code scanning

@@ -7,6 +7,13 @@ human context: what was done, why, and by which PR.
 
 ## 2026-10-14
 
+### Repository public, private-repository guards removed (branch `ci/remove-private-guards`)
+
+- The repository went public after PR #1 (security CI baseline) merged.
+- Removed the `if: ${{ !github.event.repository.private }}` guards from `codeql.yml`,
+  `dependency-review.yml` and `scorecard.yml`; the three workflows now run for real (CodeQL on
+  `actions` and `c-cpp`, dependency review on PRs, Scorecard on `main` after merge).
+
 ### Security CI baseline (branch `chore/security-ci-baseline`)
 
 - Owner decision: the repository goes public (free Copilot review and analysis tools) only
