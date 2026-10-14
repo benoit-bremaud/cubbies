@@ -3,8 +3,7 @@
 Proves coverage: every requirement has a use case, a design view, a component and a
 verification; nothing is orphaned. This file owns the REQ → design → verification mapping; the
 use cases own UC → REQ. Updated at each PDR. Port and module names follow the component diagram
-of the first UML study (`diagrams/cube-core/03-component.md`); diagram links resolve once the
-`docs/uml-study` branch is merged.
+of the first UML study (`diagrams/cube-core/03-component.md`, merged in PR #5).
 
 | Requirement | Use case(s) | Sequence / state | Component (port) | Verification |
 |-------------|-------------|------------------|------------------|--------------|
