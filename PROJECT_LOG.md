@@ -34,8 +34,8 @@ human context: what was done, why, and by which PR.
   held-at-boot gesture, derived MAC colour not persisted, constant default volume until a UC6
   gesture is chosen, unauthenticated ESP-NOW broadcast accepted as residual risk. Consequences
   applied: `CLAUDE.md` "never loud" rule reworded, roadmap S4/S5/S8 reworded.
-- Follow-up: a superseding ADR recording the accepted ESP-NOW residual risk and the V2 key hook,
-  in its own PR. Double tap cycling backwards in the ritual stays open until the palette size.
+- The accepted ESP-NOW residual risk and the V2 fleet-key hook are recorded in ADR-0012 (amends
+  ADR-0005, PR #3). Double tap cycling backwards in the ritual stays open until the palette size.
 - Next: PR for this branch, then backlog items S1–S7 and G1 become issues with these diagrams as
   their contract.
 ### Security CI baseline (branch `chore/security-ci-baseline`)

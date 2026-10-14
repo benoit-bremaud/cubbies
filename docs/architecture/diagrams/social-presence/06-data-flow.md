@@ -102,8 +102,8 @@ flowchart LR
   Awake. Accepted in V1 because the consequences are a nuisance on a desk toy: nothing is
   persisted, nothing is actuated beyond eyes and a beep, and a global greeting budget (proposal:
   at most 6 greetings per 10 min, a tunable in the Social protocol) caps the noise. Accepted by
-  the owner on 2026-10-14; to be recorded in a superseding ADR (own PR) with the V2 hook: a
-  fleet key provisioned at adoption into NVS (never in source), or per-peer keys on unicast.
+  the owner on 2026-10-14 and recorded in ADR-0012 (amends ADR-0005). V2 hook: a fleet key
+  provisioned at adoption into NVS, never in source (per-peer keys were scored out in ADR-0012).
 - **Decode in `lib/`, I/O in `src/`**: the allowlist checks are pure functions over a byte array,
   so they are fuzzed and unit-tested natively. The adapter only compares the length and moves
   bytes from the ESP-NOW receive callback (which runs in the Wi-Fi task on Arduino core 3) into
