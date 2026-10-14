@@ -41,6 +41,12 @@ this repository.
 - **Time and randomness are injected.** No `millis()` or `random()` inside `lib/`; a clock is
   passed in and each consumer gets a lib-owned `Prng` seeded by `main.cpp` after the Wi-Fi
   driver is up (ADR-0013), so behaviours replay in tests.
+- **Tests follow the conception (ADR-0014).** On `firmware/lib/` every table row of the
+  validated diagrams becomes a failing native test before the code (TDD, Red → Green →
+  Refactor). The eyes are verified by golden images under `firmware/test/golden/`
+  (regenerate with `CUBBIES_UPDATE_GOLDEN=1 pio test -e native`, review the PNG sheet from
+  `firmware/tools/golden_sheet.py` in the PR, then commit). Adapters in `firmware/src/` are
+  validated by the board builds and on the bench, never by mocking Arduino.
 - **The cube must never be loud.** Every sound goes through the single Sound gate in `lib/`,
   which applies the volume (a constant in V1, the ritual's stored step from V1.x, ADR-0013) and
   forwards a volume level to the one audio adapter, which alone converts it to a PWM duty. The cube is silent when it sleeps and, from
@@ -67,7 +73,8 @@ firmware/platformio.ini   envs: xiao_c3 (series), c3_supermini (prototypes), nat
 firmware/include/         pin maps and shared headers
 firmware/lib/             pure behaviour logic (no Arduino)
 firmware/src/             adapters and main
-firmware/test/            native unit tests (Unity)
+firmware/test/            native unit tests (Unity): one folder per test program, shared doubles
+                          in test/support, golden images in test/golden
 hardware/electronics/     KiCad schematic (native) + PDF export, sim/ (ngspice netlists and plots)
 hardware/case/            enclosure: FreeCAD Python script (source) + generated exports (CC BY-SA 4.0)
 ```

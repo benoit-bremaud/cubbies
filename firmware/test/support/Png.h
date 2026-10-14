@@ -9,8 +9,11 @@
 #include <vector>
 
 #include "eyes/Framebuffer.h"
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmissing-field-initializers"
 #include "stb_image.h"
 #include "stb_image_write.h"
+#pragma GCC diagnostic pop
 
 namespace cubbies::test {
 
