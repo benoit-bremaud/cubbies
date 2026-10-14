@@ -2,8 +2,6 @@
 # Two languages: the workflows themselves (`actions`) and the firmware (`c-cpp`). The C++
 # analysis traces the native host build of the behaviour logic and its tests, which is the code
 # CodeQL can reason about; the cross-compiled board builds are covered by the CI workflow.
-# Code scanning needs a public repository (or GitHub Advanced Security): the job is skipped while
-# the repository is private. Remove the `if:` guard in the public-release PR.
 name: CodeQL
 
 on:
@@ -21,7 +19,6 @@ permissions:
 jobs:
   analyze:
     name: Analyze (${{ matrix.language }})
-    if: ${{ !github.event.repository.private }}
     runs-on: ubuntu-latest
     permissions:
       contents: read

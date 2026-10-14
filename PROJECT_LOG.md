@@ -7,6 +7,13 @@ human context: what was done, why, and by which PR.
 
 ## 2026-10-14
 
+### Repository public, private-repository guards removed (branch `ci/remove-private-guards`)
+
+- The repository went public after PR #1 (security CI baseline) merged.
+- Removed the `if: ${{ !github.event.repository.private }}` guards from `codeql.yml`,
+  `dependency-review.yml` and `scorecard.yml`; the three workflows now run for real (CodeQL on
+  `actions` and `c-cpp`, dependency review on PRs, Scorecard on `main` after merge).
+
 ### ADR-0012: unauthenticated ESP-NOW broadcast recorded as an accepted residual risk (amends ADR-0005)
 
 - The social-presence UML study (branch `docs/uml-study`, data-flow and sequence diagrams) found
