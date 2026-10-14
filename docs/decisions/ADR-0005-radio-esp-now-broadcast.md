@@ -1,6 +1,6 @@
 # ADR-0005: Radio — ESP-NOW broadcast for the social layer
 
-**Status:** Accepted — 2026-10-14
+**Status:** Accepted — 2026-10-14 — Amended by [ADR-0012](ADR-0012-esp-now-unauthenticated-broadcast-accepted-residual-risk.md) (security consequence of unauthenticated broadcast)
 
 ## Context
 

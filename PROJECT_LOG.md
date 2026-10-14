@@ -7,6 +7,20 @@ human context: what was done, why, and by which PR.
 
 ## 2026-10-14
 
+### ADR-0012: unauthenticated ESP-NOW broadcast recorded as an accepted residual risk (amends ADR-0005)
+
+- The social-presence UML study (branch `docs/uml-study`, data-flow and sequence diagrams) found
+  that ESP-NOW broadcast cannot be encrypted, that the source MAC is forgeable, and that V1 has
+  no path to provision a key. An attacker in radio range can flood the 16-slot neighbour table,
+  impersonate a cube's presence and mood byte, or trigger one greeting per cooldown.
+- Four options scored (accept bounded risk / fleet key in NVS at adoption / per-peer unicast
+  keys / BLE instead). Decision: accept in V1, bounded by eviction of absent entries only,
+  greeting cooldown plus a global budget, allowlist and rate-bounded receive path, RAM-only and
+  eyes-and-beep-only effects. ADR-0005's transport choice stands; its status line now reads
+  "Amended by ADR-0012".
+- V2 hook recorded: fleet key in NVS, never in source. V1.5 relayed OTA must ship a signed image,
+  not a hash alone.
+
 ### Security CI baseline (branch `chore/security-ci-baseline`)
 
 - Owner decision: the repository goes public (free Copilot review and analysis tools) only
