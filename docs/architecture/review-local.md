@@ -1,49 +1,106 @@
-# Local review — cubbies (branch `docs/uml-study`)
+# Local review — cubbies (branch diff)
 
 - Date: 2026-10-14
-- Commit: e894c8a (findings applied in the follow-up commit on the same branch)
-- Scope: branch diff `main...HEAD` — 8 new UML diagrams, `docs/architecture/README.md`, `PROJECT_LOG.md`. Docs only, no code.
-- Checks run: design (architecture-guardian, three passes) · docs (doc-auditor) · tests (not applicable, no code in scope) · security (security-policy threat-model pass on the frame and identity designs) · correctness (Mermaid render of every block with `mmdc`, 8/8 OK, and a relative-link resolution script, all links resolve)
-- Verdict: ship after the listed fixes, all applied before push  ·  Must 4 · Should 6 · Nice 5
-
-Every Must and Should below is **applied** in the working tree; the lines record what the gate
-found and what changed, so the PR reviewer can check the fix rather than rediscover the issue.
+- Commit: b5a7449 (findings applied in the amended commit that replaces it)
+- Scope: branch diff `main...HEAD` on `docs/design-dossier` (design dossier: requirements, use
+  cases, verification plan, gates, traceability matrix, hardware specs, ADR-0010/0011, research,
+  roadmap, CLAUDE.md, pins.h comments)
+- Checks run: design (architecture-guardian) · docs (doc-auditor) · correctness (technical
+  fact-check of every hardware value against datasheets) · security: not applicable (no code; the
+  privacy constraint C7 was reviewed by the design pass) · tests: not applicable
+- Verdict: fix Must Have first, then ship · Must 8 · Should 14 · Nice 9 — **all Must and Should
+  applied before push**, Nice applied where one line sufficed
 
 ## 🔴 Must Have
 
-- `docs/architecture/diagrams/social-presence/06-data-flow.md:30` `[security]` · The design bounded frame *content* but not frame *rate*: "bounded RX queue" with no overflow policy and no per-tick drain budget, so a replay flood could starve the tick or silently drop legitimate frames · Added the receive-path budget table: drop newest on full (8 slots), 4 frames decoded per tick, counters by reason, native flood test.
-- `docs/architecture/diagrams/social-presence/06-data-flow.md:57` `[security]` · Length check was drawn after the queue, contradicting "dropped before any field is read" and forcing 250-byte slots · Length compare moved into the callback, fixed 8-byte slots, diagram and note updated.
-- `docs/architecture/diagrams/social-presence/06-data-flow.md:88` `[security][design]` · Spoofing consequence overstated ("at most one entry and one greeting"): a sustained stream of 16 forged MACs hides real newcomers, and a forged known MAC overwrites mood and `lastSeen` · Rewritten as an honest accepted residual risk with a global greeting budget, submitted to the owner for an ADR-0005 amendment with the V2 key hook.
-- `docs/architecture/diagrams/cube-core/05a-state-mood-engine.md:73` `[docs][design]` · Stale cross-reference after the use-case renumbering (UC3 instead of UC2) · Fixed.
+- `docs/architecture/traceability-matrix.md` `[design|docs]` · Links to diagrams that exist only
+  on `docs/uml-study`; broken on `main` if merged first. · Applied: header states the dependency;
+  merge order decided: `docs/uml-study` merges first.
+- `traceability-matrix.md` `[design]` · Port names drifted from the UML component diagram
+  (`ITouch`, `ISensors` grab-bag). · Applied: `ITouchSource`, `IMic`, `IMotion` (created at S9),
+  one port per source.
+- `firmware/include/pins.h:27` `[design]` · Comment claimed GPIO20/21 free while SCL is on
+  GPIO21. · Applied: comment corrected.
+- `electronics-spec.md`, `calculations.md` `[design|correctness]` · Buzzer on strapping pins
+  (GPIO2 XIAO, GPIO8 Super Mini) with a gate pull-down, undiscussed. · Applied: datasheet facts
+  recorded, CDR checklist item added, swap plan stated.
+- `electronics-spec.md:55` `[correctness]` · SPI 8 MHz exceeds the SSD1331 maximum (6.67 MHz).
+  · Applied: 6 MHz.
+- `calculations.md:10` `[correctness]` · Wi-Fi TX peak 300 mA not in the datasheet (335 mA at
+  1 Mbps). · Applied, total peak ≈ 420 mA.
+- `calculations.md:28` `[correctness]` · R_s = 47 Ω drives 52 mA into a buzzer rated 40 mA. ·
+  Applied: 68 Ω → 39 mA; AO3400 only (2N7002 unspecified at 3.3 V gate drive).
+- `CLAUDE.md:43`, `roadmap.md` S4/S8 `[docs]` · Stale "quiet hours" wording. · Intentional:
+  those lines are rewritten on `docs/uml-study` (owner-validated); duplicating the edit would
+  conflict. They arrive with that merge.
 
 ## 🟡 Should Have
 
-- `docs/architecture/diagrams/cube-core/03-component.md:46` `[security][correctness]` · `nowMs` wrap-around (49.7 days) unspecified for an always-on device · Clock contract added (uint32, modular subtraction only, wrap test).
-- `docs/architecture/diagrams/social-presence/06-data-flow.md:98` `[security]` · "never logged outside debug builds" is a PRIV hole, prototypes sit on the same desks · Debug output limited to palette index and a 16-bit MAC hash prefix, counters by reason only.
-- `docs/architecture/diagrams/social-presence/06-data-flow.md:103` `[security]` · GDPR framing incomplete (sender-side leak, inference of presence at work, lawful basis, retention) · Privacy paragraph added.
-- `docs/architecture/diagrams/identity/02a-sequence-first-boot.md:29` and `02b:47` `[security]` · NVS value shape unchecked (Preferences default looks like index 0) and no failed-write branch (fail closed) · One-byte shape check in 02a, `put` failure branch in 02b.
-- `docs/architecture/diagrams/cube-core/01-use-case.md:65` `[design]` · UC5 "greet once" promised more than the Awake-only policy delivers · Guarantee reworded to include the Awake condition, in 01 and 02.
-- `docs/architecture/diagrams/cube-core/05b-state-sleep-wake.md:4` and `06-data-flow.md:3` `[docs]` · Header blocks not aligned with the other six files · Roadmap link and explicit "Frame: none" added.
+- `ADR-0011` totals `[docs]` · Two scoring totals wrong (G 26, E 32). · Applied.
+- `requirements.md` `[design]` · Solutions leaking into requirements (buzzer, Sound gate,
+  neighbour table, audio adapter, 96×64). · Applied: reworded solution-neutral; the Sound gate
+  lives in the matrix and the component diagram.
+- `requirements.md` `[design|docs]` · IMU fitted without a requirement. · Applied: REQ-F-15
+  (tier B, S9) with the "fitted in V1" rationale.
+- `gates.md` `[design]` · Full PDR on every backlog item. · Applied: scoped to features that add
+  a requirement, port, frame field or state.
+- `verification-plan.md`, `calculations.md` `[design]` · ngspice for an RC with 500× margin and
+  for decoupling. · Applied: ngspice kept for the buzzer stage only; RESET verified by hand
+  calculation + 10 cold boots.
+- `use-cases.md` `[docs]` · UC11/UC12 were not actor-initiated goals; UC11 cited C8. · Applied:
+  "not use cases" list B1–B3, UC13 renumbered UC11.
+- `requirements.md` C10 `[docs]` · `IClock` could read as a wall clock. · Applied: monotonic
+  uptime stated.
+- `electronics-spec.md:32` `[docs]` · "confirmed by simulation" before any simulation. ·
+  Applied.
+- `electronics-spec.md:62` `[docs]` · Garbled sentence on RESET. · Applied.
+- `calculations.md:16` `[docs|correctness]` · Buzzer peak 30 mA vs 52 mA computed. · Applied
+  (39 mA after resizing).
+- `calculations.md` `[correctness]` · LDO part and dissipation missing; INMP441 1.5 mA is the
+  1.8 V figure; OLED typical overstated; reset pulse ≥ 3 µs not 2; GPIO drive default 10/20 mA.
+  · Applied.
+- `mechanical-spec.md` `[correctness]` · Window 20.5 × 14 mm below print tolerance over the
+  active area; module size unverifiable. · Applied: window on the viewing area 22.2 × 15.5 mm,
+  SKU to name at the CDR.
+- `PROJECT_LOG.md` `[docs]` · Counts wrong (constraints, UCs); KiCad method claim without source.
+  · Applied (10 constraints, 11 UCs + 3 behaviours; "provisional, no ADR yet").
+- `requirements.md`, matrix, verification plan `[design]` · REQ↔UC mapping written three times.
+  · Applied: the Acceptance column removed from requirements; UCs own UC→REQ, the matrix owns
+  REQ→design→verification.
 
 ## 🔵 Nice to Have
 
-- `docs/architecture/diagrams/social-presence/06-data-flow.md:19` `[security]` · "rejects other ESP-NOW users" overstated for a magic number · Reworded to "filters unrelated traffic". Applied.
-- `docs/architecture/diagrams/social-presence/06-data-flow.md` `[security]` · OTA "SHA-256-verified" defends against corruption, not a hostile image · Note added that the V1.5 ADR must require a signed image. Applied.
-- `docs/architecture/diagrams/cube-core/03-component.md:80` `[security]` · Queue primitive unnamed · SPSC ring or FreeRTOS queue stated. Applied.
-- `docs/architecture/diagrams/cube-core/03-component.md:103` `[docs]` · Four runtime paragraphs between diagram and notes were hard to scan · `### Runtime rules` sub-heading added. Applied.
-- Header blocks `[docs]` · ADRs named in plain text rather than linked · Not applied: the template allows it and the ADR folder is stable. Can be done in the PR if the reviewer asks.
+- `requirements.md` C9/C10 order and C9 criterion · Applied.
+- `ADR-0011` option letters A/E/F/G · Applied: note on discarded variants.
+- `ADR-0010` heaviest weight is a tooling convenience · Applied: stated in Context.
+- `assembly.md` "3 V tone" · Applied: 3.3 V square wave at 2 kHz on the gate.
+- `electronics-spec.md` "NPN or N-MOSFET" vs calculations · Applied: N-MOSFET.
+- `calculations.md` wall thickness 1.5–2 mm vs 1.6 mm · Applied.
+- `traceability-matrix.md` `IRng` port vs lib-owned seeded generator · Deferred: recorded as a
+  PDR gap; the UML study owns the component diagram.
+- `calculations.md` TTP223 "3 mm of plastic" unverifiable · Applied: "measured on the prototype".
+- `docs/hardware/measurements.md` cited but absent · Intentional: filled at bench time.
 
 ## ⚪ Disagree / Intentional
 
-- `docs/architecture/diagrams/cube-core/05a-state-mood-engine.md:97` `[docs]` · "the beeps of S4" flagged as possibly stale · Correct as written: roadmap S4 is "expressive beeps per mood, wake-up melody, volume setting".
-- `PROJECT_LOG.md:10` `[docs]` · Entry written before a PR exists · Intentional draft entry; it is rewritten with the merge SHA at post-merge cleanup per `project-log-discipline`.
-- Extra sections beyond the template (Cockburn brief, transition tables, frame layout, mood encoding) `[docs]` · They are the source of the firmware constants and the frame contract, not decoration.
-- CLAUDE.md "volume is a stored setting with quiet hours" not edited although the study drops quiet hours from V1 `[design]` · A project rule change is the owner's decision; it is flagged in `01-use-case.md` and in the Q&A submitted with the study.
+- The Sound gate in `lib/` `[design]` · Domain policy (volume, silence asleep/dark, gag rate
+  limits) at the single exit point for sound; one plain class calling `IAudio`, no interface of
+  its own. Kept.
+- The CDR gate `[design]` · Runs once before ordering parts for > 10 units; proportionate. Kept.
+- Constraints C3/C5/C6 restating ADRs `[design]` · Accepted decisions are constraints, not
+  solutions in disguise. Kept.
+- Five hardware/architecture documents for a scaffold `[design]` · The owner required a formal
+  design dossier before any code; each file has one role and is short. Kept.
 
 ## Per-dimension summary
 
-- Design: three adversarial passes, 10 then 4 Must items found and fixed, third pass clean; remaining owner decisions are listed in the study's Q&A, not hidden in the diagrams.
-- Docs: template followed by 8/8 files, every link resolves, no doc-noise, one stale reference fixed.
-- Tests: not applicable (no code); every diagram names the native test that will cover it.
-- Security: no secrets; input validation complete once the receive-path budget, NVS shape check and clock wrap were added; spoofing stated as an accepted residual risk pending ADR amendment.
-- Correctness: all Mermaid blocks render, no stale UC numbers remain (`grep` clean).
+- Design: ports aligned with the UML study, PDR scoped, no dependency-rule violation found,
+  one speculative port (`ISensors`) removed, `IRng` flagged for the next PDR.
+- Docs: 100 % of planned artefacts present, 6 accuracy fixes, counts corrected, no doc-noise.
+- Tests: not applicable (no code); firmware builds re-run after the `pins.h` comment edits
+  (both envs succeed).
+- Security: not applicable to this diff; privacy constraint C7 and REQ-NF-07 carried into the
+  matrix.
+- Correctness: 17 hardware claims checked against datasheets; 6 wrong values corrected (SPI
+  clock, TX peak, buzzer current, reset pulse, INMP441 current, GPIO drive), 3 unverifiable
+  deferred to the CDR with the SKU choice.

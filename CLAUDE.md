@@ -19,8 +19,14 @@ this repository.
 
 ## Non-negotiables (project)
 
-- **Design before code.** A behaviour is implemented only after its UML views (use case, state,
-  sequence as relevant) are validated under `docs/architecture/diagrams/<feature>/`.
+- **Design before code.** A behaviour is implemented only after it passes the PDR checklist of
+  `docs/architecture/gates.md`: requirements cited (`specs/requirements.md`), textual use case,
+  UML views under `docs/architecture/diagrams/<feature>/`, traceability matrix updated, owner
+  validation. Hardware is frozen at the CDR before the series is ordered (ADR-0011).
+- **Component choices are verified, not assumed.** Calculations, ngspice netlists and bench
+  measurements live in `docs/hardware/` and `hardware/electronics/sim/` and are reviewed in PRs
+  (`docs/architecture/verification-plan.md`). Eyes are verified by golden images in the native
+  tests.
 - **Validated decisions are not reopened silently.** Changing an ADR requires a superseding ADR
   in its own PR.
 - **One firmware for every cube.** Identity (colour) comes from NVS, defaulting from the MAC
@@ -51,13 +57,18 @@ this repository.
 docs/bom.md               bill of materials
 docs/roadmap.md           versions and prioritised backlog
 docs/decisions/           ADRs (Nygard format, ADR-NNNN-<slug>.md)
-docs/architecture/        UML diagrams (Mermaid) and architecture notes
+docs/architecture/        design dossier: README (arc42-lite), specs/ (requirements, use cases),
+                          diagrams/ (UML), traceability matrix, verification plan, gates
+docs/hardware/            electronics spec (signed GPIO contract), calculations, mechanical spec,
+                          assembly guide, measurements
+docs/research/            state of the art
 firmware/platformio.ini   envs: xiao_c3 (series), c3_supermini (prototypes), native (tests)
 firmware/include/         pin maps and shared headers
 firmware/lib/             pure behaviour logic (no Arduino)
 firmware/src/             adapters and main
 firmware/test/            native unit tests (Unity)
-hardware/case/            enclosure sources and exports (CC BY-SA 4.0)
+hardware/electronics/     KiCad schematic (native) + PDF export, sim/ (ngspice netlists and plots)
+hardware/case/            enclosure: FreeCAD Python script (source) + generated exports (CC BY-SA 4.0)
 ```
 
 ## Toolchain

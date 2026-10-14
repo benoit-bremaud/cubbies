@@ -9,7 +9,8 @@ namespace cubbies::pins {
 
 #if defined(CUBBIES_BOARD_XIAO_C3)
 // Seeed XIAO ESP32-C3. GPIO9 is a strapping pin held high by the BOOT button pull-up; it is
-// only ever driven by the MCU (display DC), never by an external device at reset.
+// only ever driven by the MCU (display DC), never by an external device at reset. GPIO2 is a
+// strapping pin too: its reset level with the buzzer stage is a CDR check (gates.md).
 constexpr uint8_t kDisplaySck = 8;   // D8
 constexpr uint8_t kDisplayMosi = 10; // D10
 constexpr uint8_t kDisplayCs = 3;    // D1
@@ -24,7 +25,8 @@ constexpr uint8_t kI2cScl = 7;       // D5
 
 #elif defined(CUBBIES_BOARD_C3_SUPERMINI)
 // ESP32-C3 Super Mini (prototypes). GPIO8 carries the onboard LED, reused for the buzzer;
-// GPIO9 (BOOT) is left unused; GPIO20/21 (UART) stay free for a serial probe.
+// GPIO9 (BOOT) is left unused; GPIO20 (UART RX) stays free; GPIO21 (UART TX) carries I2C SCL.
+// GPIO8 is a strapping pin: its reset level with the buzzer stage is a CDR check (gates.md).
 constexpr uint8_t kDisplaySck = 4;
 constexpr uint8_t kDisplayMosi = 6;
 constexpr uint8_t kDisplayCs = 7;

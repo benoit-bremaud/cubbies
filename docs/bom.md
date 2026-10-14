@@ -10,12 +10,13 @@ Tiers follow ADR-0007: P0 is the minimum living cube, each later tier is demonst
 | P0 | Seeed XIAO ESP32-C3 | USB-C | — | 1 | ~6 € |
 | P0 | 0.95" colour OLED SSD1331 96×64 (4-wire SPI) | SPI | 4 (SCK, MOSI, CS, DC; RESET tied to 3V3 through RC) | 1 | ~6 € |
 | P0 | TTP223 capacitive touch module | GPIO | 1 | 1 | ~0.5 € |
-| P0 | Passive buzzer 3 V (12 mm) | PWM | 1 | 1 | ~0.3 € |
+| P0 | Passive buzzer 3 V, 16 Ω, rated 40 mA | PWM | 1 | 1 | ~0.3 € |
 | P1 | INMP441 I2S MEMS microphone | I2S | 3 (SCK, WS, SD; L/R to GND) | 1 | ~2 € |
 | P2 | MPU6050 IMU (or LSM6DS3) | I2C | 2 (shared bus) | 1 | ~1.5 € |
 | P3 | BH1750 ambient light sensor | I2C | 0 (shared bus) | 1 | ~1 € |
 | — | USB-C cable 1 m | — | — | 1 | ~1.5 € |
-| — | Hook-up wire, heat-shrink, M2 screws | — | — | — | ~1 € |
+| P0 | Buzzer stage: AO3400, 1N4148, 68 Ω, 100 Ω, 100 kΩ; display RESET RC 10 kΩ + 100 nF | — | — | 1 set | ~0.3 € |
+| — | Hook-up wire, heat-shrink, foam pads | — | — | — | ~1 € |
 | — | PLA filament for the enclosure | — | — | ~40 g | ~1 € |
 | | **Total per cube** | | **11 GPIO** | | **~20 €** |
 
