@@ -138,6 +138,24 @@ static void test_loud_counts_from_the_first_loud_tick() {
   Rig r;
   // 14 ticks: the first enters Sound, the 14th is 520 ms later (≥ T_loud, the 13th is 480 ms).
   assertSeq({SoundClass::Voice, SoundClass::Loud}, r.play(kRoom * 5, kRoom * 5, 14 * kTick));
+  Rig early;  // one tick short: not yet
+  assertSeq({SoundClass::Voice}, early.play(kRoom * 5, kRoom * 5, 13 * kTick));
+}
+
+// Burst -> Sound: a long loud bang counts its loud run from the burst start, like the sound.
+static void test_long_loud_bang_counts_loud_from_the_burst_start() {
+  const uint16_t bang = kRoom * SoundClassifier::kClapRatio;
+  Rig r;
+  assertSeq({SoundClass::Voice, SoundClass::Loud}, r.play(kRoom * 5, bang, 14 * kTick));
+  Rig early;
+  assertSeq({SoundClass::Voice}, early.play(kRoom * 5, bang, 13 * kTick));
+}
+
+// Burst -> Quiet: a clap ends its loud run; a loud tail after it is a new sound (05d).
+static void test_clap_does_not_leak_its_loud_run_into_the_next_sound() {
+  Rig r;
+  assertSeq({}, r.play(kRoom * 5, kRoom * SoundClassifier::kClapRatio, 2 * kTick));
+  assertSeq({SoundClass::Clap, SoundClass::Voice}, r.play(kRoom * 5, kRoom * 5, 12 * kTick));
 }
 
 // Loud held for less than T_loud is only a voice.
@@ -172,6 +190,8 @@ int main(int, char**) {
   UNITY_BEGIN();
   RUN_TEST(test_loud_must_be_sustained_for_t_loud);
   RUN_TEST(test_loud_counts_from_the_first_loud_tick);
+  RUN_TEST(test_long_loud_bang_counts_loud_from_the_burst_start);
+  RUN_TEST(test_clap_does_not_leak_its_loud_run_into_the_next_sound);
   RUN_TEST(test_short_loud_is_only_a_voice);
   RUN_TEST(test_ratio_thresholds_are_inclusive);
   RUN_TEST(test_clap_boundary_is_t_clap);
