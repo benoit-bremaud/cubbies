@@ -35,9 +35,24 @@ class SoundClassifier {
   IClock& clock_;
   IMic& mic_;
   State state_ = State::Quiet;
-  uint32_t sinceMs_ = 0;   // start of the burst or of the sound
-  uint32_t loudSinceMs_ = 0;  // first tick of the current run of loud samples, valid while loudRun_
-  bool loudRun_ = false;
+  // A run of consecutive samples at a level (voice or loud), from its first sample.
+  struct Run {
+    bool on = false;
+    uint32_t sinceMs = 0;
+    void update(bool level, uint32_t now) {
+      if (!level) {
+        on = false;
+      } else if (!on) {
+        on = true;
+        sinceMs = now;
+      }
+    }
+    uint32_t lastedMs(uint32_t now) const { return ageMs(now, sinceMs); }
+  };
+
+  uint32_t sinceMs_ = 0;   // start of the burst (T_clap); voice and loud use their own runs
+  Run voiceRun_;
+  Run loudRun_;
   bool voiceSent_ = false;
   bool loudSent_ = false;
   bool seeded_ = false;

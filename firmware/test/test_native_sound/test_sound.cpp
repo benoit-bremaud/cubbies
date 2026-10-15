@@ -142,7 +142,7 @@ static void test_loud_counts_from_the_first_loud_tick() {
   assertSeq({SoundClass::Voice}, early.play(kRoom * 5, kRoom * 5, 13 * kTick));
 }
 
-// Burst -> Sound: a long loud bang counts its loud run from the burst start, like the sound.
+// Burst -> Sound: a long loud bang counts its loud run from its first loud tick, inside the burst.
 static void test_long_loud_bang_counts_loud_from_the_burst_start() {
   const uint16_t bang = kRoom * SoundClassifier::kClapRatio;
   Rig r;

@@ -138,11 +138,13 @@ mood, and a wake trigger for the Sleep cycle.
 [05d](05d-state-sound-classifier.md); adaptive baseline = slow running mean of the rms, frozen
 while a sound lasts):
 
+`ref = max(baseline, kMinLevel)`; each duration is a run of consecutive ticks at that level.
+
 | Class | Rule (tuning values) | Used by |
 |-------|----------------------|---------|
-| voice | rms ≥ baseline + L_voice for ≥ 200 ms | Mood engine (attention, Bored/Tired → Curious), Sleep cycle wake from Dozing |
-| clap | peak ≥ L_clap with the burst shorter than 100 ms | Mood engine (attention), Sleep cycle wake from Dozing |
-| loud | rms ≥ baseline + L_loud for ≥ 500 ms | Mood engine (Annoyed), Sleep cycle wake from Dozing and deep wake from Asleep |
+| voice | rms ≥ R_voice·ref (2×) for ≥ 200 ms | Mood engine (attention, Bored/Tired → Curious), Sleep cycle wake from Dozing |
+| clap | peak ≥ R_clap·ref (8×) with the burst shorter than 100 ms | Mood engine (attention), Sleep cycle wake from Dozing |
+| loud | rms ≥ R_loud·ref (4×) for ≥ 500 ms | Mood engine (Annoyed), Sleep cycle wake from Dozing and deep wake from Asleep |
 
 A call (UC4) is a voice or a clap and never produces Annoyed; only a sustained loud level does.
 

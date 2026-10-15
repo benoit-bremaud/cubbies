@@ -36,14 +36,16 @@ stateDiagram-v2
 
 ## Transition table
 
-Each row is one native test (ADR-0014). `ref = max(baseline, kMinLevel)`.
+Each row is one native test (ADR-0014). `ref = max(baseline, kMinLevel)`. "Stayed ≥ … for T" is a
+run of consecutive ticks at that level, counted from its own first tick in any state; a clap
+ending resets both runs.
 
 | From | Trigger | To | Emits |
 |------|---------|----|-------|
 | Quiet | rms < R_voice·ref, peak < R_clap·ref | Quiet | nothing; the baseline learns |
 | Quiet | peak ≥ R_clap·ref | Burst | nothing yet |
 | Burst | peak back below R_clap·ref, burst < T_clap | Quiet | `Clap` |
-| Burst | burst lasts T_clap or more (checked before the peak falling, so an expired burst whose peak falls on that tick is still a sound) | Sound | nothing (a long bang is no clap; its voice and loud timers run from the burst start) |
+| Burst | burst lasts T_clap or more (checked before the peak falling, so an expired burst whose peak falls on that tick is still a sound) | Sound | nothing (a long bang is no clap; voice and loud runs that started during it are kept) |
 | Quiet | rms ≥ R_voice·ref | Sound | nothing yet |
 | Sound | rms stayed ≥ R_voice·ref for T_voice | Sound | `Voice`, once per sound |
 | Sound | rms stayed ≥ R_loud·ref for T_loud | Sound | `Loud`, once per sound |

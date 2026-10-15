@@ -16,15 +16,11 @@ SoundClass SoundClassifier::tick() {
   const bool clapPeak = in.peak >= kClapRatio * ref;
   const bool voiceLevel = in.rms >= kVoiceRatio * ref;
   const bool loudLevel = in.rms >= kLoudRatio * ref;
-  const uint32_t age = ageMs(now, sinceMs_);
-  // The loud run is tracked in every state, so it starts on the sample that enters Sound (or
-  // during a Burst that turns into a sound), not one tick later; a clap ending resets it.
-  if (!loudLevel) {
-    loudRun_ = false;
-  } else if (!loudRun_) {
-    loudRun_ = true;
-    loudSinceMs_ = now;
-  }
+  // Voice and loud are timed on their own runs of samples at level, tracked in every state, so a
+  // run starts on the sample that enters Sound (or during a Burst that turns into a sound), and a
+  // low-rms bang lends no time to a voice that rises after it; a clap ending resets both.
+  voiceRun_.update(voiceLevel, now);
+  loudRun_.update(loudLevel, now);
 
   switch (state_) {
     case State::Quiet:
@@ -33,7 +29,6 @@ SoundClass SoundClassifier::tick() {
         sinceMs_ = now;
       } else if (voiceLevel) {
         state_ = State::Sound;
-        sinceMs_ = now;
         voiceSent_ = loudSent_ = false;
       } else {  // learn only in quiet: running mean over kBaselineTicks
         const int32_t delta = static_cast<int32_t>(static_cast<uint32_t>(in.rms) << 8) -
@@ -44,16 +39,16 @@ SoundClass SoundClassifier::tick() {
       return SoundClass::None;
 
     case State::Burst:
-      // Age first: a burst that reached T_clap is a long bang, a sound from the burst start, even
-      // if its peak falls on this very tick (05d); its loud run is kept.
-      if (age >= kClapMs) {
+      // Age first: a burst that reached T_clap is a long bang, a sound, even if its peak falls on
+      // this very tick (05d); its voice and loud runs are kept.
+      if (ageMs(now, sinceMs_) >= kClapMs) {
         state_ = State::Sound;
         voiceSent_ = loudSent_ = false;
         return SoundClass::None;
       }
       if (!clapPeak) {
         state_ = State::Quiet;
-        loudRun_ = false;  // the clap is over: a loud tail is a new sound (05d)
+        voiceRun_.on = loudRun_.on = false;  // the clap is over: a tail is a new sound (05d)
         return SoundClass::Clap;
       }
       return SoundClass::None;
@@ -63,12 +58,12 @@ SoundClass SoundClassifier::tick() {
         state_ = State::Quiet;
         return SoundClass::None;
       }
-      if (!voiceSent_ && age >= kVoiceMs) {
+      if (!voiceSent_ && voiceRun_.lastedMs(now) >= kVoiceMs) {
         voiceSent_ = true;
         return SoundClass::Voice;
       }
       // Loud only when the loud level itself has lasted T_loud (05d), not the whole sound.
-      if (!loudSent_ && loudRun_ && ageMs(now, loudSinceMs_) >= kLoudMs) {
+      if (!loudSent_ && loudRun_.on && loudRun_.lastedMs(now) >= kLoudMs) {
         loudSent_ = true;
         return SoundClass::Loud;
       }
