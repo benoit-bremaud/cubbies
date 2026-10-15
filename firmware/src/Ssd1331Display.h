@@ -29,6 +29,7 @@ class Ssd1331Display final : public IDisplay {
   };
 
   Device device_;
+  bool ready_ = false;  // a failed init leaves the panel dark instead of driving a dead bus
 };
 
 }  // namespace cubbies

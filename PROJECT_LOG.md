@@ -17,6 +17,8 @@ human context: what was done, why, and by which PR.
 - Owner decisions (scored options): note stepping by `esp_timer` (470/500), FreeRTOS queue for
   RX (480/500), explicit channel constant 1 (380/500, after a deeper analysis). The volume table
   came from calculations.md (no new decision). Decisions recorded in 03-component.
+- Local review: Must 3 · Should 4 applied (I2S partial reads, init-failure guards, STA power
+  save off, stale boot frames purged); Nice grouped in issue #25.
 - Both board envs build with no warning, 220 native tests green; bench checklist in
   `docs/hardware/bench-f5.md` (issue #16 checks included).
 

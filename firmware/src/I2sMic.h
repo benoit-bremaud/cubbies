@@ -22,6 +22,7 @@ class I2sMic final : public IMic {
   int8_t bclk_, ws_, sd_;
   I2SClass i2s_;
   int32_t chunk_[kChunkSamples];
+  bool ready_ = false;
   int32_t dc_ = 0;  // running DC offset of the 16-bit samples, Q8 fixed point
 };
 

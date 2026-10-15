@@ -159,7 +159,7 @@ void setup() {
 
   // Wi-Fi first: esp_random() is only truly random once the RF is up (ADR-0013).
   WiFi.mode(WIFI_STA);
-  if (!radio.begin()) Serial.println("radio: init failed, social layer off");
+  if (!radio.begin()) Serial.println("radio: init failed, cube stays alone");
   seeded = new Seeded(randomSeed64(), randomSeed64());
 
   touch.begin();
@@ -169,13 +169,14 @@ void setup() {
   if (!display.begin()) Serial.println("display: init failed");
 
   Mac mac;
-  esp_read_mac(mac.data(), ESP_MAC_WIFI_STA);
+  if (esp_read_mac(mac.data(), ESP_MAC_WIFI_STA) != ESP_OK) Serial.println("mac: read failed");
   identity = resolveIdentity(mac, storage);
 
   gate.setSleepState(sleepCycle.state());
   seeded->eyes.setBrightness(sleepCycle.brightness());
   nextTickMs = clock_.nowMs();
   runBoot();
+  radio.discardPending();
   mood.restart();
 }
 

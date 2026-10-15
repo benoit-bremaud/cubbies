@@ -26,7 +26,10 @@ class EspNowRadio final : public IRadio {
   bool begin();
 
   void broadcast(const uint8_t* bytes, size_t len) override;
+  // When begin() failed, the radio sends nothing and receives nothing.
   bool receive(RxFrame& out) override;
+  // Drops the frames queued while the boot screens ran (their nowMs is stale).
+  void discardPending();
 
   uint32_t dropLen() const { return dropLen_.load(std::memory_order_relaxed); }
   uint32_t dropFull() const { return dropFull_.load(std::memory_order_relaxed); }
@@ -38,6 +41,7 @@ class EspNowRadio final : public IRadio {
 
   const IClock& clock_;
   QueueHandle_t queue_ = nullptr;
+  bool ready_ = false;
   std::atomic<uint32_t> dropLen_{0};
   std::atomic<uint32_t> dropFull_{0};
 };

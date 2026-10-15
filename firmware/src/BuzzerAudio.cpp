@@ -35,11 +35,14 @@ bool BuzzerAudio::begin() {
       .name = "buzzer",
       .skip_unhandled_events = true,
   };
-  return esp_timer_create(&args, &timer_) == ESP_OK;
+  ready_ = esp_timer_create(&args, &timer_) == ESP_OK;
+  return ready_;
 }
 
 void BuzzerAudio::play(const Note* notes, uint8_t count, VolumeLevel level) {
+  if (!ready_) return;
   Lock l(lock_);
+  // Never waits for a callback blocked on the lock; noteEndUs_ makes that one a no-op.
   esp_timer_stop(timer_);  // ESP_ERR_INVALID_STATE when idle: harmless
   notes_ = notes;
   count_ = count;
@@ -49,6 +52,7 @@ void BuzzerAudio::play(const Note* notes, uint8_t count, VolumeLevel level) {
 }
 
 void BuzzerAudio::stop() {
+  if (!ready_) return;
   Lock l(lock_);
   esp_timer_stop(timer_);
   count_ = 0;

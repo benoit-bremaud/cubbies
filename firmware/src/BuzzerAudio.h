@@ -15,7 +15,7 @@ namespace cubbies {
 class BuzzerAudio final : public IAudio {
  public:
   explicit BuzzerAudio(uint8_t pin) : pin_(pin) {}
-  bool begin();
+  bool begin();  // when it fails, play() and stop() do nothing: the cube stays silent
 
   void play(const Note* notes, uint8_t count, VolumeLevel level) override;
   void stop() override;
@@ -25,6 +25,7 @@ class BuzzerAudio final : public IAudio {
   void startNoteLocked();  // plays notes_[index_] and arms the timer, or goes silent at the end
 
   uint8_t pin_;
+  bool ready_ = false;
   esp_timer_handle_t timer_ = nullptr;
   SemaphoreHandle_t lock_ = nullptr;
   const Note* notes_ = nullptr;
