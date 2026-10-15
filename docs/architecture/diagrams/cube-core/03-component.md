@@ -158,7 +158,8 @@ pauses and restarts the Mood engine. The Mood engine knows nothing about sleep. 
 goes on the air is computed by the Social protocol's codec, `moodByte(sleepState, wakeOrigin,
 mood)`, from both machines' states (table in [05b](05b-state-sleep-wake.md), the Sleep cycle
 exposes where Waking came from); neither machine knows the wire format, hence the
-`Social --> MoodE` and `Social --> Sleep` read edges. Brightness is set by the Sleep cycle through the Eyes renderer, which owns
+`Social --> MoodE` and `Social --> Sleep` read edges; from F4 these reads pass through `main.cpp`,
+which hands the Social protocol a `SelfState` on every tick ([social-presence/05a](../social-presence/05a-state-neighbour-entry.md), owner decision 2026-10-15). Brightness is set by the Sleep cycle through the Eyes renderer, which owns
 the `IDisplay` port.
 
 ## Notes

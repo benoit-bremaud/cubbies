@@ -1,36 +1,39 @@
-# Local review — cubbies (brick F3 identity and boot)
+# Local review — cubbies (brick F4 social)
 
 - Date: 2026-10-15
-- Commit: see `git log` of `feat/f3-identity` (review of the 13 commits on `origin/main...HEAD`)
-- Scope: branch diff `origin/main...feat/f3-identity` (firmware/lib, firmware/test, docs)
+- Commit: 74618f0
+- Scope: branch diff origin/main...feat/f4-social
 - Checks run: design · docs · tests · security · correctness
-- Verdict: fix Must Have first · Must 4 · Should 6 · Nice 7 — all Must and Should applied on the branch, Nice filed as one backlog issue
+- Verdict: fix Must Have first  ·  Must 1 · Should 11 · Nice 6
 
 ## 🔴 Must Have
-- `docs/architecture/diagrams/identity/02b-sequence-adoption-ritual.md:44` `[docs]` · "pitch follows the index" contradicts the fixed-tick decision · fix the arrow to `play(RitualTick)`.
-- `02b-sequence-adoption-ritual.md:40` `[docs]` · double tap +2 missing from the loop · add an `opt double tap`.
-- `02b-sequence-adoption-ritual.md:85` `[docs]` · "8–12 entries" stale · 8 entries.
-- `firmware/test/test_native_ritual/test_ritual.cpp` `[tests]` · timeout test does not pin the 60 s length nor the restart by a tap · assert not done at T − tick after a tap, done with Clear at T.
+- `firmware/test/test_native_social/test_social.cpp:247` `[tests]` · the 05a row "Waiting refresh" is untested (the entry is already Greeted) · hold the cooldown, hear neighbour 2 twice, assert Waiting + new mood + lastSeen
 
 ## 🟡 Should Have
-- `firmware/lib/cubbies_core/core/InvitationWindow.cpp:43` `[correctness][design]` · a press whose edge falls on the last tick before T_invite is declined (`holdMs()` is 0 on the edge tick and expiry is checked first); a delayed tick can enter Holding with hold ≥ T_secret and wrap the gauge · check the press before the expiry in Inviting and clamp the progress; new 05a row and tests.
-- `02b-sequence-adoption-ritual.md:82` `[docs]` · "restarts at every tap" → every gesture; chime at start and `clearIdentityFrame` on timeout missing from the sequence.
-- `docs/architecture/diagrams/cube-core/05e-state-sound-gate.md:26` `[docs]` · rank list omits the ritual sounds.
-- `firmware/test/test_native_invitation/test_invitation.cpp` `[tests]` · exact T_secret and T_invite edges not pinned.
-- `firmware/test/test_native_gesture/test_gesture.cpp` `[tests]` · 05c "any → Consumed" not tested from Pressed2.
-- `test_invitation.cpp` `[tests]` · silent-release check cannot fail; `GREATER_THAN(0)` instead of the exact progress.
+- `firmware/lib/cubbies_core/ports/IRadio.h:10` `[design]` · port includes core/Identity.h (inverted dependency, drags eyes) · `ports/Mac.h` with Mac and kFrameSize, included by IRadio, Identity and the codec
+- `firmware/lib/cubbies_core/core/SocialProtocol.cpp:24` `[design]` · receive() does three jobs · extract findSlot()
+- `firmware/lib/cubbies_core/core/SocialProtocol.cpp:69` `[correctness]` · an entry absent for > 49.7 days aliases as fresh, owed re-greet lost · clear greeted in expire() once absent > T_regreet, test
+- `firmware/lib/cubbies_core/core/SocialProtocol.cpp:84` `[correctness]` · the budget ring aliases after 49.7 days without greetings · reset the ring when the newest greeting is ≥ window old, test
+- `firmware/lib/cubbies_core/ports/IRadio.h:2` + 06 `[docs]` · dropLen counted in adapter and lib · document the lib check as defence in depth
+- `test_social.cpp:224` `[tests]` · Free → Waiting does not assert the state · assert Waiting
+- `test_social.cpp:276` `[tests]` · "lowest waiting slot" unpinned · distinct palettes, assert order
+- `test_social.cpp:268` `[tests]` · cooldown boundary unpinned · exact boundary test
+- `test_social.cpp:297` `[tests]` · budget boundary unpinned (05a says "more than 10 min") · exact boundary test, code aligned to strict
+- `test_social.cpp:340` `[tests]` · T_regreet boundary unpinned · exact and +1 tick tests
+- `test_social.cpp:426` `[tests]` · flood test passes with 0 greetings · assert == budget, 4 per tick over several ticks, dropFull > 0
 
 ## 🔵 Nice to Have
-- `InvitationWindow.cpp:39` `[correctness]` · consume at the settle end whenever the classifier is not Idle (double press inside 250 ms during calibration).
-- `GestureClassifier.h:24`, `Identity.h` `[docs][design]` · state the preconditions of `consumeCurrentPress()` and `paletteColour()` (or assert).
-- `AdoptionRitual.cpp:46` `[design]` · separate Tap and DoubleTap branches to mirror the 05b rows.
-- `IdentityOutput.h:7` `[design]` · `SoundId` in its own header (Rule of Three not reached).
-- `test_ritual.cpp`, `test_invitation.cpp` `[tests]` · stroke as first gesture, re-adoption timeout keeps adopted, Entered returns Keep, re-press after a consumed press, release at exactly T_invite.
+- `SocialProtocol.h:34` `[design]` · six drop counters could be an array indexed by DecodeResult
+- `firmware/test/support/LoopbackRadio.h:44` `[design|correctness]` · len clamp then overwrite; memcpy from null with len 0
+- `SocialProtocol.h:59` `[correctness]` · neighbour(slot) unchecked · document precondition
+- `test_social.cpp:422` `[tests]` · flood MACs include the cube's own MAC
+- `test_social.cpp:380` `[tests]` · eviction test could assert the newcomer state and slot of 2
+- `SocialProtocol.h:1` `[docs]` · header could mention stats()
 
 ## ⚪ Disagree / Intentional
-- `IdentityOutput` next to the router's `Route` · PDR F3 decision (445/500).
-- `InvitationWindow` ticks the Gesture classifier itself · 05a, the pad is sampled in one place.
-- `Consumed` state in the classifier · amended 05c, validated.
+- `SocialProtocol.cpp:83` `[design]` · greeting emitted while not Awake · the router drops it (02-sequence-presence)
+- `ports/IRadio.h` `[design]` · RxFrame.nowMs stamped by the adapter · 05a, 03-component
+- `LoopbackRadio.h` `[tests]` · unbounded queue · the 8-slot policy belongs to EspNowRadio (06)
 
 ## Per-dimension summary
-- Design: no SOLID breach or over-engineering; one gauge clamp. · Docs: code headers fine; 02b not updated with the F3 decisions. · Tests: every 05a/05b row has a test; edges and timeout length weak. · Security: NVS value validated, fail-closed write, no secrets; key at the 15-char NVS limit. · Correctness: one edge-tick press lost at the window end.
+- Design: conformant, one inverted include, one long method · Docs: consistent, dropLen double count to state · Tests: every row but one covered, boundaries loose · Security: allowlist complete, flood bounded, no PII logged · Correctness: two 2^32 aliasing edge cases
