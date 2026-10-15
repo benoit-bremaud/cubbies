@@ -1,7 +1,7 @@
 // Gesture classifier (05c): turns the one-bit touch level read each tick into TouchDown, Tap,
 // DoubleTap, Stroke and Released, timed on the injected clock. At most one gesture per tick.
 // A short press emits no Released: the touch-down stays held until Tap or DoubleTap replaces it.
-// The boot hold of the invitation window (02a) is added by F3.
+// holdMs() and consumeCurrentPress() serve the invitation window (identity/05a).
 #pragma once
 
 #include <cstdint>
@@ -20,13 +20,18 @@ class GestureClassifier {
   // Reads the pad and returns the gesture completed on this tick, if any. Call once per tick.
   Gesture tick();
 
+  // Age of the current press in ms, 0 when released or consumed.
+  uint32_t holdMs() const;
+  // Swallows the rest of the current press: nothing is emitted until the pad is released.
+  void consumeCurrentPress();
+
   // Tuning values (05c).
   static constexpr uint32_t kTapMaxMs = 400;     // longer presses are no tap
   static constexpr uint32_t kDoubleTapMs = 250;  // wait for a second press after a short one
   static constexpr uint32_t kStrokeMs = 1500;    // contact long enough to be a stroke
 
  private:
-  enum class State : uint8_t { Idle, Pressed, WaitSecond, Pressed2, Stroking };
+  enum class State : uint8_t { Idle, Pressed, WaitSecond, Pressed2, Stroking, Consumed };
 
   IClock& clock_;
   ITouchSource& touch_;

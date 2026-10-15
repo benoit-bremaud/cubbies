@@ -53,4 +53,8 @@ Gesture GestureClassifier::tick() {
   return Gesture::None;
 }
 
+uint32_t GestureClassifier::holdMs() const { return 0; }
+
+void GestureClassifier::consumeCurrentPress() {}
+
 }  // namespace cubbies

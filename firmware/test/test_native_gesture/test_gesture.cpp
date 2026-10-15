@@ -156,6 +156,37 @@ static void test_tap_and_stroke_survive_the_clock_wrap() {
   TEST_ASSERT_EQUAL(Gesture::Stroke, s.hold(true, 2000));
 }
 
+// holdMs(): age of the current press, 0 when released (identity/05a reads it).
+static void test_hold_ms_reports_the_age_of_the_current_press() {
+  Rig r;
+  TEST_ASSERT_EQUAL_UINT32(0, r.gestures.holdMs());
+  r.hold(true, 1000);
+  TEST_ASSERT_EQUAL_UINT32(1000 - kTick, r.gestures.holdMs());
+  r.hold(true, 1000);  // past T_stroke, still counting
+  TEST_ASSERT_EQUAL_UINT32(2000 - kTick, r.gestures.holdMs());
+  r.hold(false, kTick);
+  TEST_ASSERT_EQUAL_UINT32(0, r.gestures.holdMs());
+}
+
+// any -> Consumed: consumeCurrentPress(); holdMs() reads 0, nothing is emitted while held.
+static void test_consumed_press_emits_nothing_while_held() {
+  Rig r;
+  r.hold(true, 200);
+  r.gestures.consumeCurrentPress();
+  TEST_ASSERT_EQUAL_UINT32(0, r.gestures.holdMs());
+  TEST_ASSERT_EQUAL(Gesture::None, r.hold(true, 3000));  // no Stroke
+}
+
+// Consumed -> Idle: the release emits nothing, and the next press is a fresh gesture.
+static void test_consumed_press_release_is_silent_then_idle() {
+  Rig r;
+  r.hold(true, 2000);  // Stroke already emitted
+  r.gestures.consumeCurrentPress();
+  TEST_ASSERT_EQUAL(Gesture::None, r.hold(false, 1000));  // no Released, no Tap
+  r.touch.set(true);
+  TEST_ASSERT_EQUAL(Gesture::TouchDown, r.step());
+}
+
 int main(int, char**) {
   UNITY_BEGIN();
   RUN_TEST(test_pressed_edge_emits_touchdown_on_the_same_tick);
@@ -168,5 +199,8 @@ int main(int, char**) {
   RUN_TEST(test_tap_then_long_contact_is_a_stroke);
   RUN_TEST(test_third_tap_starts_a_new_gesture);
   RUN_TEST(test_tap_and_stroke_survive_the_clock_wrap);
+  RUN_TEST(test_hold_ms_reports_the_age_of_the_current_press);
+  RUN_TEST(test_consumed_press_emits_nothing_while_held);
+  RUN_TEST(test_consumed_press_release_is_silent_then_idle);
   return UNITY_END();
 }
