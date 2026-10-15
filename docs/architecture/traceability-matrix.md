@@ -9,7 +9,7 @@ of the first UML study (`diagrams/cube-core/03-component.md`, merged in PR #5).
 |-------------|-------------|------------------|------------------|--------------|
 | REQ-F-01 eyes | UC3, UC5 | [05a-state-mood-engine](diagrams/cube-core/05a-state-mood-engine.md) (reactions) | eye renderer → `IDisplay` (mood frame, reaction overlay, identity frames; `Timeline`) | golden images (28 states), blink period test, reaction timing tests (F1b) |
 | REQ-F-02 moods | UC3, UC4, UC8 | [05a-state-mood-engine](diagrams/cube-core/05a-state-mood-engine.md) | mood engine | native state tests, golden images |
-| REQ-F-03 touch gestures | UC1, UC3, UC6 | — | gesture classifier (touch-down + classified gestures) ← `ITouchSource`; eye renderer `TouchDown` overlay held until release | native gesture tests, bench; touch-down next-tick test (F1b) |
+| REQ-F-03 touch gestures | UC1, UC3, UC6 | [05c-state-gesture-classifier](diagrams/cube-core/05c-state-gesture-classifier.md) | gesture classifier (touch-down + classified gestures) ← `ITouchSource`; eye renderer `TouchDown` overlay held until release | native gesture tests, bench; touch-down next-tick test (F1b) |
 | REQ-F-04 sounds | UC3, UC5, UC7 | — | sound bank → Sound gate → `IAudio` | bench, ngspice (driver) |
 | REQ-F-05 volume, silence | UC6 (V1.x ritual step), B1 | [05b-state-sleep-wake](diagrams/cube-core/05b-state-sleep-wake.md) | Sound gate in `lib/` → `IAudio` | native tests |
 | REQ-F-06 sleep / wake | UC5 | [05b-state-sleep-wake](diagrams/cube-core/05b-state-sleep-wake.md) | Sleep cycle ← `IClock` (uptime) | native tests with injected clock |

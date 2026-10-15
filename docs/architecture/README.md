@@ -141,6 +141,7 @@ types.
 | `cube-core` | [03-component](diagrams/cube-core/03-component.md) | Pure logic in `firmware/lib/` versus adapters in `firmware/src/`, and the ports between them |
 | `cube-core` | [05a-state-mood-engine](diagrams/cube-core/05a-state-mood-engine.md) | The five moods and what moves them |
 | `cube-core` | [05b-state-sleep-wake](diagrams/cube-core/05b-state-sleep-wake.md) | Awake, dozing, asleep, waking, and what wakes the cube |
+| `cube-core` | [05c-state-gesture-classifier](diagrams/cube-core/05c-state-gesture-classifier.md) | How a one-bit touch level becomes tap, double tap or stroke |
 | `identity` | [02a-sequence-first-boot](diagrams/identity/02a-sequence-first-boot.md) | How every boot ends with a colour (NVS, else MAC-derived) |
 | `identity` | [02b-sequence-adoption-ritual](diagrams/identity/02b-sequence-adoption-ritual.md) | Tap cycles the palette, long stroke confirms; the only entry is a hold during the post-boot invitation window (ADR-0013) |
 | `social-presence` | [02-sequence-presence](diagrams/social-presence/02-sequence-presence.md) | Presence broadcast, neighbour table, greeting a newcomer |
