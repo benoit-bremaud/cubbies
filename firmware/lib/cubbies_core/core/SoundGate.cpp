@@ -27,7 +27,7 @@ constexpr Sound sound(const Note (&notes)[N], uint8_t rank) {
 // Indexed by SoundId.
 constexpr Sound kSounds[] = {
     sound(kSurprise, 0), sound(kJoy, 0),    sound(kPurr, 0),       sound(kHello, 0),
-    sound(kYawn, 1),     sound(kGrumpy, 2), sound(kWakeMelody, 3),
+    sound(kYawn, 1),     sound(kGrumpy, 2), sound(kWakeMelody, 3), sound(kHello, 9), sound(kHello, 9), sound(kHello, 9),
 };
 
 static_assert(sizeof(kSounds) / sizeof(kSounds[0]) == kSoundCount,

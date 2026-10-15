@@ -12,8 +12,9 @@
 
 namespace cubbies {
 
-enum class SoundId : uint8_t { Surprise, Joy, Purr, Hello, Yawn, Grumpy, WakeMelody };
-constexpr uint8_t kSoundCount = 7;
+enum class SoundId : uint8_t { Surprise, Joy, Purr, Hello, Yawn, Grumpy, WakeMelody,
+                               RitualChime, RitualTick, Adoption };  // ritual sounds: identity/05b
+constexpr uint8_t kSoundCount = 10;
 
 class SoundGate {
  public:
