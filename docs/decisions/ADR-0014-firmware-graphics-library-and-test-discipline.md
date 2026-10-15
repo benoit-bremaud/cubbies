@@ -52,7 +52,11 @@ cost (2), avoided false confidence (2).
   reviewed as PNGs in the pull request, then committed); adapters in `firmware/src/` are
   validated by the board builds in CI and on the bench, never by mocking Arduino.
 - **Brick plan**, one pull request each, in this order: F1 skeleton + eyes (ports `IDisplay`,
-  `IClock`, `Prng`, `Framebuffer`, eyes renderer, fakes, golden images); F2 behaviours (gesture
+  `IClock`, `Prng`, `Framebuffer`, eyes renderer with the five moods and closed eyes, fakes,
+  golden images); **F1b expressions** (shared animation `Timeline`, reactions: touch-down,
+  surprise, joy, purr, look up, yawn, wake, greet; identity frames: invitation with gauge,
+  ritual, adoption, error; the complete face sheet validated by the owner before any state
+  machine — owner decision 2026-10-15, so F2/F3 are pure logic with no visual surprise); F2 behaviours (gesture
   and sound classifiers, stimulus router, mood engine, sleep cycle, Sound gate); F3 identity
   and boot (identity rules, invitation window, tick-driven ritual); F4 social (frame codec,
   neighbour table, greeting policy, loopback radio, fuzz); F5 adapters and `main.cpp` (both

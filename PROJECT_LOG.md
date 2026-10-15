@@ -26,6 +26,9 @@ human context: what was done, why, and by which PR.
   (FS1 reworded: 2–6 s of open eyes measured from the reopening), the golden update mode that
   passed silently, `openEyes()` rescheduling the blink, framebuffer primitives bounded against
   extreme inputs, the 12 KB-on-the-stack hazard documented for `main.cpp`.
+- Owner validated the five mood frames and the closed eyes as golden references (2026-10-15)
+  and chose to complete the face vocabulary in a dedicated brick **F1b** before F2 (reactions
+  and identity frames with a shared `Timeline`; ADR-0014 amended), after scored options.
 
 ### cube-core PDR passed (branch `docs/pdr-cube-core`, ADR-0013)
 
