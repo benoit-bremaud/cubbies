@@ -180,7 +180,8 @@ static void test_consumed_press_emits_nothing_while_held() {
 // Consumed -> Idle: the release emits nothing, and the next press is a fresh gesture.
 static void test_consumed_press_release_is_silent_then_idle() {
   Rig r;
-  r.hold(true, 2000);  // Stroke already emitted
+  r.touch.set(true);
+  for (uint32_t t = 0; t < 2000; t += kTick) r.step();  // TouchDown then Stroke
   r.gestures.consumeCurrentPress();
   TEST_ASSERT_EQUAL(Gesture::None, r.hold(false, 1000));  // no Released, no Tap
   r.touch.set(true);
