@@ -37,6 +37,11 @@ class SleepCycle {
   static constexpr uint32_t kDozeMs = 120000;
   static constexpr uint32_t kFallAsleepMs = 1200000;
   static constexpr uint32_t kWakingMs = 1000;
+  // Waking lasts as long as its wake animation, never under 1 s (owner decision, PR #12 review):
+  // Wake (800 ms) from Dozing, Yawn (1200 ms) from Asleep. Pinned against the renderer in the
+  // router tests.
+  static constexpr uint32_t kWakingFromDozeMs = 1000;
+  static constexpr uint32_t kWakingFromSleepMs = 1200;
 
  private:
   SleepEffect enter(SleepState s);

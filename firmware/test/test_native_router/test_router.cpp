@@ -3,6 +3,7 @@
 #include <unity.h>
 
 #include "core/StimulusRouter.h"
+#include "eyes/EyesRenderer.h"
 
 using cubbies::effects;
 using cubbies::Gesture;
@@ -183,6 +184,17 @@ static void test_sleep_effects() {
   TEST_ASSERT_EQUAL(Lids::Keep, r.lids);
 }
 
+// Waking covers its whole wake animation, so the reaction is never cut by an Awake stimulus.
+static void test_waking_lasts_as_long_as_its_wake_animation() {
+  using cubbies::EyesRenderer;
+  using cubbies::SleepCycle;
+  const Route doze = effects(SleepEffect::WokeFromDoze);
+  const Route sleep = effects(SleepEffect::WokeFromSleep);
+  TEST_ASSERT_TRUE(EyesRenderer::reactionDurationMs(doze.reaction) <= SleepCycle::kWakingFromDozeMs);
+  TEST_ASSERT_TRUE(EyesRenderer::reactionDurationMs(sleep.reaction) <= SleepCycle::kWakingFromSleepMs);
+  TEST_ASSERT_TRUE(SleepCycle::kWakingFromDozeMs >= 1000 && SleepCycle::kWakingFromSleepMs >= 1000);
+}
+
 int main() {
   UNITY_BEGIN();
   RUN_TEST(test_awake_touch_down_widens_eyes_only);
@@ -195,5 +207,6 @@ int main() {
   RUN_TEST(test_none_routes_nowhere);
   RUN_TEST(test_mood_effects);
   RUN_TEST(test_sleep_effects);
+  RUN_TEST(test_waking_lasts_as_long_as_its_wake_animation);
   return UNITY_END();
 }

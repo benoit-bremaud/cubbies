@@ -156,13 +156,15 @@ static void test_asleep_ignores_voice_and_clap() {
   TEST_ASSERT_EQUAL(SleepState::Asleep, r.sleep.state());
 }
 
-// Waking -> Awake: after the wake animation (kWakingMs); full brightness, mood Curious.
+// Waking -> Awake: after the wake animation (1 s from Dozing, 1.2 s from Asleep); full brightness,
+// mood Curious.
 static void test_waking_returns_awake_and_restarts_mood() {
   for (int fromAsleep = 0; fromAsleep < 2; ++fromAsleep) {
     Rig r;
     if (fromAsleep) r.toAsleep(); else r.toDozing();
     r.sleep.gesture(Gesture::TouchDown);
-    TEST_ASSERT_EQUAL(0, r.run(SleepCycle::kWakingMs - kTick, SleepEffect::Awoke));
+    const uint32_t waking = fromAsleep ? SleepCycle::kWakingFromSleepMs : SleepCycle::kWakingFromDozeMs;
+    TEST_ASSERT_EQUAL(0, r.run(waking - kTick, SleepEffect::Awoke));
     TEST_ASSERT_EQUAL(SleepState::Waking, r.sleep.state());
     TEST_ASSERT_EQUAL(1, r.run(kTick, SleepEffect::Awoke));  // exactly at T_waking
     TEST_ASSERT_EQUAL(SleepState::Awake, r.sleep.state());
