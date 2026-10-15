@@ -20,7 +20,8 @@ human context: what was done, why, and by which PR.
 - Five TDD steps, each red then green: `resolveIdentity` (FNV-1a MAC hash mod 8, typed
   `IStorage` port, `FakeStorage`); Gesture classifier hold/consume; ritual sounds in the Sound
   gate; `InvitationWindow`; `AdoptionRitual` (single NVS write, fail closed, timeout).
-- 182 native tests green, both board envs build. NVS adapter and `main.cpp` wiring are F5.
+- Local review: Must 4 · Should 6 applied (02b aligned, window press read before expiry + gauge clamp, edge tests); Nice grouped in a backlog issue.
+- 185 native tests green, both board envs build. NVS adapter and `main.cpp` wiring are F5.
 
 ### Brick F2 — behaviours — **PR #12 merged** (`ef10f61`, ADR-0014)
 

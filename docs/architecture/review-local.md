@@ -4,7 +4,7 @@
 - Commit: see `git log` of `feat/f3-identity` (review of the 13 commits on `origin/main...HEAD`)
 - Scope: branch diff `origin/main...feat/f3-identity` (firmware/lib, firmware/test, docs)
 - Checks run: design · docs · tests · security · correctness
-- Verdict: fix Must Have first · Must 4 · Should 6 · Nice 7
+- Verdict: fix Must Have first · Must 4 · Should 6 · Nice 7 — all Must and Should applied on the branch, Nice filed as one backlog issue
 
 ## 🔴 Must Have
 - `docs/architecture/diagrams/identity/02b-sequence-adoption-ritual.md:44` `[docs]` · "pitch follows the index" contradicts the fixed-tick decision · fix the arrow to `play(RitualTick)`.
