@@ -41,13 +41,13 @@ stateDiagram-v2
   Greeted --> Greeted: valid PRESENCE / refresh
   Waiting --> Absent: tick, age(lastSeen) > T_ttl
   Greeted --> Absent: tick, age(lastSeen) > T_ttl
-  Absent --> Greeted: valid PRESENCE, absent ≤ T_regreet / refresh
-  Absent --> Waiting: valid PRESENCE, absent > T_regreet / refresh
+  Absent --> Greeted: valid PRESENCE, was greeted, absent ≤ T_regreet / refresh
+  Absent --> Waiting: valid PRESENCE, absent > T_regreet or never greeted / refresh
   Absent --> Waiting: unknown MAC, no Free slot, oldest Absent / evict, store newcomer
 ```
 
-`Absent` keeps whether the entry had been greeted only through `lastSeen`: the re-greet rule
-reads its age. An `Absent` slot evicted for a newcomer starts over in `Waiting`.
+`Absent` remembers whether the entry had been greeted (a `greeted` bit) and when it was last
+seen: a newcomer that leaves before its turn is still greeted when it comes back. An `Absent` slot evicted for a newcomer starts over in `Waiting`.
 
 ## Transition table
 
@@ -63,8 +63,9 @@ Each row is one native test (ADR-0014). Ages are `ageMs(now, then)` on the injec
 | Waiting | tick, another slot greeted this tick | Waiting | none (one greeting per tick) |
 | Greeted | valid PRESENCE, same MAC | Greeted | refresh |
 | Waiting, Greeted | tick, `age(lastSeen) > T_ttl` | Absent | none (silent, no farewell in V1) |
-| Absent | valid PRESENCE, absent `age ≤ T_regreet` | Greeted | refresh (no second hello) |
+| Absent | valid PRESENCE, was greeted, absent `age ≤ T_regreet` | Greeted | refresh (no second hello) |
 | Absent | valid PRESENCE, absent `age > T_regreet` | Waiting | refresh (greeted again) |
+| Absent | valid PRESENCE, never greeted | Waiting | refresh (left before its turn, still owed a hello) |
 | Absent (oldest `lastSeen`) | valid PRESENCE, unknown MAC, no Free slot | Waiting | evict, store the newcomer |
 | — | valid PRESENCE, unknown MAC, every slot Waiting or Greeted | — | drop, count `dropFull` |
 | — | frame failing the allowlist (06) | — | drop, count by reason: `dropLen`, `dropMagic`, `dropVersion`, `dropType`, `dropRange` |
