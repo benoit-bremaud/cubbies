@@ -139,6 +139,7 @@ class EyesRenderer {
   Reaction reaction_ = Reaction::TouchDown;
   Timeline reactionTl_;   // timed reactions, and the purr ramp in / release
   bool purrReleasing_ = false;
+  bool fromTouch_ = false;  // the running reaction replaced a held TouchDown (size blend)
   uint8_t purrFrom_ = 0;  // openness reached when the release started (a purr may be released mid-ramp)
 
   IdentityFrame identity_ = IdentityFrame::None;
