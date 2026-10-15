@@ -196,3 +196,15 @@ the `IDisplay` port.
   ports (`IMotion`, `ILight`) when S8/S9 enter a version, not before.
 - **No Wi-Fi station, no OTA component in V1**: the mother cube (V1.5) will add an adapter next to
   `EspNowRadio`, not a new port in `lib/`.
+
+## Adapter decisions (brick F5, owner decisions 2026-10-15)
+
+| Point | Decision | Source |
+|-------|----------|--------|
+| Display | LovyanGFX 1.2.33 pinned, `Panel_SSD1331`, SPI2 at 6 MHz, DMA channel auto, blocking `pushImage` per tick; reset held by the RC network (no GPIO) | ADR-0014, electronics-spec |
+| Brightness | `setBrightness` 255 / 96 / 24 for Full / Low / Minimum, provisional until the bench | 05b |
+| Buzzer | LEDC 10-bit, duty per volume level 2 / 8 / 20 / 50 % (V1 level 1 = 8 %); notes stepped by a one-shot `esp_timer`, sequence guarded by a mutex | calculations.md; MCDA 470/500 (`esp_timer` vs per-tick poll 360, audio task 345) |
+| Radio | `kEspNowChannel = 1`, set explicitly with `esp_wifi_set_channel`; broadcast peer unencrypted (ADR-0012); RX through an 8-slot FreeRTOS queue, `xQueueSend(…, 0)` fails when full = drop newest; length checked in the callback with an own counter | MCDA 380/500 (implicit default 310, channel 11 350); MCDA 480/500 (`portMUX` ring 400, lock-free ring 360) |
+| Microphone | `ESP_I2S` standard mode, 16 kHz, 32-bit slots, mono left; top 16 bits, running DC removal, rms and peak doubled to the port's unsigned full scale; non-blocking drain each tick | electronics-spec, C7 |
+| Storage | `Preferences` namespace `cubbies`; `readU8` true only when the key's type is `PT_U8` | 02a |
+| Prng | built once in `setup()` after `WiFi.mode(WIFI_STA)`, one stream per consumer (eyes 1, social 2), seeds from `esp_random()` | ADR-0013 |

@@ -7,6 +7,21 @@ human context: what was done, why, and by which PR.
 
 ## 2026-10-15
 
+### Brick F5 — adapters and `main.cpp` — PR pending (ADR-0014)
+
+- Seven thin adapters in `firmware/src/`: `MillisClock`, `Ttp223Touch`, `NvsStorage`
+  (Preferences, typed), `BuzzerAudio` (LEDC, duty table 2/8/20/50 %), `I2sMic` (rms + peak,
+  samples never leave), `Ssd1331Display` (LovyanGFX 1.2.33 pinned), `EspNowRadio` (channel 1,
+  8-slot queue, length drop in the callback). `main.cpp` wires the boot (Wi-Fi, seeded Prngs,
+  identity, invitation window, ritual) and the 40 ms tick in the 03-component order.
+- Owner decisions (scored options): note stepping by `esp_timer` (470/500), FreeRTOS queue for
+  RX (480/500), explicit channel constant 1 (380/500, after a deeper analysis). The volume table
+  came from calculations.md (no new decision). Decisions recorded in 03-component.
+- Local review: Must 3 · Should 4 applied (I2S partial reads, init-failure guards, STA power
+  save off, stale boot frames purged); Nice grouped in issue #25.
+- Both board envs build with no warning, 220 native tests green; bench checklist in
+  `docs/hardware/bench-f5.md` (issue #16 checks included).
+
 ### Brick F4 — social presence — **PR #22 merged** (`63b0103`, ADR-0014)
 
 - PDR status: REQ-F-10 was already covered by the cube-core PDR (ADR-0013); the `social-group`

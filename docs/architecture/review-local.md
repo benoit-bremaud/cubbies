@@ -1,39 +1,35 @@
-# Local review — cubbies (brick F4 social)
+# Local review — cubbies (brick F5, adapters and main.cpp)
 
 - Date: 2026-10-15
-- Commit: 74618f0
-- Scope: branch diff origin/main...feat/f4-social
+- Commit: c17fb5e (findings applied in the follow-up commit)
+- Scope: branch diff main...feat/f5-adapters
 - Checks run: design · docs · tests · security · correctness
-- Verdict: fix Must Have first  ·  Must 1 · Should 11 · Nice 6
+- Verdict: ship after the Must Have fixes (applied)  ·  Must 3 · Should 4 · Nice 7
 
 ## 🔴 Must Have
-- `firmware/test/test_native_social/test_social.cpp:247` `[tests]` · the 05a row "Waiting refresh" is untested (the entry is already Greeted) · hold the cooldown, hear neighbour 2 twice, assert Waiting + new mood + lastSeen
+- `firmware/src/I2sMic.cpp:31` `[correctness]` · `I2SClass::readBytes` loops until the buffer is full and returns 0 on timeout, so with timeout 0 every tick lost the partial chunk and logged an error · read with `i2s_channel_read(rxChan(), …, 0)` — **applied**
+- `firmware/src/EspNowRadio.cpp:43` `[design|docs|correctness]` · a failed `begin()` left `receive()` calling `xQueueReceive(nullptr)` (assert, reboot loop) while the log said "social layer off" · `ready_` guard on `receive`/`broadcast`, log reworded — **applied**
+- `firmware/src/BuzzerAudio.cpp:28` `[design|correctness]` · a failed `begin()` left `play()`/`stop()` on a null mutex or timer · `ready_` guard — **applied**
 
 ## 🟡 Should Have
-- `firmware/lib/cubbies_core/ports/IRadio.h:10` `[design]` · port includes core/Identity.h (inverted dependency, drags eyes) · `ports/Mac.h` with Mac and kFrameSize, included by IRadio, Identity and the codec
-- `firmware/lib/cubbies_core/core/SocialProtocol.cpp:24` `[design]` · receive() does three jobs · extract findSlot()
-- `firmware/lib/cubbies_core/core/SocialProtocol.cpp:69` `[correctness]` · an entry absent for > 49.7 days aliases as fresh, owed re-greet lost · clear greeted in expire() once absent > T_regreet, test
-- `firmware/lib/cubbies_core/core/SocialProtocol.cpp:84` `[correctness]` · the budget ring aliases after 49.7 days without greetings · reset the ring when the newest greeting is ≥ window old, test
-- `firmware/lib/cubbies_core/ports/IRadio.h:2` + 06 `[docs]` · dropLen counted in adapter and lib · document the lib check as defence in depth
-- `test_social.cpp:224` `[tests]` · Free → Waiting does not assert the state · assert Waiting
-- `test_social.cpp:276` `[tests]` · "lowest waiting slot" unpinned · distinct palettes, assert order
-- `test_social.cpp:268` `[tests]` · cooldown boundary unpinned · exact boundary test
-- `test_social.cpp:297` `[tests]` · budget boundary unpinned (05a says "more than 10 min") · exact boundary test, code aligned to strict
-- `test_social.cpp:340` `[tests]` · T_regreet boundary unpinned · exact and +1 tick tests
-- `test_social.cpp:426` `[tests]` · flood test passes with 0 greetings · assert == budget, 4 per tick over several ticks, dropFull > 0
+- `firmware/src/EspNowRadio.cpp:22` `[correctness]` · STA modem power save makes ESP-NOW miss broadcasts · `esp_wifi_set_ps(WIFI_PS_NONE)` — **applied**
+- `firmware/src/main.cpp` `runBoot` `[correctness]` · frames queued during the boot screens carry a stale `nowMs` · `radio.discardPending()` after boot — **applied**
+- `firmware/src/Ssd1331Display.cpp:51` `[correctness]` · a failed init still drove the SPI bus every tick · `ready_` guard — **applied**
+- `docs/hardware/bench-f5.md` `[docs]` · rows 2, 10, 11 relied on serial output the firmware does not print · stated as temporary bench instrumentation — **applied**
 
 ## 🔵 Nice to Have
-- `SocialProtocol.h:34` `[design]` · six drop counters could be an array indexed by DecodeResult
-- `firmware/test/support/LoopbackRadio.h:44` `[design|correctness]` · len clamp then overwrite; memcpy from null with len 0
-- `SocialProtocol.h:59` `[correctness]` · neighbour(slot) unchecked · document precondition
-- `test_social.cpp:422` `[tests]` · flood MACs include the cube's own MAC
-- `test_social.cpp:380` `[tests]` · eviction test could assert the newcomer state and slot of 2
-- `SocialProtocol.h:1` `[docs]` · header could mention stats()
+- `firmware/src/I2sMic.cpp:40` `[correctness]` · left shift of a negative `int32_t` (UB before C++20) · `s * 256` — **applied**
+- `firmware/src/Ssd1331Display.cpp:15` `[design]` · brightness table unchecked against the enum · `static_assert` — **applied**
+- `firmware/src/main.cpp` `setup` `[correctness]` · `esp_read_mac` result ignored · logged — **applied**
+- `firmware/src/BuzzerAudio.cpp:44` `[correctness]` · timer stop under the lock deserves a comment · **applied**
+- `firmware/src/BuzzerAudio.cpp` `[correctness]` · zero-length notes arm a 0 µs timer · issue #25
+- `firmware/src/main.cpp` newcomer path `[design]` · relies on `routeNewcomer` never setting `toSleep` · issue #25
+- `firmware/src/EspNowRadio.h:34` `[design]` · drop counters only read by bench instrumentation · issue #25
 
 ## ⚪ Disagree / Intentional
-- `SocialProtocol.cpp:83` `[design]` · greeting emitted while not Awake · the router drops it (02-sequence-presence)
-- `ports/IRadio.h` `[design]` · RxFrame.nowMs stamped by the adapter · 05a, 03-component
-- `LoopbackRadio.h` `[tests]` · unbounded queue · the 8-slot policy belongs to EspNowRadio (06)
+- `firmware/src/main.cpp` loop `[design]` · "mood ticks only while Awake" and "gate learns the sleep state before the effect Route" live in main · the validated F2 wiring contract (StimulusRouter returns Routes that main applies, 03-component); no new rule
+- `firmware/src/EspNowRadio.cpp:15` `[design]` · single static instance · ESP-NOW takes a plain C callback, one radio per cube
+- `firmware/src/main.cpp` `Seeded` built with `new` `[design]` · Prngs seeded after Wi-Fi (ADR-0013), framebuffer off the loop stack
 
 ## Per-dimension summary
-- Design: conformant, one inverted include, one long method · Docs: consistent, dropLen double count to state · Tests: every row but one covered, boundaries loose · Security: allowlist complete, flood bounded, no PII logged · Correctness: two 2^32 aliasing edge cases
+- Design: thin adapters, ports respected; init-failure robustness fixed · Docs: comments match the code; bench rows clarified · Tests: no lib change; adapters validated by builds and bench (ADR-0014), 220 native tests green · Security: radio length check in the callback, no MAC or sample logged, no secrets · Correctness: I2S read bug fixed; boot and tick order match the contract
