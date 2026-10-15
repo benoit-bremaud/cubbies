@@ -15,7 +15,7 @@ of the first UML study (`diagrams/cube-core/03-component.md`, merged in PR #5).
 | REQ-F-06 sleep / wake | UC5 | [05b-state-sleep-wake](diagrams/cube-core/05b-state-sleep-wake.md) | Sleep cycle ← `IClock` (uptime) | native tests with injected clock |
 | REQ-F-07 identity default + ritual | UC1 | [02a-first-boot](diagrams/identity/02a-sequence-first-boot.md), [02b-adoption](diagrams/identity/02b-sequence-adoption-ritual.md) | identity rules ← `IStorage`, MAC passed by value; eye renderer identity frames (invitation, ritual, adoption, error) | native tests, bench; identity-frame goldens and rule tests (F1b) |
 | REQ-F-08 identity persistence | UC1 | [02a-first-boot](diagrams/identity/02a-sequence-first-boot.md) | `IStorage` (NVS adapter) | bench |
-| REQ-F-09 sound reactions | UC4, UC5 | — | sound classifier ← `IMic` | bench, native threshold tests |
+| REQ-F-09 sound reactions | UC4, UC5 | [05d-state-sound-classifier](diagrams/cube-core/05d-state-sound-classifier.md) | sound classifier ← `IMic` (rms + peak per tick) | bench, native threshold tests |
 | REQ-F-10 presence, greeting | UC7 | [02-sequence-presence](diagrams/social-presence/02-sequence-presence.md), [06-data-flow](diagrams/social-presence/06-data-flow.md) | presence ← `IRadio` | native protocol tests, bench ×2 |
 | REQ-F-11 contagion | UC8 | **deferred**: `social-group` PDR (05a has only the hook) | mood engine + social protocol | native tests |
 | REQ-F-12 chain reaction | UC9 | **deferred**: `social-group` PDR | social protocol (event relay) | native tests (no echo storms) |

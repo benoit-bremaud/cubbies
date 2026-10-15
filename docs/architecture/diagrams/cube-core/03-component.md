@@ -129,7 +129,8 @@ stimulus on the pressed edge (eyes widen within the next tick, ≤ 40 ms) and th
 gesture (tap, double tap, stroke) when known. Both reach the Mood engine; the touch-down reaction
 is the same in every mood.
 
-**Sound classes** (Sound classifier, adaptive baseline = slow running mean of the rms, re-seeded
+**Sound classes** (Sound classifier, port contract, ratio thresholds and baseline rules in
+[05d](05d-state-sound-classifier.md); adaptive baseline = slow running mean of the rms, re-seeded
 after each event):
 
 | Class | Rule (tuning values) | Used by |

@@ -142,6 +142,7 @@ types.
 | `cube-core` | [05a-state-mood-engine](diagrams/cube-core/05a-state-mood-engine.md) | The five moods and what moves them |
 | `cube-core` | [05b-state-sleep-wake](diagrams/cube-core/05b-state-sleep-wake.md) | Awake, dozing, asleep, waking, and what wakes the cube |
 | `cube-core` | [05c-state-gesture-classifier](diagrams/cube-core/05c-state-gesture-classifier.md) | How a one-bit touch level becomes tap, double tap or stroke |
+| `cube-core` | [05d-state-sound-classifier](diagrams/cube-core/05d-state-sound-classifier.md) | How rms and peak per tick become voice, clap or loud |
 | `identity` | [02a-sequence-first-boot](diagrams/identity/02a-sequence-first-boot.md) | How every boot ends with a colour (NVS, else MAC-derived) |
 | `identity` | [02b-sequence-adoption-ritual](diagrams/identity/02b-sequence-adoption-ritual.md) | Tap cycles the palette, long stroke confirms; the only entry is a hold during the post-boot invitation window (ADR-0013) |
 | `social-presence` | [02-sequence-presence](diagrams/social-presence/02-sequence-presence.md) | Presence broadcast, neighbour table, greeting a newcomer |
