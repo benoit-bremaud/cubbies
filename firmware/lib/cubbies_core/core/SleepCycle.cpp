@@ -89,9 +89,11 @@ SleepEffect SleepCycle::tick() {
       break;
     case SleepState::Asleep:
       break;
-    case SleepState::Waking:
-      if (ageMs(now, enteredMs_) >= kWakingMs) return enter(SleepState::Awake);
+    case SleepState::Waking: {
+      const uint32_t waking = origin_ == SleepState::Asleep ? kWakingFromSleepMs : kWakingFromDozeMs;
+      if (ageMs(now, enteredMs_) >= waking) return enter(SleepState::Awake);
       break;
+    }
   }
   return SleepEffect::None;
 }

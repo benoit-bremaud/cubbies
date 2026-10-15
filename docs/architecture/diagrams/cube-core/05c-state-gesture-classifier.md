@@ -54,6 +54,11 @@ A third quick tap after a double tap starts a new gesture.
 
 ## Notes
 
+- **Tick resolution**: the pad is sampled every 40 ms, so every window is quantised to the tick.
+  A second press first seen on the tick after T_doubletap (a press that started between 250 and
+  280 ms) still counts as the second half of a double tap: the sample cannot tell a press at 245
+  from one at 255 ms (owner decision 2026-10-15, PR #12 review).
+
 - **No `Released` after a short press**: the touch-down widening stays until `Tap` or
   `DoubleTap` replaces it, which is what lets Surprise and Joy grow from the touch-down size
   (F2 step 1) instead of the eyes shrinking then popping again.

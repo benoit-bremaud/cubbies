@@ -33,10 +33,9 @@ class SleepCycle {
   SleepEffect sound(SoundClass s);   // a classified sound
   SleepEffect tick();                // timers; call once per tick
 
-  // Durations (05b, ADR-0013 starting values; kWakingMs owner decision 2026-10-15).
+  // Durations (05b, ADR-0013 starting values; Waking timers owner decisions 2026-10-15).
   static constexpr uint32_t kDozeMs = 120000;
   static constexpr uint32_t kFallAsleepMs = 1200000;
-  static constexpr uint32_t kWakingMs = 1000;
   // Waking lasts as long as its wake animation, never under 1 s (owner decision, PR #12 review):
   // Wake (800 ms) from Dozing, Yawn (1200 ms) from Asleep. Pinned against the renderer in the
   // router tests.

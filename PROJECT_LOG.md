@@ -14,7 +14,8 @@ human context: what was done, why, and by which PR.
   adaptive baseline (new 05d); `MoodEngine` (05a); `SleepCycle` (05b); `SoundGate` → `IAudio`
   (new 05e); `StimulusRouter` as pure functions (03 routing rule, S3 reactions, effect mappings).
 - Owner decisions (scored options): stroke at 1.5 s, tap max 400 ms; sound thresholds as ratios
-  over a baseline frozen during a sound; any TouchDown wakes; Waking is a fixed 1 s timer;
+  over a baseline frozen during a sound; any TouchDown wakes; Waking covers its wake animation,
+  never under 1 s (1 s from Dozing, 1.2 s from Asleep, PR #12 review);
   sounds are note tables in `lib/`, volume level 0..3 (V1 constant 1), gate muted while Dozing
   or Asleep via `setSleepState()`, overlap by rank (strictly higher replaces, no queue);
   `Released` is a mood stimulus so a medium press wakes a Bored or Tired mood (note in 05a).
