@@ -83,7 +83,7 @@ static void test_press_starts_the_gauge() {
   r.step();  // pressed edge
   const IdentityOutput o = r.step();
   TEST_ASSERT_EQUAL(IdentityFrame::Invitation, o.frame);
-  TEST_ASSERT_GREATER_THAN_UINT8(0, o.progress);
+  TEST_ASSERT_EQUAL_UINT8(kTick * 255u / InvitationWindow::kSecretMs, o.progress);
 }
 
 // Holding -> Holding: progress = hold × 255 / T_secret, rising.
@@ -124,22 +124,49 @@ static void test_hold_reaching_secret_enters_even_past_the_window() {
   Rig r;
   r.settle();
   r.run(false, InvitationWindow::kInviteMs - 1000);
-  r.run(true, InvitationWindow::kSecretMs + kTick);
+  r.run(true, InvitationWindow::kSecretMs);  // edge tick + T_secret - tick of hold
+  TEST_ASSERT_FALSE(r.window.entered());
+  TEST_ASSERT_EQUAL(IdentityFrame::Keep, r.step().frame);  // hold == T_secret
   TEST_ASSERT_TRUE(r.window.entered());
-  TEST_ASSERT_EQUAL_UINT32(0, r.gestures.holdMs());
-  r.touch.set(false);
-  r.step();
-  TEST_ASSERT_EQUAL(cubbies::Gesture::None, r.gestures.tick());  // the release is silent
+  TEST_ASSERT_EQUAL_UINT32(0, r.gestures.holdMs());  // consumed
 }
 
 // Inviting -> Declined: T_invite elapsed without a press.
 static void test_window_elapsed_declines() {
   Rig r;
   r.settle();
-  const IdentityOutput o = r.run(false, InvitationWindow::kInviteMs);
+  r.run(false, InvitationWindow::kInviteMs - kTick);
+  TEST_ASSERT_FALSE(r.window.declined());
+  const IdentityOutput o = r.step();
   TEST_ASSERT_EQUAL(IdentityFrame::Clear, o.frame);
   TEST_ASSERT_TRUE(r.window.declined());
   TEST_ASSERT_FALSE(r.window.entered());
+}
+
+// Inviting -> Holding: a press whose edge is the last tick inside T_invite still counts.
+static void test_press_on_the_last_tick_of_the_window_counts() {
+  Rig r;
+  r.settle();
+  r.run(false, InvitationWindow::kInviteMs - 2 * kTick);  // next tick is the last inside
+  r.touch.set(true);
+  r.step();  // pressed edge, holdMs() == 0
+  const IdentityOutput o = r.step();  // past T_invite, held 40 ms
+  TEST_ASSERT_EQUAL(IdentityFrame::Invitation, o.frame);
+  TEST_ASSERT_FALSE(r.window.declined());
+}
+
+// Inviting -> Holding with a hold already past T_secret (late tick): gauge clamped, then enters.
+static void test_late_tick_clamps_the_gauge() {
+  Rig r;
+  r.settle();
+  r.touch.set(true);
+  r.step();  // pressed edge
+  r.clock.advance(InvitationWindow::kSecretMs + 500);
+  const IdentityOutput o = r.window.tick();
+  TEST_ASSERT_EQUAL(IdentityFrame::Invitation, o.frame);
+  TEST_ASSERT_EQUAL_UINT8(255, o.progress);
+  r.step();
+  TEST_ASSERT_TRUE(r.window.entered());
 }
 
 // Ages survive the uint32 clock wrap.
@@ -161,6 +188,8 @@ int main(int, char**) {
   RUN_TEST(test_release_after_window_declines);
   RUN_TEST(test_hold_reaching_secret_enters_even_past_the_window);
   RUN_TEST(test_window_elapsed_declines);
+  RUN_TEST(test_press_on_the_last_tick_of_the_window_counts);
+  RUN_TEST(test_late_tick_clamps_the_gauge);
   RUN_TEST(test_window_survives_the_clock_wrap);
   return UNITY_END();
 }

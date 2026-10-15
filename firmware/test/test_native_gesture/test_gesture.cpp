@@ -188,6 +188,18 @@ static void test_consumed_press_release_is_silent_then_idle() {
   TEST_ASSERT_EQUAL(Gesture::TouchDown, r.step());
 }
 
+// Pressed2 -> Consumed: the second press of a double tap can be consumed too.
+static void test_second_press_can_be_consumed() {
+  Rig r;
+  r.hold(true, 80);
+  r.hold(false, 80);
+  r.touch.set(true);
+  TEST_ASSERT_EQUAL(Gesture::TouchDown, r.step());  // Pressed2
+  r.gestures.consumeCurrentPress();
+  TEST_ASSERT_EQUAL(Gesture::None, r.hold(true, 2000));
+  TEST_ASSERT_EQUAL(Gesture::None, r.hold(false, 1000));  // no DoubleTap, no Released
+}
+
 int main(int, char**) {
   UNITY_BEGIN();
   RUN_TEST(test_pressed_edge_emits_touchdown_on_the_same_tick);
@@ -203,5 +215,6 @@ int main(int, char**) {
   RUN_TEST(test_hold_ms_reports_the_age_of_the_current_press);
   RUN_TEST(test_consumed_press_emits_nothing_while_held);
   RUN_TEST(test_consumed_press_release_is_silent_then_idle);
+  RUN_TEST(test_second_press_can_be_consumed);
   return UNITY_END();
 }

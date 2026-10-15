@@ -115,9 +115,11 @@ static void test_failed_write_keeps_the_identity_and_shows_error() {
 static void test_timeout_abandons_without_writing() {
   Rig r;
   r.ritual.start(kDefault);
-  r.step(Gesture::Tap);
-  IdentityOutput last;
-  for (uint32_t t = 0; t < AdoptionRitual::kTimeoutMs && !r.ritual.isDone(); t += kTick) last = r.step();
+  r.wait(30000);
+  r.step(Gesture::Tap);  // restarts the timeout
+  r.wait(AdoptionRitual::kTimeoutMs - kTick);
+  TEST_ASSERT_FALSE(r.ritual.isDone());
+  const IdentityOutput last = r.step();  // T_ritual_timeout after the tap
   TEST_ASSERT_TRUE(r.ritual.isDone());
   TEST_ASSERT_EQUAL(IdentityFrame::Clear, last.frame);
   TEST_ASSERT_EQUAL(0, r.storage.writes);
