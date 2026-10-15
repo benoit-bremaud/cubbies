@@ -41,6 +41,8 @@ stateDiagram-v2
 
 ## Transition table
 
+Each row is one native test (ADR-0014).
+
 | From | Trigger | To | Side effect |
 |------|---------|----|-------------|
 | — | boot | Idle | none |

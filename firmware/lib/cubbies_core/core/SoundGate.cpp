@@ -30,6 +30,9 @@ constexpr Sound kSounds[] = {
     sound(kYawn, 1),     sound(kGrumpy, 2), sound(kWakeMelody, 3),
 };
 
+static_assert(sizeof(kSounds) / sizeof(kSounds[0]) == kSoundCount,
+              "kSounds must have one entry per SoundId");
+
 const Sound& lookup(SoundId id) { return kSounds[static_cast<uint8_t>(id)]; }
 
 }  // namespace

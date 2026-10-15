@@ -70,9 +70,9 @@ static void test_dozes_after_tired_for_t_doze() {
   Rig r;
   r.toTired();
   TEST_ASSERT_EQUAL(Mood::Tired, r.mood.mood());
-  TEST_ASSERT_EQUAL(0, r.run(SleepCycle::kDozeMs - 2 * kTick, SleepEffect::Dozed));
+  TEST_ASSERT_EQUAL(0, r.run(SleepCycle::kDozeMs - kTick, SleepEffect::Dozed));
   TEST_ASSERT_EQUAL(SleepState::Awake, r.sleep.state());
-  TEST_ASSERT_EQUAL(1, r.run(3 * kTick, SleepEffect::Dozed));
+  TEST_ASSERT_EQUAL(1, r.run(kTick, SleepEffect::Dozed));  // exactly at T_doze
   TEST_ASSERT_EQUAL(SleepState::Dozing, r.sleep.state());
   TEST_ASSERT_EQUAL(Brightness::Low, r.sleep.brightness());
 }
@@ -124,9 +124,9 @@ static void test_falls_asleep_after_t_fall_asleep() {
   Rig r;
   r.toDozing();
   TEST_ASSERT_EQUAL(SleepEffect::None, r.sleep.sound(SoundClass::None));  // below threshold
-  TEST_ASSERT_EQUAL(0, r.run(SleepCycle::kFallAsleepMs - 2 * kTick, SleepEffect::FellAsleep));
+  TEST_ASSERT_EQUAL(0, r.run(SleepCycle::kFallAsleepMs - kTick, SleepEffect::FellAsleep));
   TEST_ASSERT_EQUAL(SleepState::Dozing, r.sleep.state());
-  TEST_ASSERT_EQUAL(1, r.run(3 * kTick, SleepEffect::FellAsleep));
+  TEST_ASSERT_EQUAL(1, r.run(kTick, SleepEffect::FellAsleep));  // exactly at T_fall_asleep
   TEST_ASSERT_EQUAL(SleepState::Asleep, r.sleep.state());
   TEST_ASSERT_EQUAL(Brightness::Minimum, r.sleep.brightness());
 }
@@ -143,6 +143,7 @@ static void test_asleep_wakes_on_touch_or_loud_with_melody() {
   Rig r;
   r.toAsleep();
   TEST_ASSERT_EQUAL(SleepEffect::WokeFromSleep, r.sleep.sound(SoundClass::Loud));
+  TEST_ASSERT_EQUAL(SleepState::Waking, r.sleep.state());
   TEST_ASSERT_EQUAL(SleepState::Asleep, r.sleep.wakeOrigin());
 }
 
@@ -157,15 +158,17 @@ static void test_asleep_ignores_voice_and_clap() {
 
 // Waking -> Awake: after the wake animation (kWakingMs); full brightness, mood Curious.
 static void test_waking_returns_awake_and_restarts_mood() {
-  Rig r;
-  r.toDozing();
-  r.sleep.gesture(Gesture::TouchDown);
-  TEST_ASSERT_EQUAL(0, r.run(SleepCycle::kWakingMs - 2 * kTick, SleepEffect::Awoke));
-  TEST_ASSERT_EQUAL(SleepState::Waking, r.sleep.state());
-  TEST_ASSERT_EQUAL(1, r.run(3 * kTick, SleepEffect::Awoke));
-  TEST_ASSERT_EQUAL(SleepState::Awake, r.sleep.state());
-  TEST_ASSERT_EQUAL(Brightness::Full, r.sleep.brightness());
-  TEST_ASSERT_EQUAL(Mood::Curious, r.mood.mood());
+  for (int fromAsleep = 0; fromAsleep < 2; ++fromAsleep) {
+    Rig r;
+    if (fromAsleep) r.toAsleep(); else r.toDozing();
+    r.sleep.gesture(Gesture::TouchDown);
+    TEST_ASSERT_EQUAL(0, r.run(SleepCycle::kWakingMs - kTick, SleepEffect::Awoke));
+    TEST_ASSERT_EQUAL(SleepState::Waking, r.sleep.state());
+    TEST_ASSERT_EQUAL(1, r.run(kTick, SleepEffect::Awoke));  // exactly at T_waking
+    TEST_ASSERT_EQUAL(SleepState::Awake, r.sleep.state());
+    TEST_ASSERT_EQUAL(Brightness::Full, r.sleep.brightness());
+    TEST_ASSERT_EQUAL(Mood::Curious, r.mood.mood());
+  }
 }
 
 // Waking swallows stimuli: a second tap or a loud noise does not restart the wake or the melody.

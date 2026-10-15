@@ -25,9 +25,9 @@ flowchart LR
     direction LR
     subgraph BEH ["Behaviours"]
       direction TB
-      Gest["Gesture classifier<br/>raw touch edges + IClock → touch-down (immediate), tap, double tap, stroke, hold"]
+      Gest["Gesture classifier<br/>touch level + IClock → touch-down (immediate), tap, double tap, stroke, released"]
       Snd["Sound classifier<br/>mic rms + peak + IClock → voice, clap, loud"]
-      Router["Stimulus router<br/>gestures, sounds, NewcomerSeen → stimuli"]
+      Router["Stimulus router<br/>gestures, sounds, NewcomerSeen → stimuli, reactions, sounds; maps mood and sleep effects"]
       MoodE["Mood engine<br/>five moods, transitions, decay"]
       Sleep["Sleep cycle<br/>idle timer, doze, wake"]
       Eyes["Eyes renderer<br/>procedural eyes, 96×64 framebuffer, brightness level"]
@@ -41,7 +41,7 @@ flowchart LR
       PTouch["ITouchSource<br/>level → pressed or released"]
       PMic["IMic<br/>rms, peak — levels only, never samples"]
       PDisp["IDisplay<br/>present framebuffer, setBrightness level"]
-      PAudio["IAudio<br/>play tone sequence at volume level"]
+      PAudio["IAudio<br/>play note sequence at volume level, stop"]
       PRadio["IRadio<br/>broadcast bytes, receive → bytes + sender MAC"]
       PStore["IStorage<br/>get key, put key value"]
       PClock["IClock<br/>nowMs — uint32 ms, wraps"]
@@ -59,8 +59,8 @@ flowchart LR
     Sleep --> Eyes
     Ident --> Eyes
     Eyes --> PDisp
-    MoodE --> Gate
-    Sleep --> Gate
+    Router --> Eyes
+    Router --> Gate
     Ident --> Gate
     Gate --> PAudio
     Social --> PRadio
@@ -118,20 +118,25 @@ by value), shows the invitation window, and if a hold is detected calls `startRi
 `tick()` until `isDone()` ([identity/02a](../identity/02a-sequence-first-boot.md), [02b](../identity/02b-sequence-adoption-ritual.md)).
 The Stimulus router, Sleep cycle and Social protocol start ticking only after the ritual ends.
 
-Routing rule of the Stimulus router (one pure function `route(stimulus, sleepState)`): while
-the Sleep cycle is Awake, gestures, sounds and `NewcomerSeen` go to the Mood engine (and gestures
-and sounds also feed the Sleep cycle's idle timer). While not Awake, gestures and sounds go to the
-Sleep cycle only, and `NewcomerSeen` is dropped.
+Routing rule of the Stimulus router (pure functions `route(gesture | sound, sleepState)` and
+`routeNewcomer(sleepState)`, plus `effects(MoodEffect | SleepEffect)`, each returning a `Route`
+that `main.cpp` applies): while the Sleep cycle is Awake, classified gestures, sounds and
+`NewcomerSeen` go to the Mood engine, with the S3 reaction and sound (and gestures and sounds also
+feed the Sleep cycle's idle timer). While not Awake, gestures and sounds go to the Sleep cycle
+only, and `NewcomerSeen` is dropped. The effects the Mood engine and the Sleep cycle return (yawn,
+grumpy, doze, sleep, wake) become eyes and Sound gate commands through the same `Route`, hence the
+`Router --> Eyes` and `Router --> Gate` edges; neither engine calls the gate itself.
 
 **Touch latency (REQ-NF-01)**: a tap can only be classified once the double-tap window
 (T_doubletap 250 ms) has elapsed, so the Gesture classifier emits an immediate `touch-down`
 stimulus on the pressed edge (eyes widen within the next tick, ≤ 40 ms) and the classified
-gesture (tap, double tap, stroke) when known. Both reach the Mood engine; the touch-down reaction
-is the same in every mood.
+gesture (tap, double tap, stroke) when known. Only the classified gesture reaches the Mood engine
+(05a: touch-down leaves the mood unchanged); the touch-down is an eyes reaction, the same in every
+mood, and a wake trigger for the Sleep cycle.
 
 **Sound classes** (Sound classifier, port contract, ratio thresholds and baseline rules in
-[05d](05d-state-sound-classifier.md); adaptive baseline = slow running mean of the rms, re-seeded
-after each event):
+[05d](05d-state-sound-classifier.md); adaptive baseline = slow running mean of the rms, frozen
+while a sound lasts):
 
 | Class | Rule (tuning values) | Used by |
 |-------|----------------------|---------|

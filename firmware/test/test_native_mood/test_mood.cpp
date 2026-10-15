@@ -28,8 +28,15 @@ struct Rig {
     }
     return count;
   }
-  void toBored() { run(MoodEngine::kBoredMs + kTick); }
-  void toTired() { toBored(); run(MoodEngine::kTiredMs + kTick); }
+  // Each helper stops on the tick of the transition, so the next timer starts from now.
+  void toBored() { ageUntil(Mood::Bored); }
+  void toTired() { toBored(); ageUntil(Mood::Tired); }
+  // Ticks one at a time until `m`; returns the age at which it was entered.
+  uint32_t ageUntil(Mood m) {
+    const uint32_t t0 = clock.nowMs();
+    while (engine.mood() != m) run(kTick);
+    return clock.nowMs() - t0;
+  }
   void toHappy() { engine.stimulus(Stimulus::Tap); }
   void toAnnoyed() { engine.stimulus(Stimulus::Loud); }
 };
@@ -62,10 +69,7 @@ static void test_tap_and_double_tap_make_curious_happy() {
 // Curious -> Bored: idle ≥ T_bored, not before.
 static void test_curious_gets_bored_after_t_bored_idle() {
   Rig r;
-  r.run(MoodEngine::kBoredMs - kTick);
-  TEST_ASSERT_EQUAL(Mood::Curious, r.engine.mood());
-  r.run(2 * kTick);
-  TEST_ASSERT_EQUAL(Mood::Bored, r.engine.mood());
+  TEST_ASSERT_EQUAL_UINT32(MoodEngine::kBoredMs, r.ageUntil(Mood::Bored));  // exactly, `>=`
 }
 
 // Any stimulus restarts the idle timer, NewcomerSeen included.
@@ -136,10 +140,9 @@ static void test_any_stimulus_wakes_bored_to_curious() {
 static void test_bored_gets_tired_after_t_tired_with_a_first_yawn() {
   Rig r;
   r.toBored();
-  // toBored() overshoots the entry by one tick, so stop two ticks short of T_tired.
-  TEST_ASSERT_EQUAL(0, r.run(MoodEngine::kTiredMs - 2 * kTick, MoodEffect::Yawn));
+  TEST_ASSERT_EQUAL(0, r.run(MoodEngine::kTiredMs - kTick, MoodEffect::Yawn));
   TEST_ASSERT_EQUAL(Mood::Bored, r.engine.mood());
-  TEST_ASSERT_EQUAL(1, r.run(2 * kTick, MoodEffect::Yawn));
+  TEST_ASSERT_EQUAL(1, r.run(kTick, MoodEffect::Yawn));  // exactly at T_tired
   TEST_ASSERT_EQUAL(Mood::Tired, r.engine.mood());
 }
 
@@ -197,15 +200,20 @@ static void test_unlisted_stimuli_leave_the_mood_unchanged() {
   c.toAnnoyed();
   TEST_ASSERT_EQUAL(MoodEffect::None, c.engine.stimulus(Stimulus::Loud));  // no second grumpy beep
   TEST_ASSERT_EQUAL(Mood::Annoyed, c.engine.mood());
+  // Annoyed: a call or a newcomer leaves the mood unchanged (05a "any" and greeting rows).
+  const Stimulus unlisted[] = {Stimulus::Voice, Stimulus::Clap, Stimulus::NewcomerSeen};
+  for (Stimulus s : unlisted) {
+    Rig d;
+    d.toAnnoyed();
+    TEST_ASSERT_EQUAL(MoodEffect::None, d.engine.stimulus(s));
+    TEST_ASSERT_EQUAL(Mood::Annoyed, d.engine.mood());
+  }
 }
 
 // Timers are ages on the uint32 clock.
 static void test_timers_survive_the_clock_wrap() {
   Rig r(0xFFFFFFFFu - 1000);
-  r.run(MoodEngine::kBoredMs - kTick);
-  TEST_ASSERT_EQUAL(Mood::Curious, r.engine.mood());
-  r.run(2 * kTick);
-  TEST_ASSERT_EQUAL(Mood::Bored, r.engine.mood());
+  TEST_ASSERT_EQUAL_UINT32(MoodEngine::kBoredMs, r.ageUntil(Mood::Bored));
 }
 
 // Bored, Tired -> Curious: released (end of a medium press) is a gesture (owner decision F2).

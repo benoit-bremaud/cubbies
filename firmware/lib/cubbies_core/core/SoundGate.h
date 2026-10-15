@@ -13,20 +13,25 @@
 namespace cubbies {
 
 enum class SoundId : uint8_t { Surprise, Joy, Purr, Hello, Yawn, Grumpy, WakeMelody };
+constexpr uint8_t kSoundCount = 7;
 
 class SoundGate {
  public:
   SoundGate(IClock& clock, IAudio& audio);
 
   bool play(SoundId id);               // true when forwarded to the buzzer
-  void setSleepState(SleepState s);    // from main.cpp after each Sleep cycle tick
+  // Sync with the Sleep cycle after every SleepCycle call that returns an effect and before
+  // applying effects(): the wake-up melody starts on a gesture() or sound() that enters Waking.
+  // Entering Dozing or Asleep stops the sound in progress.
+  void setSleepState(SleepState s);
   void tick();                         // ends the sound in progress; call once per tick
   bool playing() const { return playing_; }
 
-  static uint8_t rank(SoundId id);
+  static uint8_t rank(SoundId id);         // a strictly higher rank replaces (05e)
   static uint32_t durationMs(SoundId id);  // sum of the note durations
 
   static constexpr VolumeLevel kVolume = 1;  // V1 default, ≤ 40 dB(A) at 1 m (REQ-NF-03)
+  static_assert(kVolume <= kMaxVolume, "kVolume must be a level of the four-step scale");
 
  private:
   IClock& clock_;

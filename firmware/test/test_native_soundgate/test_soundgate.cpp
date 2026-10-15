@@ -75,10 +75,19 @@ static void test_rejects_every_sound_while_dozing_or_asleep() {
 static void test_higher_rank_replaces_the_sound_in_progress() {
   Rig r;
   r.gate.play(SoundId::Surprise);
+  const cubbies::Note* surprise = r.audio.lastNotes;
+  r.run(kTick);
   TEST_ASSERT_TRUE(r.gate.play(SoundId::Grumpy));
   TEST_ASSERT_EQUAL(2, r.audio.plays);
+  TEST_ASSERT_TRUE(r.audio.lastNotes != surprise);
+  // The replacing sound's own duration now decides the end, counted from the replacement.
+  r.run(SoundGate::durationMs(SoundId::Grumpy) - kTick);
+  TEST_ASSERT_TRUE(r.gate.playing());
+  r.run(kTick);
+  TEST_ASSERT_FALSE(r.gate.playing());
+  r.gate.play(SoundId::Grumpy);
   TEST_ASSERT_TRUE(r.gate.play(SoundId::WakeMelody));
-  TEST_ASSERT_EQUAL(3, r.audio.plays);
+  TEST_ASSERT_EQUAL(4, r.audio.plays);
 }
 
 // Playing -> Playing: an equal or lower rank is dropped (no queue).
@@ -98,7 +107,7 @@ static void test_sound_ends_after_its_duration() {
   r.gate.play(SoundId::Grumpy);
   r.run(SoundGate::durationMs(SoundId::Grumpy) - kTick);
   TEST_ASSERT_TRUE(r.gate.playing());
-  r.run(2 * kTick);
+  r.run(kTick);  // exactly at the duration
   TEST_ASSERT_FALSE(r.gate.playing());
   TEST_ASSERT_TRUE(r.gate.play(SoundId::Surprise));
 }
@@ -138,7 +147,7 @@ static void test_duration_survives_the_clock_wrap() {
   r.gate.play(SoundId::WakeMelody);
   r.run(SoundGate::durationMs(SoundId::WakeMelody) - kTick);
   TEST_ASSERT_TRUE(r.gate.playing());
-  r.run(2 * kTick);
+  r.run(kTick);
   TEST_ASSERT_FALSE(r.gate.playing());
 }
 
