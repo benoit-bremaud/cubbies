@@ -69,12 +69,14 @@ stateDiagram-v2
 | Annoyed | long stroke | Happy | purr |
 | any | touch-down (pressed edge) | unchanged | eyes widen within one tick (REQ-NF-01); the classified gesture follows |
 | any | voice, clap (a call, UC4) | unchanged unless Bored or Tired | eyes widen and look up |
-| Curious, Happy, Annoyed | NewcomerSeen (UC7 greeting) | unchanged | glance toward nothing in particular + hello beep through the Sound gate |
+| any (Awake) | NewcomerSeen (UC7 greeting) | unchanged, except Bored and Tired → Curious (row above) | glance toward nothing in particular + hello beep through the Sound gate, in every mood (owner decision 2026-10-15, brick F2) |
 
 **Stimuli not listed for a state leave the mood unchanged.** They still produce the reaction
 animation and beep of S3 (a tap in Happy is a surprise, a stroke in Curious is a purr), which is
 how UC3 guarantees a visible reaction in every mood. "Any stimulus" in Bored means every gesture,
-sound or `NewcomerSeen`. "Calm" means no gesture and no sound above the voice threshold.
+sound or `NewcomerSeen`; `released` (end of a medium press or a stroke) is a gesture, so a medium
+press on a Bored or Tired cube brings it back to Curious (owner decision 2026-10-15, brick F2).
+"Calm" means no gesture and no sound above the voice threshold.
 
 Durations are constants of the Mood engine, set in one header; tests advance the injected clock
 to exercise them. Starting values (ADR-0013, chained with 05b so that the cube dozes 10 min and

@@ -17,6 +17,9 @@ constexpr uint8_t kErrorOpenness = 60;
 constexpr int kErrorSegments = 6;              // three on/off flashes
 constexpr int kJoyBounceHeight = 4;            // pixels
 constexpr int kSurpriseGrow = 6;               // pixels on both axes
+constexpr int kTouchGrowW = 2;                 // touch-down widening, pixels
+constexpr int kTouchGrowH = 4;
+constexpr uint32_t kTouchBlendMs = 80;         // Surprise / Joy grow from the touch-down size (two ticks)
 constexpr int kInvitationShrink = 8;           // room for the gauge
 constexpr int kSmileDepthPercent = 45;         // arc depth at the centre, % of the open height
 constexpr int kSmileClosedDepthPercent = 60;   // deeper when nearly shut (purr)
@@ -87,6 +90,9 @@ uint32_t EyesRenderer::reactionDurationMs(Reaction reaction) {
 
 void EyesRenderer::play(Reaction reaction) {
   if (reacting_ && reaction_ == reaction && reactionDurationMs(reaction) == 0 && !purrReleasing_) return;
+  // A tap or double tap follows the touch-down: Surprise and Joy grow from its size, no second pop.
+  fromTouch_ = reacting_ && reaction_ == Reaction::TouchDown &&
+               (reaction == Reaction::Surprise || reaction == Reaction::Joy);
   reacting_ = true;
   reaction_ = reaction;
   purrReleasing_ = false;
@@ -182,7 +188,7 @@ void EyesRenderer::applyReaction(Shape& s, uint32_t now) const {
   const Lids open{0, 0, 0, Arc::None};
   switch (reaction_) {
     case Reaction::TouchDown:  // one notch wider while pressed
-      s.w += 2; s.h += 4; s.lids = open;
+      s.w += kTouchGrowW; s.h += kTouchGrowH; s.lids = open;
       break;
     case Reaction::Surprise:   // round, big eyes
       s.w = kEyeW + kSurpriseGrow; s.h = kEyeH + kSurpriseGrow; s.lids = open;
@@ -217,6 +223,12 @@ void EyesRenderer::applyReaction(Shape& s, uint32_t now) const {
       s.dx = p < 128 ? kMaxLook : -kMaxLook;
       break;
     }
+  }
+  const uint32_t t = reactionTl_.elapsed(now);
+  if (fromTouch_ && t < kTouchBlendMs) {  // blend the size from the touch-down one
+    const int fromW = kEyeW + kTouchGrowW, fromH = kEyeH + kTouchGrowH;
+    s.w = fromW + (s.w - fromW) * static_cast<int>(t) / static_cast<int>(kTouchBlendMs);
+    s.h = fromH + (s.h - fromH) * static_cast<int>(t) / static_cast<int>(kTouchBlendMs);
   }
 }
 

@@ -5,6 +5,7 @@
 
 #include <cstdio>
 #include <string>
+#include <vector>
 
 #include "FakeClock.h"
 #include "Golden.h"
@@ -401,6 +402,44 @@ static void test_touchdown_is_visible_next_tick_and_held_until_release() {
   TEST_ASSERT_TRUE(framesEqual(base, r.display.last));
 }
 
+// Lit pixels after each tick of a reaction played at t0, optionally while TouchDown is held.
+static std::vector<int> reactionLitPixels(Reaction re, bool fromTouch, int ticks) {
+  Rig r = goldenRig(Mood::Curious);
+  r.eyes.tick();
+  if (fromTouch) {
+    r.eyes.play(Reaction::TouchDown);
+    r.run(4 * kTickMs);
+  }
+  r.eyes.play(re);
+  std::vector<int> lit;
+  for (int i = 0; i < ticks; ++i) {
+    r.clock.advance(kTickMs);
+    r.eyes.tick();
+    lit.push_back(litPixels(r.display.last));
+  }
+  return lit;
+}
+
+// A tap shows TouchDown then Surprise: the eyes keep growing from the touch-down size, no second
+// pop (decision 2026-10-15, open point of the F1b review).
+static void test_surprise_after_touchdown_grows_continuously() {
+  const int touch = reactionLitPixels(Reaction::TouchDown, false, 1)[0];
+  const std::vector<int> plain = reactionLitPixels(Reaction::Surprise, false, 4);
+  const std::vector<int> chained = reactionLitPixels(Reaction::Surprise, true, 4);
+  TEST_ASSERT_GREATER_THAN_INT(touch, chained[0]);  // already growing on the first tick
+  TEST_ASSERT_LESS_THAN_INT(plain[0], chained[0]);  // but not snapped to full size
+  for (size_t i = 1; i < chained.size(); ++i) TEST_ASSERT_GREATER_OR_EQUAL_INT(chained[i - 1], chained[i]);
+  TEST_ASSERT_EQUAL_INT(plain.back(), chained.back());  // same frame once the blend is over
+}
+
+// A double tap shows TouchDown then Joy: the arcs start at the touch-down size and settle.
+static void test_joy_after_touchdown_starts_from_the_touchdown_size() {
+  const std::vector<int> plain = reactionLitPixels(Reaction::Joy, false, 4);
+  const std::vector<int> chained = reactionLitPixels(Reaction::Joy, true, 4);
+  TEST_ASSERT_GREATER_THAN_INT(plain[0], chained[0]);
+  TEST_ASSERT_EQUAL_INT(plain.back(), chained.back());
+}
+
 // Replaying a timed reaction restarts it.
 static void test_replaying_a_timed_reaction_restarts_it() {
   Rig r = goldenRig(Mood::Curious);
@@ -657,6 +696,15 @@ static void goldenReaction(Reaction re, const char* name, uint32_t atMs1, uint32
 }
 static void test_golden_touchdown() { goldenReactionAt(Reaction::TouchDown, "touchdown", 40); }
 static void test_golden_surprise() { goldenReactionAt(Reaction::Surprise, "surprise", 80); }
+static void test_golden_touch_to_surprise() {  // mid-blend frame of a tap
+  Rig r = goldenRig(Mood::Curious);
+  r.eyes.tick();
+  r.eyes.play(Reaction::TouchDown);
+  r.run(4 * kTickMs);
+  r.eyes.play(Reaction::Surprise);
+  r.run(kTickMs);
+  checkGolden("touch-to-surprise", r.display.last);
+}
 static void test_golden_joy() { goldenReaction(Reaction::Joy, "joy", 120, 250); }     // peak, trough
 static void test_golden_lookup() { goldenReactionAt(Reaction::LookUp, "lookup", 120); }
 static void test_golden_yawn() { goldenReaction(Reaction::Yawn, "yawn", 400, 1000); }  // closing, wide
@@ -724,6 +772,8 @@ int main() {
   RUN_TEST(test_reaction_overlay_ends_and_restores_the_mood_frame);
   RUN_TEST(test_every_timed_reaction_changes_the_frame_for_its_duration);
   RUN_TEST(test_touchdown_is_visible_next_tick_and_held_until_release);
+  RUN_TEST(test_surprise_after_touchdown_grows_continuously);
+  RUN_TEST(test_joy_after_touchdown_starts_from_the_touchdown_size);
   RUN_TEST(test_replaying_a_timed_reaction_restarts_it);
   RUN_TEST(test_purr_holds_until_stopped_then_releases_gradually);
   RUN_TEST(test_purr_released_mid_ramp_reopens_without_a_snap);
@@ -738,6 +788,7 @@ int main() {
   RUN_TEST(test_adoption_and_error_animations_end_on_their_own);
   RUN_TEST(test_golden_touchdown);
   RUN_TEST(test_golden_surprise);
+  RUN_TEST(test_golden_touch_to_surprise);
   RUN_TEST(test_golden_joy);
   RUN_TEST(test_golden_lookup);
   RUN_TEST(test_golden_yawn);
