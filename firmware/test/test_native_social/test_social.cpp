@@ -277,6 +277,20 @@ static void test_absence_longer_than_the_clock_period_is_greeted_again() {
   TEST_ASSERT_EQUAL(2u, r.greetings);
 }
 
+// Absent -> Free: past T_regreet the entry is owed a fresh greeting anyway, so its slot is freed
+// and no Absent age can grow towards the 2^32 wrap and mislead the eviction order (PR #22).
+static void test_absent_entry_is_freed_past_t_regreet() {
+  Rig r;
+  const uint32_t h = r.clock.nowMs();
+  r.hear(1);
+  r.step();
+  r.tickAt(h + S::kTtlMs + 100);
+  r.tickAt(h + S::kRegreetMs);
+  TEST_ASSERT_EQUAL(EntryState::Absent, r.stateOf(1));
+  r.tickAt(h + S::kRegreetMs + 1);
+  TEST_ASSERT_EQUAL(-1, r.slotOf(1));
+}
+
 // The greeting ring does not alias either: old greetings never block after a full clock period.
 static void test_old_greetings_do_not_block_after_the_clock_period() {
   Rig r;
@@ -458,6 +472,7 @@ int main() {
   RUN_TEST(test_absence_of_exactly_t_regreet_is_not_greeted_again);
   RUN_TEST(test_absence_past_t_regreet_is_greeted_again);
   RUN_TEST(test_absence_longer_than_the_clock_period_is_greeted_again);
+  RUN_TEST(test_absent_entry_is_freed_past_t_regreet);
   RUN_TEST(test_old_greetings_do_not_block_after_the_clock_period);
   RUN_TEST(test_full_table_evicts_the_oldest_absent_entry);
   RUN_TEST(test_full_table_of_present_entries_drops_the_newcomer);
