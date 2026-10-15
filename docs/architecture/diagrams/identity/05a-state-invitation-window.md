@@ -51,6 +51,8 @@ Each row is one native test (ADR-0014). Times are ages on the injected clock.
 | Settling | T_settle_touch elapsed, pad released | Inviting | `showInvitation(0)` |
 | Settling | T_settle_touch elapsed, pad already pressed | Inviting | `consumeCurrentPress()`, `showInvitation(0)` — the finger must lift and press again |
 | Inviting | pressed (`holdMs() > 0`) | Holding | `showInvitation(progress)` |
+| Inviting | press whose edge came inside T_invite, first seen held on a tick past it | Holding | `showInvitation(progress)` — the press is checked before the expiry (`holdMs()` is 0 on the edge tick) |
+| Inviting | pressed, hold already ≥ T_secret (late tick) | Holding | `showInvitation(255)` — progress clamped; enters on the next tick |
 | Holding | still pressed, hold < T_secret | Holding | `showInvitation(progress)`, progress = hold × 255 / T_secret |
 | Holding | released, T_invite not elapsed | Inviting | `showInvitation(0)` |
 | Holding | released, T_invite elapsed | Declined | `clearIdentityFrame()` |

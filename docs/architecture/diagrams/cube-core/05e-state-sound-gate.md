@@ -24,7 +24,7 @@ owner decisions of 2026-10-15 (F2, scored options):
   starts on entering Waking) and rejects every sound in Dozing and Asleep; entering Dozing or
   Asleep stops a sound in progress.
 - **Overlap by rank**: wake-up melody (3) > grumpy (2) > yawn (1) > surprise, joy, purr,
-  hello (0). A request whose rank is strictly higher than the sound in progress replaces it;
+  hello and the ritual sounds (0). A request whose rank is strictly higher than the sound in progress replaces it;
   otherwise it is dropped. Requests are never queued, so a burst of taps cannot turn into a
   burst of beeps.
 
