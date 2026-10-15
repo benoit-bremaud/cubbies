@@ -17,6 +17,14 @@ SoundClass SoundClassifier::tick() {
   const bool voiceLevel = in.rms >= kVoiceRatio * ref;
   const bool loudLevel = in.rms >= kLoudRatio * ref;
   const uint32_t age = ageMs(now, sinceMs_);
+  // The loud run is tracked in every state, so it starts on the sample that enters Sound (or
+  // during a Burst that turns into a sound), not one tick later.
+  if (!loudLevel) {
+    loudRun_ = false;
+  } else if (!loudRun_) {
+    loudRun_ = true;
+    loudSinceMs_ = now;
+  }
 
   switch (state_) {
     case State::Quiet:
@@ -26,7 +34,7 @@ SoundClass SoundClassifier::tick() {
       } else if (voiceLevel) {
         state_ = State::Sound;
         sinceMs_ = now;
-        voiceSent_ = loudSent_ = loudRun_ = false;
+        voiceSent_ = loudSent_ = false;
       } else {  // learn only in quiet: running mean over kBaselineTicks
         const int32_t delta = static_cast<int32_t>(static_cast<uint32_t>(in.rms) << 8) -
                               static_cast<int32_t>(baselineQ8_);
@@ -42,7 +50,7 @@ SoundClass SoundClassifier::tick() {
       }
       if (age >= kClapMs) {  // a long bang: treat it as a sound from the burst start
         state_ = State::Sound;
-        voiceSent_ = loudSent_ = loudRun_ = false;
+        voiceSent_ = loudSent_ = false;
       }
       return SoundClass::None;
 
@@ -50,12 +58,6 @@ SoundClass SoundClassifier::tick() {
       if (!voiceLevel) {
         state_ = State::Quiet;
         return SoundClass::None;
-      }
-      if (!loudLevel) {
-        loudRun_ = false;
-      } else if (!loudRun_) {
-        loudRun_ = true;
-        loudSinceMs_ = now;
       }
       if (!voiceSent_ && age >= kVoiceMs) {
         voiceSent_ = true;

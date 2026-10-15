@@ -36,7 +36,7 @@ class SoundClassifier {
   IMic& mic_;
   State state_ = State::Quiet;
   uint32_t sinceMs_ = 0;   // start of the burst or of the sound
-  uint32_t loudSinceMs_ = 0;  // start of the current loud run, valid while loudRun_
+  uint32_t loudSinceMs_ = 0;  // first tick of the current run of loud samples, valid while loudRun_
   bool loudRun_ = false;
   bool voiceSent_ = false;
   bool loudSent_ = false;
