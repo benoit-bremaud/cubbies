@@ -136,7 +136,8 @@ static void test_any_stimulus_wakes_bored_to_curious() {
 static void test_bored_gets_tired_after_t_tired_with_a_first_yawn() {
   Rig r;
   r.toBored();
-  TEST_ASSERT_EQUAL(0, r.run(MoodEngine::kTiredMs - kTick, MoodEffect::Yawn));
+  // toBored() overshoots the entry by one tick, so stop two ticks short of T_tired.
+  TEST_ASSERT_EQUAL(0, r.run(MoodEngine::kTiredMs - 2 * kTick, MoodEffect::Yawn));
   TEST_ASSERT_EQUAL(Mood::Bored, r.engine.mood());
   TEST_ASSERT_EQUAL(1, r.run(2 * kTick, MoodEffect::Yawn));
   TEST_ASSERT_EQUAL(Mood::Tired, r.engine.mood());
