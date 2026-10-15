@@ -151,6 +151,14 @@ static void test_long_loud_bang_counts_loud_from_the_burst_start() {
   assertSeq({SoundClass::Voice}, early.play(kRoom * 5, bang, 13 * kTick));
 }
 
+// Burst -> Sound: a burst that reached T_clap is a sound even when its peak falls on that very
+// tick; its loud run is kept, so a 520 ms bang still deep-wakes (PR #12 review, issue #14).
+static void test_expired_burst_whose_peak_falls_stays_a_sound() {
+  Rig r;
+  assertSeq({}, r.play(kRoom * 5, kRoom * SoundClassifier::kClapRatio, 3 * kTick));  // 0..80 ms
+  assertSeq({SoundClass::Voice, SoundClass::Loud}, r.play(kRoom * 5, kRoom * 5, 11 * kTick));
+}
+
 // Burst -> Quiet: a clap ends its loud run; a loud tail after it is a new sound (05d).
 static void test_clap_does_not_leak_its_loud_run_into_the_next_sound() {
   Rig r;
@@ -191,6 +199,7 @@ int main(int, char**) {
   RUN_TEST(test_loud_must_be_sustained_for_t_loud);
   RUN_TEST(test_loud_counts_from_the_first_loud_tick);
   RUN_TEST(test_long_loud_bang_counts_loud_from_the_burst_start);
+  RUN_TEST(test_expired_burst_whose_peak_falls_stays_a_sound);
   RUN_TEST(test_clap_does_not_leak_its_loud_run_into_the_next_sound);
   RUN_TEST(test_short_loud_is_only_a_voice);
   RUN_TEST(test_ratio_thresholds_are_inclusive);
