@@ -40,6 +40,7 @@ struct Rig {
   SocialProtocol social;
   uint32_t greetings = 0;
   uint8_t lastPalette = 0xFF;
+  uint32_t firstGreetAt = 0;
 
   void hear(uint8_t n, uint8_t palette = 1, uint8_t mood = 0) {
     uint8_t buf[kFrameSize];
@@ -49,7 +50,16 @@ struct Rig {
   SocialOutput step() {
     clock.advance(kTick);
     const SocialOutput o = social.tick(kSelf);
+    return record(o);
+  }
+  // Ticks at an exact time (boundary tests).
+  SocialOutput tickAt(uint32_t ms) {
+    clock.set(ms);
+    return record(social.tick(kSelf));
+  }
+  SocialOutput record(const SocialOutput& o) {
     if (o.newcomer) {
+      if (greetings == 0) firstGreetAt = clock.nowMs();
       ++greetings;
       lastPalette = o.paletteIndex;
     }
@@ -80,18 +90,39 @@ struct Rig {
 void setUp() {}
 void tearDown() {}
 
-// Free -> Waiting: a valid PRESENCE from an unknown MAC is stored (greeted on the same tick
-// since no cooldown is running, so the state is checked through the stored fields).
-static void test_unknown_mac_is_stored() {
+// Free -> Waiting: a valid PRESENCE from an unknown MAC is stored and waits while a cooldown runs.
+static void test_unknown_mac_is_stored_waiting() {
   Rig r;
+  r.hear(1);
+  r.step();  // greets 1, starts the cooldown
   const uint32_t heardAt = r.clock.nowMs();
-  r.hear(1, 5, 4);
+  r.hear(2, 5, 4);
   r.step();
-  const int s = r.slotOf(1);
+  const int s = r.slotOf(2);
   TEST_ASSERT_TRUE(s >= 0);
+  TEST_ASSERT_EQUAL(EntryState::Waiting, r.stateOf(2));
   TEST_ASSERT_EQUAL(5, r.social.neighbour(s).paletteIndex);
   TEST_ASSERT_EQUAL(4, r.social.neighbour(s).mood);
   TEST_ASSERT_EQUAL(heardAt, r.social.neighbour(s).lastSeen);
+}
+
+// Waiting -> Waiting: a waiting entry is refreshed and still waits.
+static void test_waiting_entry_is_refreshed() {
+  Rig r;
+  r.hear(1);
+  r.step();
+  r.hear(2, 1, 0);
+  r.step();
+  r.run(1000);
+  const uint32_t heardAt = r.clock.nowMs();
+  r.hear(2, 6, 3);
+  r.step();
+  const int s = r.slotOf(2);
+  TEST_ASSERT_EQUAL(EntryState::Waiting, r.stateOf(2));
+  TEST_ASSERT_EQUAL(6, r.social.neighbour(s).paletteIndex);
+  TEST_ASSERT_EQUAL(3, r.social.neighbour(s).mood);
+  TEST_ASSERT_EQUAL(heardAt, r.social.neighbour(s).lastSeen);
+  TEST_ASSERT_EQUAL(1u, r.greetings);
 }
 
 // Waiting -> Greeted: the first newcomer is greeted at once with its palette index.
@@ -104,7 +135,7 @@ static void test_first_newcomer_is_greeted() {
   TEST_ASSERT_EQUAL(EntryState::Greeted, r.stateOf(1));
 }
 
-// Waiting -> Waiting (refresh) and Greeted -> Greeted (refresh): mood and lastSeen follow.
+// Greeted -> Greeted (refresh): mood and lastSeen follow.
 static void test_known_mac_is_refreshed_without_a_second_greeting() {
   Rig r;
   r.hear(1, 1, 0);
@@ -118,50 +149,57 @@ static void test_known_mac_is_refreshed_without_a_second_greeting() {
   TEST_ASSERT_EQUAL(heardAt, r.social.neighbour(r.slotOf(1)).lastSeen);
 }
 
-// Waiting -> Waiting, cooldown not elapsed: a second newcomer waits, then is greeted.
+// Waiting -> Waiting, cooldown not elapsed: greeted at exactly T_greet_cooldown, not before.
 static void test_second_newcomer_waits_for_the_cooldown() {
   Rig r;
   r.hear(1);
   r.step();
+  const uint32_t g = r.firstGreetAt;
   r.hear(2, 4);
-  r.step();
+  r.tickAt(g + S::kGreetCooldownMs - 1);
   TEST_ASSERT_EQUAL(EntryState::Waiting, r.stateOf(2));
-  r.run(S::kGreetCooldownMs - 2 * kTick);
   TEST_ASSERT_EQUAL(1u, r.greetings);
-  r.run(2 * kTick);
+  r.tickAt(g + S::kGreetCooldownMs);
   TEST_ASSERT_EQUAL(2u, r.greetings);
   TEST_ASSERT_EQUAL(4, r.lastPalette);
 }
 
-// Waiting -> Waiting, another slot greeted this tick: one greeting per tick, none skipped.
+// Waiting -> Waiting, another slot greeted this tick: one greeting per tick, lowest slot first.
 static void test_newcomers_arriving_together_are_greeted_one_by_one() {
   Rig r;
-  r.hear(1);
-  r.hear(2);
-  r.hear(3);
+  r.hear(1, 4);
+  r.hear(2, 5);
+  r.hear(3, 6);
   r.step();
   TEST_ASSERT_EQUAL(1u, r.greetings);
-  for (int i = 0; i < 3; ++i) {  // keep them present while the cooldowns run
-    r.hear(1);
-    r.hear(2);
-    r.hear(3);
+  TEST_ASSERT_EQUAL(4, r.lastPalette);
+  for (uint8_t i = 0; i < 2; ++i) {  // keep them present while the cooldowns run
+    r.hear(1, 4);
+    r.hear(2, 5);
+    r.hear(3, 6);
     r.run(S::kGreetCooldownMs);
+    TEST_ASSERT_EQUAL(2u + i, r.greetings);
+    TEST_ASSERT_EQUAL(5 + i, r.lastPalette);
   }
-  TEST_ASSERT_EQUAL(3u, r.greetings);
 }
 
-// Waiting -> Waiting, budget spent: at most 6 greetings in any 10 min, the 7th waits.
+// Waiting -> Waiting, budget spent: a 7th greeting needs the oldest of the last 6 to be more
+// than 10 min old (strict).
 static void test_budget_caps_greetings_in_a_sliding_window() {
   Rig r;
-  for (uint8_t n = 1; n <= 7; ++n) r.hear(n);
-  // Keep all seven present; 6 greetings fit in 6 cooldowns, the 7th must wait for the window.
-  for (uint32_t t = 0; t < S::kBudgetWindowMs - kTick; t += S::kPresenceMs) {
-    for (uint8_t n = 1; n <= 7; ++n) r.hear(n);
-    r.run(S::kPresenceMs);
+  for (uint8_t n = 1; n <= 6; ++n) {
+    r.hear(n);
+    r.run(S::kGreetCooldownMs);
   }
   TEST_ASSERT_EQUAL(6u, r.greetings);
-  for (uint8_t n = 1; n <= 7; ++n) r.hear(n);
-  r.run(S::kPresenceMs);
+  const uint32_t g1 = r.firstGreetAt;
+  r.clock.set(g1 + S::kBudgetWindowMs - 1000);
+  r.hear(7);
+  r.tickAt(g1 + S::kBudgetWindowMs - 500);
+  TEST_ASSERT_EQUAL(EntryState::Waiting, r.stateOf(7));
+  r.tickAt(g1 + S::kBudgetWindowMs);
+  TEST_ASSERT_EQUAL(6u, r.greetings);
+  r.tickAt(g1 + S::kBudgetWindowMs + 1);
   TEST_ASSERT_EQUAL(7u, r.greetings);
 }
 
@@ -197,27 +235,58 @@ static void test_newcomer_that_left_before_its_turn_is_greeted_on_return() {
   TEST_ASSERT_EQUAL(7u, r.greetings);
 }
 
-// Absent -> Greeted: back within T_regreet, no second hello.
-static void test_short_absence_is_not_greeted_again() {
+// Absent -> Greeted: back after exactly T_regreet, no second hello.
+static void test_absence_of_exactly_t_regreet_is_not_greeted_again() {
   Rig r;
+  const uint32_t h = r.clock.nowMs();
   r.hear(1);
   r.step();
-  r.run(S::kTtlMs + kTick);
+  r.tickAt(h + S::kTtlMs + 100);
   TEST_ASSERT_EQUAL(EntryState::Absent, r.stateOf(1));
+  r.clock.set(h + S::kRegreetMs);
   r.hear(1);
-  r.run(S::kGreetCooldownMs);
+  r.tickAt(h + S::kRegreetMs);
   TEST_ASSERT_EQUAL(EntryState::Greeted, r.stateOf(1));
   TEST_ASSERT_EQUAL(1u, r.greetings);
 }
 
-// Absent -> Waiting: back after more than T_regreet, greeted again.
-static void test_long_absence_is_greeted_again() {
+// Absent -> Waiting: back one millisecond past T_regreet, greeted again.
+static void test_absence_past_t_regreet_is_greeted_again() {
+  Rig r;
+  const uint32_t h = r.clock.nowMs();
+  r.hear(1);
+  r.step();
+  r.tickAt(h + S::kTtlMs + 100);
+  r.clock.set(h + S::kRegreetMs + 1);
+  r.hear(1);
+  r.tickAt(h + S::kRegreetMs + 1);
+  TEST_ASSERT_EQUAL(2u, r.greetings);
+}
+
+// An entry absent for longer than the 32-bit clock period still owes its re-greet (no aliasing).
+static void test_absence_longer_than_the_clock_period_is_greeted_again() {
+  Rig r;
+  const uint32_t h = r.clock.nowMs();
+  r.hear(1);
+  r.step();
+  r.tickAt(h + S::kTtlMs + 100);
+  r.tickAt(h + S::kRegreetMs + 100);
+  r.clock.set(h + 5000);  // 49.7 days later: same counter value as just after the first sight
+  r.hear(1);
+  r.tickAt(h + 5000);
+  TEST_ASSERT_EQUAL(2u, r.greetings);
+}
+
+// The greeting ring does not alias either: old greetings never block after a full clock period.
+static void test_old_greetings_do_not_block_after_the_clock_period() {
   Rig r;
   r.hear(1);
   r.step();
-  r.run(S::kRegreetMs + kTick);
-  r.hear(1);
-  r.step();
+  const uint32_t g = r.firstGreetAt;
+  r.tickAt(g + S::kBudgetWindowMs + 1);
+  r.clock.set(g + 2000);  // wrapped: 2 s after the old greeting on the counter
+  r.hear(2);
+  r.tickAt(g + 2000);
   TEST_ASSERT_EQUAL(2u, r.greetings);
 }
 
@@ -277,14 +346,26 @@ static void test_invalid_frames_are_counted_by_reason() {
   TEST_ASSERT_EQUAL(0u, r.greetings);
 }
 
-// Flood: 1 000 frames in one burst are decoded 4 per tick, and greetings stay capped.
+// Flood: 10 frames per tick from 200 MACs are decoded 4 per tick; a sustained stream keeps the
+// table full (dropFull) and greetings stay at the budget. LoopbackRadio has no queue cap (the
+// 8-slot drop-newest is the adapter's), so the sustained phase injects at the drain rate.
 static void test_flood_is_drained_four_frames_per_tick() {
   Rig r;
-  for (int i = 0; i < 1000; ++i) r.hear(static_cast<uint8_t>(i));
-  r.step();
-  TEST_ASSERT_EQUAL(1000u - S::kMaxFramesPerTick, r.radio.pending());
-  r.run(S::kBudgetWindowMs - kTick);
-  TEST_ASSERT_TRUE(r.greetings <= S::kBudget);
+  uint8_t next = 0;
+  auto flood = [&](int count) {
+    for (int i = 0; i < count; ++i) r.hear(static_cast<uint8_t>(1 + (next++ % 200)));
+  };
+  for (uint32_t k = 1; k <= 5; ++k) {
+    flood(10);
+    r.step();
+    TEST_ASSERT_EQUAL(k * (10u - S::kMaxFramesPerTick), r.radio.pending());
+  }
+  for (uint32_t t = 0; t < S::kBudgetWindowMs - 10 * kTick; t += kTick) {
+    flood(S::kMaxFramesPerTick);
+    r.step();
+  }
+  TEST_ASSERT_EQUAL(S::kBudget, r.greetings);
+  TEST_ASSERT_TRUE(r.social.stats().dropFull > 0);
 }
 
 // Broadcast: on the first tick, then every 5 s ± 1 s, carrying the encoded SelfState.
@@ -365,7 +446,8 @@ static void test_two_cubes_greet_each_other_once() {
 
 int main() {
   UNITY_BEGIN();
-  RUN_TEST(test_unknown_mac_is_stored);
+  RUN_TEST(test_unknown_mac_is_stored_waiting);
+  RUN_TEST(test_waiting_entry_is_refreshed);
   RUN_TEST(test_first_newcomer_is_greeted);
   RUN_TEST(test_known_mac_is_refreshed_without_a_second_greeting);
   RUN_TEST(test_second_newcomer_waits_for_the_cooldown);
@@ -373,8 +455,10 @@ int main() {
   RUN_TEST(test_budget_caps_greetings_in_a_sliding_window);
   RUN_TEST(test_silent_neighbour_goes_absent_after_the_ttl);
   RUN_TEST(test_newcomer_that_left_before_its_turn_is_greeted_on_return);
-  RUN_TEST(test_short_absence_is_not_greeted_again);
-  RUN_TEST(test_long_absence_is_greeted_again);
+  RUN_TEST(test_absence_of_exactly_t_regreet_is_not_greeted_again);
+  RUN_TEST(test_absence_past_t_regreet_is_greeted_again);
+  RUN_TEST(test_absence_longer_than_the_clock_period_is_greeted_again);
+  RUN_TEST(test_old_greetings_do_not_block_after_the_clock_period);
   RUN_TEST(test_full_table_evicts_the_oldest_absent_entry);
   RUN_TEST(test_full_table_of_present_entries_drops_the_newcomer);
   RUN_TEST(test_invalid_frames_are_counted_by_reason);
