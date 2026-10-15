@@ -58,7 +58,7 @@ cost (2), value for V2/V3 (2).
   requirements; `diagrams/<feature>/` holds the UML views whose question applies.
 - `docs/architecture/traceability-matrix.md`, `verification-plan.md`, `gates.md` (PDR before
   code per feature, CDR before ordering the series).
-- `docs/hardware/`: electronics spec with the signed GPIO contract, calculations, mechanical
+- `docs/electronics/` and `docs/mechanics/` (formerly `docs/hardware/`): electronics spec with the signed GPIO contract, calculations, mechanical
   spec, assembly guide (OSHWA), measurements.
 - `docs/research/state-of-the-art.md`.
 - Verification: calculations and ngspice netlists committed with plots; native tests; a native

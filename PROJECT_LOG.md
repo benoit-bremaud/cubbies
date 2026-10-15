@@ -7,7 +7,28 @@ human context: what was done, why, and by which PR.
 
 ## 2026-10-15
 
-### Brick F1b — reactions overlay and identity frames (branch `feat/f1b-expressions`, ADR-0014)
+### Repository layout — one discipline per root directory (branch `chore/repo-layout`)
+
+- `hardware/case/` → `mechanics/`, `hardware/electronics/` → `electronics/`, `docs/hardware/`
+  split into `docs/electronics/` and `docs/mechanics/`; `web/` reserved for the WebAssembly
+  simulator and configurator (ADR-0015 to write). `git mv` throughout, history kept.
+- New: `okh.yml` (Open Know-How 1.0 manifest, licences per discipline from ADR-0009; the
+  electronics licence is left to the first KiCad PR), `docs/architecture/audits.md` (recurring
+  audits: per-brick review, electronics, mechanics, security; debt review folded into the CDR),
+  `docs/architecture/reviews/<branch>.md` for the pre-push reports, commit scopes and the
+  cross-discipline dependency rule in `CLAUDE.md`. ADR-0009/0010/0011 carry a path note, not a
+  new decision.
+- Pre-push gate (docs + design reviews): 4 Must Have applied (a broken link after the move, a
+  `.mcp.json` claimed but absent, the one-way rule written with two-way arrows and silent on
+  goldens, dimensions and root aggregators, the electronics licence undefined); 7 Should Have
+  applied (three audit rows merged into the one `review-local` event, the mechanics checklist
+  deferred to the first FreeCAD PR, the ERC CI job attributed to the first KiCad PR, scope
+  overlap between `docs` and the disciplines resolved, `date-updated` dropped from the manifest,
+  "measurements" marked to come).
+- Why now: no KiCad or FreeCAD file is committed yet, so the move costs six link rewrites; after
+  the first schematic it would cost a KiCad project relocation.
+
+### Brick F1b — reactions overlay and identity frames — **PR #10 merged** (`35daf50`, ADR-0014)
 
 - TDD in two commits (red, then green) on the extraction trigger recorded in the F1 review:
   `Timeline` (start + duration + phase, wrap-safe, 64-bit phase) now drives blinks, lid moves,
@@ -26,8 +47,14 @@ human context: what was done, why, and by which PR.
 - 73 native tests green, 28 golden states on the contact sheet (owner validated the first
   draft of the full face vocabulary on 2026-10-15), both board envs build (xiao_c3 273 KB,
   c3_supermini 298 KB flash).
+- Codex review (P2, confirmed): a purr released before its 240 ms ramp-in restarted the release
+  from the floor and dropped one frame; the release now starts from the openness reached
+  (`purrTarget`, regression test). 74 native tests at merge.
 - Open for F1c: TouchDown widening vs the double-tap window (owner decision), generalized
-  12-parameter lids, `eyes_lab` native tool, emotion catalogue.
+  12-parameter lids, emotion catalogue. The simulator becomes a web app (decision 2026-10-15,
+  ADR-0015 to write): `cubbies_core` compiled to WebAssembly in `web/`, simulator + eye-rhythm
+  sliders first, GitHub Pages; first-boot setup stays the touch ritual in V1, captive portal
+  (name, Wi-Fi OTA) modelled for V1.x.
 
 ## 2026-10-14
 

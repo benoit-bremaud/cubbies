@@ -29,3 +29,5 @@ until the public release checklist passes.
 
 - Linking a GPL library into the firmware would require superseding this ADR.
 - The enclosure is designed from scratch or from CC-compatible sources only.
+
+> Note (2026-10-15, repo layout PR): `hardware/case/` became `mechanics/`; the licence split is unchanged.

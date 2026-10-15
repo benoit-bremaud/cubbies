@@ -11,11 +11,11 @@ freecadcmd cubbies_case.py
 ```
 
 Requires FreeCAD 1.1 (snap: `sudo snap install freecad`). The script writes to `export/`.
-Dimensions and their rationale: `docs/hardware/mechanical-spec.md`.
+Dimensions and their rationale: `docs/mechanics/mechanical-spec.md`.
 
 ## Agent tooling
 
-The `freecad-mcp` server (declared in the repository's `.mcp.json`, addon installed in
+The `freecad-mcp` server (owner-local MCP configuration, addon installed in
 `~/.local/share/FreeCAD/Mod/FreeCADMCP`) is used for inspection and screenshots during design
 iterations; it is not needed to regenerate the files.
 

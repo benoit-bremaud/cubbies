@@ -36,7 +36,7 @@ rating. CDR check: measure the LDO temperature at the real typical current.
   average at 50 % duty ≈ 20 mA.
 - Volume levels: PWM duty 2 %, 8 %, 20 %, 50 % (V1 uses one constant, default 8 %; the four
   steps wait for a gesture); the dB mapping is measured, not computed.
-- To simulate: `hardware/electronics/sim/buzzer-driver.cir`, transient 2 kHz, 4 duty values;
+- To simulate: `electronics/sim/buzzer-driver.cir`, transient 2 kHz, 4 duty values;
   checks: peak current, MOSFET dissipation, flyback spike ≤ 10 V.
 
 ## 3. Display RESET RC (ADR-0007 pin budget) — status: draft

@@ -12,8 +12,9 @@ firmware/test/golden/sheet.png
 !.env.example
 
 # CAD / slicer scratch
-hardware/**/*.bak
-hardware/**/*.gcode
+electronics/**/*.bak
+mechanics/**/*.bak
+mechanics/**/*.gcode
 
 # Editors and operating systems
 .idea/
