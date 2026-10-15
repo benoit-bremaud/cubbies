@@ -91,5 +91,7 @@ sequenceDiagram
   T_secret 2 s (tuning values). A hold started
   before T_invite elapses is allowed to complete (the window extends by up to T_secret) and the
   gauge never resets mid-hold.
+- **State machine (F3)**: the window is the `InvitationWindow` class of
+  [05a](05a-state-invitation-window.md); it returns the frame to draw and `main.cpp` applies it.
 - **Entry press consumed**: the hold that opened the ritual is consumed by the Gesture
   classifier, so its release cannot be read as the 1.5 s confirming stroke of 02b.

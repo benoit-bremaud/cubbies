@@ -94,5 +94,7 @@ sequenceDiagram
 - **Ritual entry only from the invitation window**: owner decision, validated 2026-10-14 (an
   automatic offer on the first boot was rejected because the Maker's tests would consume it);
   the window replaces "held while plugging in" for the TTP223 calibration reason stated in 02a.
-- **Open**: whether a double tap cycles backwards (friendlier for 12 colours, at the price of
-  overloading the "joy" gesture of the mood domain). To be decided with the palette size.
+- **Palette and double tap (decided 2026-10-15, F3)**: 8 colours, forward only; a double tap
+  moves forward by two. The ritual is the state machine of [05b](05b-state-adoption-ritual.md),
+  which returns the frame and sound for `main.cpp` to apply (the `I->>E` and `I->>A` arrows
+  above go through `main.cpp`). The tick has one fixed pitch until the sound-design brick.
