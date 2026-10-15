@@ -60,6 +60,12 @@ stateDiagram-v2
 | Asleep | touch, noise ≥ deep-wake threshold | Waking | yawn animation, wake-up melody through the Sound gate |
 | Waking | animation complete | Awake | `Eyes.setBrightness(full)`, mood restarts in Curious |
 
+Owner decisions (2026-10-15, brick F2): "touch" is any contact, i.e. the classifier's immediate
+`TouchDown` (a medium press wakes too; the Tap that follows is swallowed by Waking). "Wake
+animation done" is a fixed timer owned by this machine, T_waking 1 s on both paths (tuning, no
+ADR); brightness stays at its Dozing or Asleep level until Awake. While Awake, every gesture or
+sound restarts T_doze (the idle timer of [03](03-component.md)).
+
 The wake-up melody has one owner: this machine, on the Asleep → Waking path (and the boot
 sequence in [identity/02a](../identity/02a-sequence-first-boot.md)). The mood engine plays nothing
 when it restarts in Curious.

@@ -35,9 +35,23 @@ struct Rig {
     }
     return count;
   }
-  void toTired() { run(MoodEngine::kBoredMs + MoodEngine::kTiredMs + 2 * kTick); }
-  void toDozing() { toTired(); run(SleepCycle::kDozeMs + kTick); }
-  void toAsleep() { toDozing(); run(SleepCycle::kFallAsleepMs + kTick); }
+  // Tick until the condition holds, so each helper stops on the tick of the transition.
+  template <typename Done>
+  void runUntil(Done done) {
+    while (!done()) run(kTick);
+  }
+  void toTired() {
+    runUntil([this] { return mood.mood() == Mood::Tired; });
+    sleep.tick();  // the sleep cycle sees the Tired spell start on this same tick
+  }
+  void toDozing() {
+    toTired();
+    runUntil([this] { return sleep.state() == SleepState::Dozing; });
+  }
+  void toAsleep() {
+    toDozing();
+    runUntil([this] { return sleep.state() == SleepState::Asleep; });
+  }
 };
 }  // namespace
 
