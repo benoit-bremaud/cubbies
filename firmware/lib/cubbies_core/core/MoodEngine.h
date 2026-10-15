@@ -12,7 +12,9 @@
 
 namespace cubbies {
 
-enum class Stimulus : uint8_t { Tap, DoubleTap, Stroke, Voice, Clap, Loud, NewcomerSeen };
+// Released ends a medium press or a stroke: a gesture like the others (owner decision
+// 2026-10-15, so a medium press wakes a Bored or Tired mood).
+enum class Stimulus : uint8_t { Tap, DoubleTap, Stroke, Released, Voice, Clap, Loud, NewcomerSeen };
 enum class MoodEffect : uint8_t { None, Yawn, Grumpy };
 
 class MoodEngine {

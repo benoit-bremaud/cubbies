@@ -208,6 +208,18 @@ static void test_timers_survive_the_clock_wrap() {
   TEST_ASSERT_EQUAL(Mood::Bored, r.engine.mood());
 }
 
+// Bored, Tired -> Curious: released (end of a medium press) is a gesture (owner decision F2).
+static void test_released_wakes_bored_and_tired_to_curious() {
+  Rig a;
+  a.toBored();
+  a.engine.stimulus(Stimulus::Released);
+  TEST_ASSERT_EQUAL(Mood::Curious, a.engine.mood());
+  Rig b;
+  b.toTired();
+  b.engine.stimulus(Stimulus::Released);
+  TEST_ASSERT_EQUAL(Mood::Curious, b.engine.mood());
+}
+
 int main(int, char**) {
   UNITY_BEGIN();
   RUN_TEST(test_starts_and_restarts_in_curious);
@@ -225,6 +237,7 @@ int main(int, char**) {
   RUN_TEST(test_annoyed_calms_down_after_t_calm);
   RUN_TEST(test_stroke_soothes_annoyed_to_happy);
   RUN_TEST(test_unlisted_stimuli_leave_the_mood_unchanged);
+  RUN_TEST(test_released_wakes_bored_and_tired_to_curious);
   RUN_TEST(test_timers_survive_the_clock_wrap);
   return UNITY_END();
 }
