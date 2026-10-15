@@ -42,7 +42,7 @@ IdentityOutput InvitationWindow::tick() {
     case State::Settling:
       if (age < kSettleMs) return {};
       // Always: a press may have been calibrated away, or its edge is this very tick
-      // (holdMs() still 0); with the pad released the classifier is back to Idle next tick.
+      // (holdMs() still 0); with the pad released the classifier is back to Idle at once.
       gestures_.consumeCurrentPress();
       state_ = State::Inviting;
       sinceMs_ = now;
