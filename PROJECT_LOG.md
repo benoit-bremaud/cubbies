@@ -7,7 +7,7 @@ human context: what was done, why, and by which PR.
 
 ## 2026-10-15
 
-### Brick F5 — adapters and `main.cpp` — PR pending (ADR-0014)
+### Brick F5 — adapters and `main.cpp` — **PR #26 merged** (`ff7b509`, ADR-0014)
 
 - Seven thin adapters in `firmware/src/`: `MillisClock`, `Ttp223Touch`, `NvsStorage`
   (Preferences, typed), `BuzzerAudio` (LEDC, duty table 2/8/20/50 %), `I2sMic` (rms + peak,
@@ -19,6 +19,9 @@ human context: what was done, why, and by which PR.
   came from calculations.md (no new decision). Decisions recorded in 03-component.
 - Local review: Must 3 · Should 4 applied (I2S partial reads, init-failure guards, STA power
   save off, stale boot frames purged); Nice grouped in issue #25.
+- Codex review (3 rounds), every thread answered inline: 4 P2 fixed in `main.cpp` (gate ticked
+  before any sound-producing output, wake-up melody at normal start per 02a, played after the
+  adoption sound ends, MAC zeroed on a read failure). Third round clean.
 - Both board envs build with no warning, 220 native tests green; bench checklist in
   `docs/hardware/bench-f5.md` (issue #16 checks included).
 
