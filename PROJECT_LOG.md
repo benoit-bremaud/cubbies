@@ -7,7 +7,7 @@ human context: what was done, why, and by which PR.
 
 ## 2026-10-15
 
-### Brick F4 — social presence (branch `feat/f4-social`, ADR-0014)
+### Brick F4 — social presence — **PR #22 merged** (`63b0103`, ADR-0014)
 
 - PDR status: REQ-F-10 was already covered by the cube-core PDR (ADR-0013); the `social-group`
   PDR (G2/G3) stays deferred. New state diagram social-presence/05a (neighbour entry and
@@ -24,7 +24,11 @@ human context: what was done, why, and by which PR.
 - Local review: Must 1 · Should 11 applied (Waiting refresh row, exact boundaries, flood
   assertions, `ports/Mac.h` so the port no longer includes core, `findSlot()`, 2^32 aliasing of
   absent entries and of the greeting ring); Nice 6 grouped in issue #23.
-- 219 native tests green, both board envs build. `EspNowRadio` and the `main.cpp` wiring are F5.
+- Codex review (2 rounds, no Copilot), every thread answered inline: one P2 fixed in TDD, an
+  Absent entry older than 2^32 ms could alias as recent and mislead the eviction order, so the
+  tick now frees Absent entries past T_regreet (05a row added). Second round clean.
+- 220 native tests green, both board envs build, CI green. `EspNowRadio` and the `main.cpp`
+  wiring are F5.
 
 ### Brick F3 — identity and boot — **PR #20 merged** (`93c9019`, ADR-0014)
 
