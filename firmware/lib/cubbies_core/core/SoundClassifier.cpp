@@ -18,7 +18,7 @@ SoundClass SoundClassifier::tick() {
   const bool loudLevel = in.rms >= kLoudRatio * ref;
   const uint32_t age = ageMs(now, sinceMs_);
   // The loud run is tracked in every state, so it starts on the sample that enters Sound (or
-  // during a Burst that turns into a sound), not one tick later.
+  // during a Burst that turns into a sound), not one tick later; a clap ending resets it.
   if (!loudLevel) {
     loudRun_ = false;
   } else if (!loudRun_) {
@@ -46,6 +46,7 @@ SoundClass SoundClassifier::tick() {
     case State::Burst:
       if (!clapPeak) {
         state_ = State::Quiet;
+        loudRun_ = false;  // the clap is over: a loud tail is a new sound (05d)
         return age < kClapMs ? SoundClass::Clap : SoundClass::None;
       }
       if (age >= kClapMs) {  // a long bang: treat it as a sound from the burst start
