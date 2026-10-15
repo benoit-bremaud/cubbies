@@ -1,7 +1,8 @@
 // Social protocol (social-presence/02, 05a): drains at most 4 frames per tick from IRadio, keeps
 // the 16-slot neighbour table (RAM only), greets each newcomer once per arrival under a cooldown
 // and a sliding budget, and broadcasts PRESENCE every 5 s ± 1 s (Prng jitter). Returns the
-// greeting as a SocialOutput that main.cpp hands to routeNewcomer().
+// greeting as a SocialOutput that main.cpp hands to routeNewcomer(). Drop counters by reason are
+// exposed through stats() for debug output.
 #pragma once
 
 #include <cstdint>
@@ -58,7 +59,7 @@ class SocialProtocol {
 
   const SocialStats& stats() const { return stats_; }
   static constexpr uint8_t kCapacity = 16;
-  const Neighbour& neighbour(uint8_t slot) const { return table_[slot]; }
+  const Neighbour& neighbour(uint8_t slot) const { return table_[slot]; }  // slot < kCapacity
 
   // Tuning values (02, 05a).
   static constexpr uint32_t kPresenceMs = 5000;
@@ -72,6 +73,7 @@ class SocialProtocol {
 
  private:
   void receive(const RxFrame& f);
+  Neighbour* findSlot(const Mac& mac, uint32_t now);
   void expire(uint32_t now);
   SocialOutput greet(uint32_t now);
   void broadcastIfDue(uint32_t now, const SelfState& self);

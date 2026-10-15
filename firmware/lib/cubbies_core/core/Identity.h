@@ -7,10 +7,9 @@
 
 #include "eyes/Framebuffer.h"
 #include "ports/IStorage.h"
+#include "ports/Mac.h"
 
 namespace cubbies {
-
-using Mac = std::array<uint8_t, 6>;
 
 constexpr uint8_t kPaletteSize = 8;
 constexpr const char* kColourKey = "identity.colour";

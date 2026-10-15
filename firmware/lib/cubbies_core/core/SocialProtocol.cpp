@@ -43,28 +43,12 @@ void SocialProtocol::receive(const RxFrame& f) {
       return;
   }
 
-  Neighbour* slot = nullptr;
-  Neighbour* freeSlot = nullptr;
-  Neighbour* oldestAbsent = nullptr;
-  for (Neighbour& n : table_) {
-    if (n.state == EntryState::Free) {
-      if (freeSlot == nullptr) freeSlot = &n;
-    } else if (n.mac == f.mac) {
-      slot = &n;
-      break;
-    } else if (n.state == EntryState::Absent &&
-               (oldestAbsent == nullptr || ageMs(f.nowMs, n.lastSeen) > ageMs(f.nowMs, oldestAbsent->lastSeen))) {
-      oldestAbsent = &n;
-    }
+  Neighbour* slot = findSlot(f.mac, f.nowMs);
+  if (slot == nullptr) {
+    ++stats_.dropFull;
+    return;
   }
-
-  if (slot == nullptr) {  // newcomer: Free first, else evict the oldest Absent
-    slot = freeSlot != nullptr ? freeSlot : oldestAbsent;
-    if (slot == nullptr) {
-      ++stats_.dropFull;
-      return;
-    }
-    *slot = Neighbour{};
+  if (slot->state == EntryState::Free) {
     slot->mac = f.mac;
   } else if (slot->state == EntryState::Absent && ageMs(f.nowMs, slot->lastSeen) > kRegreetMs) {
     slot->greeted = false;
@@ -75,18 +59,45 @@ void SocialProtocol::receive(const RxFrame& f) {
   slot->lastSeen = f.nowMs;
 }
 
+// The known entry for `mac`, else a Free slot, else the Absent entry with the oldest lastSeen
+// (reset to Free for the newcomer), else nullptr: present entries are never evicted.
+Neighbour* SocialProtocol::findSlot(const Mac& mac, uint32_t now) {
+  Neighbour* freeSlot = nullptr;
+  Neighbour* oldestAbsent = nullptr;
+  for (Neighbour& n : table_) {
+    if (n.state == EntryState::Free) {
+      if (freeSlot == nullptr) freeSlot = &n;
+    } else if (n.mac == mac) {
+      return &n;
+    } else if (n.state == EntryState::Absent &&
+               (oldestAbsent == nullptr || ageMs(now, n.lastSeen) > ageMs(now, oldestAbsent->lastSeen))) {
+      oldestAbsent = &n;
+    }
+  }
+  Neighbour* slot = freeSlot != nullptr ? freeSlot : oldestAbsent;
+  if (slot != nullptr) *slot = Neighbour{};
+  return slot;
+}
+
 void SocialProtocol::expire(uint32_t now) {
-  for (Neighbour& n : table_)
+  for (Neighbour& n : table_) {
     if (present(n.state) && ageMs(now, n.lastSeen) > kTtlMs) n.state = EntryState::Absent;
+    // Forget the greeting once it is owed again, so a 2^32 ms absence cannot alias back to fresh.
+    if (n.state == EntryState::Absent && ageMs(now, n.lastSeen) > kRegreetMs) n.greeted = false;
+  }
 }
 
 SocialOutput SocialProtocol::greet(uint32_t now) {
   if (greetCount_ > 0) {
     const uint8_t last = static_cast<uint8_t>((greetHead_ + kBudget - 1) % kBudget);
-    if (ageMs(now, greetings_[last]) < kGreetCooldownMs) return {};
+    const uint32_t sinceLast = ageMs(now, greetings_[last]);
+    // Every recorded greeting is out of the window: forget them before they can alias (2^32 ms).
+    if (sinceLast > kBudgetWindowMs) greetCount_ = 0;
+    else if (sinceLast < kGreetCooldownMs) return {};
   }
-  // Full ring: greetHead_ is the oldest of the last kBudget greetings.
-  if (greetCount_ == kBudget && ageMs(now, greetings_[greetHead_]) < kBudgetWindowMs) return {};
+  // Full ring: greetHead_ is the oldest of the last kBudget greetings, which must be more than
+  // the window old (05a, strict).
+  if (greetCount_ == kBudget && ageMs(now, greetings_[greetHead_]) <= kBudgetWindowMs) return {};
 
   for (Neighbour& n : table_) {
     if (n.state != EntryState::Waiting) continue;

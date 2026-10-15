@@ -59,7 +59,7 @@ Each row is one native test (ADR-0014). Ages are `ageMs(now, then)` on the injec
 | Waiting | valid PRESENCE, same MAC | Waiting | refresh palette, mood, `lastSeen` |
 | Waiting | tick, no greeting in the last T_greet_cooldown, fewer than 6 greetings in the last 10 min, lowest waiting slot | Greeted | `SocialOutput{newcomer, paletteIndex}`, push `nowMs` in the budget ring |
 | Waiting | tick, cooldown not elapsed | Waiting | none (greeted on a later tick, never skipped) |
-| Waiting | tick, budget spent (6 in the last 10 min) | Waiting | none (greeted once the oldest greeting is 10 min old) |
+| Waiting | tick, budget spent (oldest of the last 6 greetings not more than 10 min old) | Waiting | none (greeted once it is strictly more than 10 min old) |
 | Waiting | tick, another slot greeted this tick | Waiting | none (one greeting per tick) |
 | Greeted | valid PRESENCE, same MAC | Greeted | refresh |
 | Waiting, Greeted | tick, `age(lastSeen) > T_ttl` | Absent | none (silent, no farewell in V1) |
@@ -86,4 +86,7 @@ Timers (02, tuning values): T_presence 5 s ± 1 s, T_ttl 15 s, T_greet_cooldown 
   functions over a byte array, fuzzed natively; the table and the timers live in
   `SocialProtocol`.
 - **Wrap-safe**: every age is `ageMs(now, then)`; a native test starts the clock just below the
-  32-bit wrap.
+  32-bit wrap. Ages longer than the 2^32 ms period (49.7 days) would alias back to fresh, so the
+  tick forgets them once they stop mattering: an Absent entry loses its `greeted` bit past
+  T_regreet, and the greeting ring is cleared once its newest greeting is past the window
+  (review-local F4, tested).

@@ -7,6 +7,25 @@ human context: what was done, why, and by which PR.
 
 ## 2026-10-15
 
+### Brick F4 — social presence (branch `feat/f4-social`, ADR-0014)
+
+- PDR status: REQ-F-10 was already covered by the cube-core PDR (ADR-0013); the `social-group`
+  PDR (G2/G3) stays deferred. New state diagram social-presence/05a (neighbour entry and
+  greeting) with its transition table; 03-component note and traceability matrix amended.
+- Owner decisions (scored options): `IRadio` pulled by the lib, which drains 4 frames per tick
+  (475/500); greeting budget as a sliding window over the last 6 greetings (470/500); the cube's
+  own state passed per tick as `SelfState`, mood byte computed by the codec (445/500); F4
+  review-local report overwrites F3's (475/500).
+- Design gap found while writing the tests: a newcomer that leaves before its greeting is still
+  owed one (`greeted` bit kept while Absent, 05a amended).
+- TDD: `PresenceCodec` (allowlist, drop reasons, 05b mood byte, 200 000-input fuzz) and
+  `SocialProtocol` (16-slot table, absent eviction, cooldown, re-greet hysteresis, strict sliding
+  budget, jittered broadcast, wrap), `LoopbackRadio` fake, two cubes greeting each other once.
+- Local review: Must 1 · Should 11 applied (Waiting refresh row, exact boundaries, flood
+  assertions, `ports/Mac.h` so the port no longer includes core, `findSlot()`, 2^32 aliasing of
+  absent entries and of the greeting ring); Nice 6 grouped in a backlog issue.
+- 219 native tests green, both board envs build. `EspNowRadio` and the `main.cpp` wiring are F5.
+
 ### Brick F3 — identity and boot (branch `feat/f3-identity`, ADR-0014)
 
 - Design first: new state diagrams identity/05a (invitation window) and 05b (adoption ritual),

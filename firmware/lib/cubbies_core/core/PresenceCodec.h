@@ -8,7 +8,7 @@
 
 #include "core/Mood.h"
 #include "core/SleepCycle.h"
-#include "ports/IRadio.h"
+#include "ports/Mac.h"
 
 namespace cubbies {
 

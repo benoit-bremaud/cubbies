@@ -37,7 +37,7 @@ frame content):
 | Receive callback (Wi-Fi task) | `len != kFrameSize` (8, a constant included from `lib/`) → drop and count `dropLen`, before any copy. A length compare is not parsing. Otherwise copy into a fixed slot `{uint8_t[8], mac[6], nowMs}` |
 | RX queue | 8 fixed slots, single producer (callback) single consumer (tick). **Drop newest when full**, count `rxOverflow`. The callback never blocks |
 | Tick drain | at most 4 frames decoded per tick, the rest wait for the next tick, so a flood cannot starve gestures, eyes or display |
-| Decode (lib) | allowlist on every field, drop counted by reason: `dropMagic`, `dropVersion`, `dropType`, `dropRange` |
+| Decode (lib) | length re-checked as defence in depth (`dropLen` in the lib's stats, separate from the adapter's counter), then allowlist on every field, drop counted by reason: `dropMagic`, `dropVersion`, `dropType`, `dropRange`; a full table of present entries counts `dropFull` |
 
 A native test injects 1 000 frames in one tick through `LoopbackRadio` and asserts the tick
 budget and the counters.

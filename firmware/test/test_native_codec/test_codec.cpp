@@ -2,6 +2,7 @@
 // byte table, and a fuzz pass (REQ-NF-06: no crash, only valid frames accepted).
 #include <unity.h>
 
+#include "core/Identity.h"
 #include "core/Prng.h"
 #include "core/PresenceCodec.h"
 
