@@ -119,8 +119,53 @@ static void test_floor_ignores_a_breath_in_a_silent_room() {
   assertSeq({SoundClass::Voice}, r.play(voice, voice, 400));
 }
 
+// Sound -> Loud needs rms ≥ R_loud·ref for the whole T_loud, not just one loud tick late in a
+// voice, nor a loudness that started less than T_loud ago (review F2).
+static void test_loud_must_be_sustained_for_t_loud() {
+  Rig a;
+  assertSeq({SoundClass::Voice}, a.play(kRoom * 5 / 2, kRoom * 5 / 2, 480));
+  assertSeq({}, a.play(kRoom * 4, kRoom * 4, kTick));            // one loud tick at 520 ms
+  assertSeq({}, a.play(kRoom * 5 / 2, kRoom * 5 / 2, 1000));
+  Rig b;
+  assertSeq({SoundClass::Voice}, b.play(kRoom * 5 / 2, kRoom * 5 / 2, 400));
+  assertSeq({}, b.play(kRoom * 5, kRoom * 5, SoundClassifier::kLoudMs - kTick));
+  assertSeq({SoundClass::Loud}, b.play(kRoom * 5, kRoom * 5, 2 * kTick));
+}
+
+// Loud held for less than T_loud is only a voice.
+static void test_short_loud_is_only_a_voice() {
+  Rig r;
+  assertSeq({SoundClass::Voice}, r.play(kRoom * 5, kRoom * 5, SoundClassifier::kLoudMs - kTick));
+  assertSeq({}, r.quiet());
+}
+
+// Thresholds are inclusive: exactly R_voice·ref is a voice, one below is nothing; same for loud.
+static void test_ratio_thresholds_are_inclusive() {
+  const uint16_t voice = kRoom * SoundClassifier::kVoiceRatio;
+  const uint16_t loud = kRoom * SoundClassifier::kLoudRatio;
+  Rig a;
+  assertSeq({SoundClass::Voice}, a.play(voice, voice, 1000));
+  Rig b;
+  assertSeq({}, b.play(voice - 1, voice - 1, 1000));
+  Rig c;
+  assertSeq({SoundClass::Voice, SoundClass::Loud}, c.play(loud, loud, 1000));
+  Rig d;
+  assertSeq({SoundClass::Voice}, d.play(loud - 1, loud - 1, 1000));
+}
+
+// Burst boundary: a peak lasting three ticks (120 ms ≥ T_clap) is no clap, two ticks is.
+static void test_clap_boundary_is_t_clap() {
+  Rig r;
+  assertSeq({}, r.play(kRoom, kRoom * SoundClassifier::kClapRatio, 3 * kTick));
+  assertSeq({}, r.quiet());
+}
+
 int main(int, char**) {
   UNITY_BEGIN();
+  RUN_TEST(test_loud_must_be_sustained_for_t_loud);
+  RUN_TEST(test_short_loud_is_only_a_voice);
+  RUN_TEST(test_ratio_thresholds_are_inclusive);
+  RUN_TEST(test_clap_boundary_is_t_clap);
   RUN_TEST(test_steady_background_emits_nothing);
   RUN_TEST(test_short_peak_burst_is_a_clap);
   RUN_TEST(test_long_peak_burst_is_no_clap);
