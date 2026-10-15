@@ -41,54 +41,68 @@ void Framebuffer::fillRect(int x, int y, int w, int h, Rgb565 colour) {
 void Framebuffer::fillRoundRect(int x, int y, int w, int h, int r, Rgb565 colour) {
   int lo, hi;
   if (!clipSpan(x, w, kWidth, lo, hi) || !clipSpan(y, h, kHeight, lo, hi)) return;
-  // A rectangle far larger than the screen is a plain fill: no corner can be visible.
-  if (w > 2 * kWidth || h > 2 * kHeight) {
-    fillRect(x, y, w, h, colour);
-    return;
-  }
   const int maxR = (w < h ? w : h) / 2;
   if (r > maxR) r = maxR;
   if (r <= 0) {
     fillRect(x, y, w, h, colour);
     return;
   }
-  // Centre band and the two side bands are plain rectangles; corners test the circle equation.
-  fillRect(x + r, y, w - 2 * r, h, colour);
-  fillRect(x, y + r, r, h - 2 * r, colour);
-  fillRect(x + w - r, y + r, r, h - 2 * r, colour);
-  const int r2 = r * r;
-  for (int dy = 0; dy < r; ++dy) {
-    for (int dx = 0; dx < r; ++dx) {
-      const int cx = r - dx;  // distance from the corner's circle centre, in pixel units
-      const int cy = r - dy;
-      const int d2 = (cx - 1) * (cx - 1) + (cy - 1) * (cy - 1);
-      if (d2 >= r2) continue;
-      set(x + dx, y + dy, colour);                      // top-left
-      set(x + w - 1 - dx, y + dy, colour);              // top-right
-      set(x + dx, y + h - 1 - dy, colour);              // bottom-left
-      set(x + w - 1 - dx, y + h - 1 - dy, colour);      // bottom-right
+  // Centre band and the two side bands are plain rectangles (64-bit positions, then clipped).
+  const int64_t X = x, Y = y, W = w, H = h;
+  auto band = [&](int64_t bx, int64_t by, int64_t bw, int64_t bh) {
+    if (bx >= kWidth || by >= kHeight || bx + bw <= 0 || by + bh <= 0) return;
+    const int cx0 = bx < 0 ? 0 : static_cast<int>(bx);
+    const int cy0 = by < 0 ? 0 : static_cast<int>(by);
+    const int cx1 = bx + bw > kWidth ? kWidth : static_cast<int>(bx + bw);
+    const int cy1 = by + bh > kHeight ? kHeight : static_cast<int>(by + bh);
+    for (int yy = cy0; yy < cy1; ++yy)
+      for (int xx = cx0; xx < cx1; ++xx) pixels_[static_cast<size_t>(yy) * kWidth + xx] = colour.value;
+  };
+  band(X + r, Y, W - 2 * r, H);
+  band(X, Y + r, r, H - 2 * r);
+  band(X + W - r, Y + r, r, H - 2 * r);
+  // Corners: each corner block is r×r; only its on-screen part is visited, so the work is
+  // bounded by the screen whatever r is. Pixel (ox + sx*dx, oy + sy*dy) is inside the corner
+  // arc when (r-dx-1)^2 + (r-dy-1)^2 < r^2.
+  const int64_t r2 = static_cast<int64_t>(r) * r;
+  const int64_t corners[4][4] = {{X, Y, 1, 1}, {X + W - 1, Y, -1, 1}, {X, Y + H - 1, 1, -1}, {X + W - 1, Y + H - 1, -1, -1}};
+  for (const auto& c : corners) {
+    const int64_t ox = c[0], oy = c[1], sx = c[2], sy = c[3];
+    for (int64_t dy = 0; dy < r; ++dy) {
+      const int64_t py = oy + sy * dy;
+      if (py < 0 || py >= kHeight) continue;
+      const int64_t cy = r - dy - 1;
+      const int64_t rem = r2 - cy * cy;
+      if (rem <= 0) continue;
+      for (int64_t dx = 0; dx < r; ++dx) {
+        const int64_t px = ox + sx * dx;
+        if (px < 0 || px >= kWidth) continue;
+        const int64_t cx = r - dx - 1;
+        if (cx * cx < rem) pixels_[static_cast<size_t>(py) * kWidth + static_cast<size_t>(px)] = colour.value;
+      }
     }
   }
 }
 
 void Framebuffer::fillCircle(int cx, int cy, int r, Rgb565 colour) {
   if (r <= 0) return;
-  // Reject a circle whose bounding box misses the screen (64-bit so huge values cannot wrap),
-  // then cap the radius: beyond the screen diagonal the visible part is a full fill at most.
-  const int64_t R = r;
-  if (cx + R < 0 || cy + R < 0 || cx - R >= kWidth || cy - R >= kHeight) return;
-  if (r > kWidth + kHeight) r = kWidth + kHeight;
-  // Iterate only over the on-screen rows and columns of the bounding box.
-  const int yLo = cy - r < 0 ? 0 : cy - r;
-  const int yHi = cy + r > kHeight - 1 ? kHeight - 1 : cy + r;
-  const int xLo = cx - r < 0 ? 0 : cx - r;
-  const int xHi = cx + r > kWidth - 1 ? kWidth - 1 : cx + r;
-  const int64_t r2 = static_cast<int64_t>(r) * r;
+  // Everything in 64 bits: the bounding box is intersected with the screen (so the work is
+  // bounded by the screen, not by r), the radius is never altered, and the distance test uses
+  // the remainder r^2 - dy^2 so that two squares are never added (each fits in 64 bits).
+  const int64_t CX = cx, CY = cy, R = r;
+  if (CX + R <= 0 || CY + R <= 0 || CX - R >= kWidth || CY - R >= kHeight) return;
+  const int yLo = CY - R < 0 ? 0 : static_cast<int>(CY - R);
+  const int yHi = CY + R > kHeight - 1 ? kHeight - 1 : static_cast<int>(CY + R);
+  const int xLo = CX - R < 0 ? 0 : static_cast<int>(CX - R);
+  const int xHi = CX + R > kWidth - 1 ? kWidth - 1 : static_cast<int>(CX + R);
+  const int64_t r2 = R * R;
   for (int y = yLo; y <= yHi; ++y) {
-    const int64_t dy = static_cast<int64_t>(y) - cy;
+    const int64_t dy = y - CY;
+    const int64_t rem = r2 - dy * dy;
+    if (rem <= 0) continue;
     for (int x = xLo; x <= xHi; ++x) {
-      const int64_t dx = static_cast<int64_t>(x) - cx;
-      if (dx * dx + dy * dy < r2) pixels_[static_cast<size_t>(y) * kWidth + x] = colour.value;
+      const int64_t dx = x - CX;
+      if (dx * dx < rem) pixels_[static_cast<size_t>(y) * kWidth + x] = colour.value;
     }
   }
 }
