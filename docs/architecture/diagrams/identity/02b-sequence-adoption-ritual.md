@@ -30,7 +30,7 @@ sequenceDiagram
 
   Note over C,S: Precondition — 02a detected the hold inside the invitation window, identity resolved (stored or MAC default)
   M->>I: startRitual()
-  I->>E: showRitualFrame(paletteIndex)
+  I->>E: showRitualFrame(palette[paletteIndex])
   I->>A: play(ritual chime)
   Note over E: Eyes wide open in the candidate colour, slow pulse on the border
 
@@ -40,7 +40,7 @@ sequenceDiagram
     M->>I: tick(gesture, nowMs)
     opt tap
       I->>I: paletteIndex = (paletteIndex + 1) mod paletteSize
-      I->>E: showRitualFrame(paletteIndex)
+      I->>E: showRitualFrame(palette[paletteIndex])
       I->>A: play(tick, pitch follows the index)
     end
   end
@@ -51,13 +51,13 @@ sequenceDiagram
     I->>S: put("identity.colour", paletteIndex as one uint8)
     alt Write succeeded
       S-->>I: ok
-      I->>E: playAdoptionAnimation(palette[paletteIndex])
+      I->>E: playAdoption(palette[paletteIndex])
       I->>A: play(adoption melody)
       I->>I: adopted = true
       Note over I,A: Step 2 (V1.x, UC6) — volume: tap cycles the four levels with a sample beep, long stroke confirms and writes "settings.volume". V1 skips this step
     else Write failed
       S-->>I: error
-      I->>E: showErrorBlink()
+      I->>E: showError()
       I->>I: identity unchanged, adopted unchanged — fail closed
     end
   else No gesture for T_ritual_timeout

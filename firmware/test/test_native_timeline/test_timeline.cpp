@@ -43,7 +43,14 @@ static void test_survives_the_uint32_wrap() {
   TEST_ASSERT_TRUE(t.active(0xFFFFFFFFu));
   TEST_ASSERT_TRUE(t.active(200));          // 301 ms in
   TEST_ASSERT_EQUAL_UINT32(301, t.elapsed(200));
+  TEST_ASSERT_EQUAL_UINT8(191, t.phase(200));
   TEST_ASSERT_FALSE(t.active(300));         // 401 ms in
+}
+
+static void test_long_durations_use_64_bit_phase_arithmetic() {
+  Timeline t;
+  t.start(0, 20000000);  // 5.5 h: elapsed * 255 would overflow 32 bits
+  TEST_ASSERT_EQUAL_UINT8(127, t.phase(10000000));
 }
 
 static void test_zero_duration_is_immediately_done() {
@@ -59,6 +66,7 @@ int main() {
   RUN_TEST(test_phase_runs_from_0_to_255_over_the_duration_then_ends);
   RUN_TEST(test_elapsed_and_stop);
   RUN_TEST(test_survives_the_uint32_wrap);
+  RUN_TEST(test_long_durations_use_64_bit_phase_arithmetic);
   RUN_TEST(test_zero_duration_is_immediately_done);
   return UNITY_END();
 }

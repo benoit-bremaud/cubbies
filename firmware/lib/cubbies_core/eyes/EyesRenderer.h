@@ -1,9 +1,14 @@
 // Procedural eyes in the identity colour (S1, REQ-F-01, REQ-NF-08). Two rounded rectangles
 // on black; lids shaped by the mood; blinks with 2–6 s of open eyes between them; idle glances
 // from the Prng; the whole frame drifts one pixel per minute around a 4-point square (full loop
-// 4 min) in every state, closed eyes included, against OLED burn-in.
-// Three layers, highest wins: identity frames (invitation, ritual, adoption, error) > reaction
-// overlay (transient, ends on its own) > mood frame. Blinks are deferred during a reaction.
+// 4 min) in every state, identity frames and closed eyes included, against OLED burn-in.
+// Three layers, highest wins: identity frame > reaction overlay > mood frame.
+//  - Identity frames replace the face: Invitation and Ritual hold until clearIdentityFrame();
+//    Adoption and Error end on their own (kAdoptionMs, kErrorMs). A running reaction does not
+//    alter an identity frame.
+//  - Reactions reshape the mood frame; timed ones end after reactionDurationMs(), TouchDown and
+//    Purr are held until stopReaction().
+// Blinks are deferred (not dropped) while a reaction or an identity frame is showing.
 // Owns the single framebuffer and the IDisplay port; knows nothing about sleep or sound.
 // Memory: the framebuffer (12 KB) lives inside this object, so on the MCU the renderer must be
 // a static or global in main.cpp, never a local variable (the loop task stack is 8 KB).
@@ -37,17 +42,18 @@ class EyesRenderer {
   void openEyes();
   void blinkNow();    // forces a blink
 
-  // Reactions (overlay). play() restarts the reaction; Purr holds until stopReaction().
+  // Reactions (overlay). play() restarts a timed reaction; replaying a held one is a no-op.
   void play(Reaction reaction);
-  void stopReaction();
+  void stopReaction();  // ends a held reaction (TouchDown, Purr); Purr releases over kLidMoveMs
+  // Duration of the overlay in ms; 0 = held until stopReaction() (TouchDown, Purr). Tuning values.
   static uint32_t reactionDurationMs(Reaction reaction);
 
-  // Identity frames (02a / 02b). They replace the mood frame until cleared or finished.
-  void showInvitation(uint8_t progress);        // question mark + gauge, progress 0..255
-  void showRitualFrame(Rgb565 candidate);       // wide eyes in the candidate colour, pulsing border
-  void playAdoption(Rgb565 chosen);             // wink + happy arcs, kAdoptionMs, then clears
-  void showError();                             // two alternating frames for kErrorMs, then clears
-  void clearIdentityFrame();
+  // Identity frames (02a / 02b). Held frames stay until clearIdentityFrame().
+  void showInvitation(uint8_t progress);        // question mark + gauge 0..255; call again to update; held
+  void showRitualFrame(Rgb565 candidate);       // wide eyes in the candidate colour, pulsing border; held
+  void playAdoption(Rgb565 chosen);             // wink then happy arcs with a border, kAdoptionMs, then clears
+  void showError();                             // three on/off flashes over kErrorMs, then clears
+  void clearIdentityFrame();                    // back to the mood frame (ends a held frame early)
 
   // Renders the current state and presents it. Call once per tick (kTickMs).
   void tick();
@@ -61,7 +67,7 @@ class EyesRenderer {
   static constexpr uint32_t kBlinkHalfMs = 50;    // first half-closed phase (one tick, rounded up)
   static constexpr uint32_t kBlinkClosedMs = 80;  // closed hold (two ticks)
   static constexpr uint32_t kBlinkTotalMs = kBlinkHalfMs + kBlinkClosedMs + kTickMs;
-  static constexpr uint32_t kLidMoveMs = 240;     // sleep lid move (six ticks)
+  static constexpr uint32_t kLidMoveMs = 240;     // sleep lid move and purr ramp / release (six ticks)
   static constexpr uint32_t kDriftPeriodMs = 60000;
   static constexpr uint32_t kGlanceMinMs = 1500;
   static constexpr uint32_t kGlanceMaxMs = 5000;
@@ -77,12 +83,12 @@ class EyesRenderer {
   static constexpr int kEyeRadius = 9;
 
  private:
+  enum class Arc : uint8_t { None, Smile, SmileClosed };  // bottom edge: flat, carved, carved even when nearly shut
   struct Lids {        // fraction 0..255 of the eye height covered from each side
     uint8_t top;
     uint8_t bottom;
     int8_t topSlant;   // positive = inner corner lower (annoyed)
-    bool smile;        // bottom carved by a circle: the upward arc of a happy eye
-    bool arcWhenClosed = false;  // keep the arc on nearly closed eyes (purr)
+    Arc arc;
   };
   // What one frame draws, after the three layers are resolved.
   struct Shape {
@@ -96,11 +102,11 @@ class EyesRenderer {
   };
   enum class IdentityFrame : uint8_t { None, Invitation, Ritual, Adoption, Error };
 
-  Lids lidsForMood(Mood mood) const;
+  static Lids lidsForMood(Mood mood);
   Shape moodShape(uint32_t now) const;
   void applyReaction(Shape& s, uint32_t now) const;
   void drawEye(int cx, int cy, const Shape& s, bool left, Rgb565 colour);
-  void drawIdentityFrame(uint32_t now, Shape s);
+  void drawIdentityFrame(uint32_t now, Shape s, int driftX, int driftY);
   void drawQuestionMark(int cx, int cy, Rgb565 colour);
   void drawGauge(uint8_t progress, Rgb565 colour);
   void drawBorder(int thickness, Rgb565 colour);
@@ -130,13 +136,14 @@ class EyesRenderer {
 
   bool reacting_ = false;
   Reaction reaction_ = Reaction::TouchDown;
-  Timeline reactionTl_;
+  Timeline reactionTl_;   // timed reactions, and the purr ramp in / release
+  bool purrReleasing_ = false;
 
   IdentityFrame identity_ = IdentityFrame::None;
   uint8_t invitationProgress_ = 0;
   Rgb565 identityColour_{0};
-  Timeline identityTl_;
-  uint32_t ritualStartMs_ = 0;
+  Timeline identityTl_;   // adoption and error
+  Timeline ritualPulse_;  // restarted every kRitualPulseMs while the ritual frame shows
 };
 
 }  // namespace cubbies

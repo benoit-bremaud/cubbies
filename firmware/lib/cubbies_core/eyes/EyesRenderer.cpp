@@ -9,6 +9,18 @@ constexpr int kRightCx = Framebuffer::kWidth / 2 + EyesRenderer::kEyeGap / 2 + E
 // Drift: one-pixel steps around a square, one step per kDriftPeriodMs.
 constexpr int8_t kDrift[4][2] = {{0, 0}, {1, 0}, {1, 1}, {0, 1}};
 
+// Reaction and identity-frame shape rules (tuning values).
+constexpr uint8_t kPurrOpenness = 80;          // nearly shut, the arc stays readable
+constexpr uint8_t kYawnClosePhase = 153;       // 60 % of the yawn is the slow close
+constexpr uint8_t kWakeOpenPhase = 192;        // 75 % opening, then the stretch
+constexpr uint8_t kErrorOpenness = 60;
+constexpr int kErrorSegments = 6;              // three on/off flashes
+constexpr int kJoyBounceHeight = 4;            // pixels
+constexpr int kSurpriseGrow = 6;               // pixels on both axes
+constexpr int kInvitationShrink = 8;           // room for the gauge
+constexpr int kSmileDepthPercent = 45;         // arc depth at the centre, % of the open height
+constexpr int kSmileClosedDepthPercent = 60;   // deeper when nearly shut (purr)
+
 int clampInt(int v, int lo, int hi) { return v < lo ? lo : (v > hi ? hi : v); }
 static_assert(EyesRenderer::kEyeW > 1, "the annoyed wedge divides by kEyeW - 1");
 
@@ -61,7 +73,7 @@ void EyesRenderer::scheduleGlance() {
 
 uint32_t EyesRenderer::reactionDurationMs(Reaction reaction) {
   switch (reaction) {
-    case Reaction::TouchDown: return 120;
+    case Reaction::TouchDown: return 0;     // held while pressed
     case Reaction::Surprise:  return 300;
     case Reaction::Joy:       return 500;
     case Reaction::Purr:      return 0;     // held until stopReaction()
@@ -74,19 +86,25 @@ uint32_t EyesRenderer::reactionDurationMs(Reaction reaction) {
 }
 
 void EyesRenderer::play(Reaction reaction) {
+  if (reacting_ && reaction_ == reaction && reactionDurationMs(reaction) == 0 && !purrReleasing_) return;
   reacting_ = true;
   reaction_ = reaction;
+  purrReleasing_ = false;
   const uint32_t d = reactionDurationMs(reaction);
   if (d > 0) reactionTl_.start(clock_.nowMs(), d);
+  else if (reaction == Reaction::Purr) reactionTl_.start(clock_.nowMs(), kLidMoveMs);  // ramp in
   else reactionTl_.stop();
-  if (reaction == Reaction::Purr) lidMove_.start(clock_.nowMs(), kLidMoveMs);
 }
 
 void EyesRenderer::stopReaction() {
-  if (!reacting_) return;
+  if (!reacting_ || reactionDurationMs(reaction_) != 0) return;
+  if (reaction_ == Reaction::Purr && !purrReleasing_) {
+    purrReleasing_ = true;                                   // release over kLidMoveMs, then end
+    reactionTl_.start(clock_.nowMs(), kLidMoveMs);
+    return;
+  }
   reacting_ = false;
   reactionTl_.stop();
-  if (reaction_ == Reaction::Purr) lidMove_.start(clock_.nowMs(), kLidMoveMs);
 }
 
 // ---- identity frames ------------------------------------------------------------------------
@@ -96,7 +114,7 @@ void EyesRenderer::showInvitation(uint8_t progress) {
   invitationProgress_ = progress;
 }
 void EyesRenderer::showRitualFrame(Rgb565 candidate) {
-  if (identity_ != IdentityFrame::Ritual) ritualStartMs_ = clock_.nowMs();
+  if (identity_ != IdentityFrame::Ritual) ritualPulse_.start(clock_.nowMs(), kRitualPulseMs);
   identity_ = IdentityFrame::Ritual;
   identityColour_ = candidate;
 }
@@ -109,19 +127,23 @@ void EyesRenderer::showError() {
   identity_ = IdentityFrame::Error;
   identityTl_.start(clock_.nowMs(), kErrorMs);
 }
-void EyesRenderer::clearIdentityFrame() { identity_ = IdentityFrame::None; }
+void EyesRenderer::clearIdentityFrame() {
+  identity_ = IdentityFrame::None;
+  identityTl_.stop();
+  ritualPulse_.stop();
+}
 
 // ---- shapes ---------------------------------------------------------------------------------
 
-EyesRenderer::Lids EyesRenderer::lidsForMood(Mood mood) const {
+EyesRenderer::Lids EyesRenderer::lidsForMood(Mood mood) {
   switch (mood) {
-    case Mood::Curious: return {0, 0, 0, false};
-    case Mood::Happy:   return {20, 0, 0, true};      // bottom carved into an upward arc
-    case Mood::Bored:   return {90, 40, 0, false};    // flattened
-    case Mood::Tired:   return {140, 0, 0, false};    // half closed
-    case Mood::Annoyed: return {60, 0, 70, false};    // slanted top lids, inner corners low
+    case Mood::Curious: return {0, 0, 0, Arc::None};
+    case Mood::Happy:   return {20, 0, 0, Arc::Smile};      // bottom carved into an upward arc
+    case Mood::Bored:   return {90, 40, 0, Arc::None};      // flattened
+    case Mood::Tired:   return {140, 0, 0, Arc::None};      // half closed
+    case Mood::Annoyed: return {60, 0, 70, Arc::None};      // slanted top lids, inner corners low
   }
-  return {0, 0, 0, false};
+  return {0, 0, 0, Arc::None};
 }
 
 uint8_t EyesRenderer::currentOpenness(uint32_t now) const {
@@ -147,35 +169,41 @@ EyesRenderer::Shape EyesRenderer::moodShape(uint32_t now) const {
 
 void EyesRenderer::applyReaction(Shape& s, uint32_t now) const {
   const uint8_t p = reactionTl_.phase(now);
+  const Lids open{0, 0, 0, Arc::None};
   switch (reaction_) {
     case Reaction::TouchDown:  // one notch wider while pressed
-      s.w += 2; s.h += 4; s.lids = {0, 0, 0, false};
+      s.w += 2; s.h += 4; s.lids = open;
       break;
     case Reaction::Surprise:   // round, big eyes
-      s.w = kEyeW + 6; s.h = kEyeH + 6; s.lids = {0, 0, 0, false};
+      s.w = kEyeW + kSurpriseGrow; s.h = kEyeH + kSurpriseGrow; s.lids = open;
       break;
     case Reaction::Joy: {      // happy arcs bouncing twice
-      s.lids = {20, 0, 0, true};
+      s.lids = lidsForMood(Mood::Happy);
       const uint8_t b = bump(static_cast<uint8_t>((p * 2) & 0xFF));
-      s.dy = -(b * 4) / 255;
+      s.dy = -(b * kJoyBounceHeight) / 255;
       break;
     }
-    case Reaction::Purr:       // soft closed arcs "^ ^": smile lids with the eyes nearly shut
-      s.lids = {0, 0, 0, true, true};
-      s.openness = lidsSettled_ && !lidMove_.active(now) ? 80 : static_cast<uint8_t>(255 - ((255 - 80) * lidMove_.phase(now)) / 255);
+    case Reaction::Purr: {     // soft closed arcs "^ ^": ramp down, hold, release; never opens
+      s.lids = {0, 0, 0, Arc::SmileClosed};   // eyes the sleep cycle closed
+      uint8_t towards;
+      if (purrReleasing_) towards = static_cast<uint8_t>(kPurrOpenness + ((255 - kPurrOpenness) * p) / 255);
+      else if (reactionTl_.active(now)) towards = static_cast<uint8_t>(255 - ((255 - kPurrOpenness) * p) / 255);
+      else towards = kPurrOpenness;             // ramp done: hold
+      if (towards < s.openness) s.openness = towards;
       break;
+    }
     case Reaction::LookUp:     // eyes up and a little wider
-      s.dy = -kMaxLook; s.h += 2; s.lids = {0, 0, 0, false};
+      s.dy = -kMaxLook; s.h += 2; s.lids = open;
       break;
     case Reaction::Yawn: {     // slow close (first 60 %), then wide open
-      if (p < 153) s.openness = static_cast<uint8_t>(255 - (p * 255) / 153);
-      else { s.openness = 255; s.h += 4; s.lids = {0, 0, 0, false}; }
+      if (p < kYawnClosePhase) s.openness = static_cast<uint8_t>(255 - (p * 255) / kYawnClosePhase);
+      else { s.openness = 255; s.h += 4; s.lids = open; }
       break;
     }
     case Reaction::Wake: {     // progressive open and a stretch at the end
-      s.openness = p < 192 ? static_cast<uint8_t>((p * 255) / 192) : 255;
-      if (p >= 192) s.h += 3;
-      s.lids = {0, 0, 0, false};
+      s.openness = p < kWakeOpenPhase ? static_cast<uint8_t>((p * 255) / kWakeOpenPhase) : 255;
+      if (p >= kWakeOpenPhase) s.h += 3;
+      s.lids = open;
       break;
     }
     case Reaction::Greet: {    // quick glance to one side, then the other
@@ -202,15 +230,16 @@ void EyesRenderer::drawEye(int cx, int cy, const Shape& s, bool left, Rgb565 col
   const int top = cy - h / 2 + topCover + (visible - open) / 2;
   const int r = open < 2 * kEyeRadius ? open / 2 : kEyeRadius;
   frame_.fillRoundRect(x0, top, w, open, r, colour);
-  // Happy: carve the bottom with a black circle so the eye becomes an upward arc. The circle
-  // is sized so the arc is 45 % of the open height deep at the centre and meets the sides just
-  // above the rounded corners (depth r + 1), leaving no spikes.
-  // Nearly closed smiling eyes (purr) keep the arc too: the edge depth then follows the open
-  // height instead of the corner radius.
-  if (s.lids.smile && (openness > 128 || s.lids.arcWhenClosed)) {
-    const int depthCentre = (open * (s.lids.arcWhenClosed ? 60 : 45)) / 100;
-    const int depthEdge = open < 2 * kEyeRadius ? 1 : r + 1;
-    if (depthCentre > depthEdge) {
+  // Smile: carve the bottom with a black circle so the eye becomes an upward arc. The circle
+  // is sized so the arc is kSmileDepthPercent of the open height deep at the centre and meets
+  // the sides just above the rounded corners, leaving no spikes. On short eyes the edge depth
+  // shrinks with the centre depth, so the carve never vanishes and a closing eye stays monotonic.
+  const bool carve = s.lids.arc == Arc::Smile ? openness > 128 : s.lids.arc == Arc::SmileClosed;
+  if (carve) {
+    const int percent = s.lids.arc == Arc::SmileClosed ? kSmileClosedDepthPercent : kSmileDepthPercent;
+    const int depthCentre = (open * percent) / 100;
+    const int depthEdge = r + 1 < depthCentre ? r + 1 : depthCentre - 1;
+    if (depthCentre >= 2) {
       const int half = w / 2;
       const int dd = depthCentre - depthEdge;
       const int radius = (half * half + dd * dd) / (2 * dd);
@@ -230,10 +259,10 @@ void EyesRenderer::drawEye(int cx, int cy, const Shape& s, bool left, Rgb565 col
 
 void EyesRenderer::drawQuestionMark(int cx, int cy, Rgb565 colour) {
   // A 7×11 question mark centred on (cx, cy): hook, stem, dot.
-  frame_.fillRoundRect(cx - 3, cy - 5, 7, 5, 2, colour);     // the hook (top arc)
-  frame_.fillRect(cx - 3, cy - 3, 3, 2, kBlack);              // open the hook on the left
-  frame_.fillRect(cx - 1, cy - 1, 3, 3, colour);              // stem
-  frame_.fillRect(cx - 1, cy + 4, 3, 2, colour);              // dot
+  frame_.fillRoundRect(cx - 3, cy - 5, 7, 5, 2, colour);
+  frame_.fillRect(cx - 3, cy - 3, 3, 2, kBlack);
+  frame_.fillRect(cx - 1, cy - 1, 3, 3, colour);
+  frame_.fillRect(cx - 1, cy + 4, 3, 2, colour);
 }
 
 void EyesRenderer::drawGauge(uint8_t progress, Rgb565 colour) {
@@ -251,45 +280,47 @@ void EyesRenderer::drawBorder(int thickness, Rgb565 colour) {
   frame_.fillRect(Framebuffer::kWidth - thickness, 0, thickness, Framebuffer::kHeight, colour);
 }
 
-void EyesRenderer::drawIdentityFrame(uint32_t now, Shape s) {
-  const int cy = kCentreY;
+// Identity frames drift like the mood frame; borders and the gauge hug the screen edge.
+void EyesRenderer::drawIdentityFrame(uint32_t now, Shape s, int driftX, int driftY) {
+  const int cy = kCentreY + driftY;
+  const int lx = kLeftCx + driftX;
+  const int rx = kRightCx + driftX;
   switch (identity_) {
     case IdentityFrame::Invitation: {
-      s.h = kEyeH - 8;                                  // eyes a little shorter: room for the gauge
-      drawEye(kLeftCx, cy - 3, s, true, colour_);
-      drawEye(kRightCx, cy - 3, s, false, colour_);
-      drawQuestionMark(Framebuffer::kWidth / 2, cy - 3, colour_);
+      s.h = kEyeH - kInvitationShrink;
+      drawEye(lx, cy - 3, s, true, colour_);
+      drawEye(rx, cy - 3, s, false, colour_);
+      drawQuestionMark(Framebuffer::kWidth / 2 + driftX, cy - 3, colour_);
       drawGauge(invitationProgress_, colour_);
       break;
     }
     case IdentityFrame::Ritual: {
-      s.w = kEyeW + 2; s.h = kEyeH + 2; s.lids = {0, 0, 0, false};
-      drawEye(kLeftCx, cy, s, true, identityColour_);
-      drawEye(kRightCx, cy, s, false, identityColour_);
-      const uint32_t t = ageMs(now, ritualStartMs_) % kRitualPulseMs;
-      drawBorder(t < kRitualPulseMs / 2 ? 2 : 1, identityColour_);   // pulsing border
+      s.w = kEyeW + 2; s.h = kEyeH + 2; s.lids = {0, 0, 0, Arc::None};
+      drawEye(lx, cy, s, true, identityColour_);
+      drawEye(rx, cy, s, false, identityColour_);
+      drawBorder(ritualPulse_.phase(now) < 128 ? 2 : 1, identityColour_);   // pulsing border
       break;
     }
     case IdentityFrame::Adoption: {
       const uint8_t p = identityTl_.phase(now);
-      s.lids = {20, 0, 0, true};
+      s.lids = lidsForMood(Mood::Happy);
       s.winkLeft = p < 128;                             // wink first, then both happy
-      drawEye(kLeftCx, cy, s, true, identityColour_);
-      drawEye(kRightCx, cy, s, false, identityColour_);
+      drawEye(lx, cy, s, true, identityColour_);
+      drawEye(rx, cy, s, false, identityColour_);
       if (p >= 128) drawBorder(2, identityColour_);
       break;
     }
     case IdentityFrame::Error: {
       const uint8_t p = identityTl_.phase(now);
-      const bool on = ((p / 43) % 2) == 0;              // three on/off alternations
+      const bool on = ((p * kErrorSegments / 256) % 2) == 0;
       if (on) {
-        s.openness = 60; s.lids = {0, 0, 0, false};
-        drawEye(kLeftCx, cy, s, true, colour_);
-        drawEye(kRightCx, cy, s, false, colour_);
+        s.openness = kErrorOpenness; s.lids = {0, 0, 0, Arc::None};
+        drawEye(lx, cy, s, true, colour_);
+        drawEye(rx, cy, s, false, colour_);
         drawBorder(3, colour_);
       } else {
-        drawEye(kLeftCx, cy, s, true, colour_);
-        drawEye(kRightCx, cy, s, false, colour_);
+        drawEye(lx, cy, s, true, colour_);
+        drawEye(rx, cy, s, false, colour_);
       }
       break;
     }
@@ -307,15 +338,25 @@ void EyesRenderer::tick() {
     scheduleBlink();
     scheduleGlance();
   }
-  if (!lidsSettled_ && !lidMove_.active(now)) lidsSettled_ = true;
-  if (reacting_ && reaction_ != Reaction::Purr && !reactionTl_.active(now)) reacting_ = false;
-  if (identity_ == IdentityFrame::Adoption || identity_ == IdentityFrame::Error) {
-    if (!identityTl_.active(now)) identity_ = IdentityFrame::None;
+  if (!lidsSettled_ && !lidMove_.active(now)) {
+    lidsSettled_ = true;
+    lidMove_.stop();
   }
-  // Blink lifecycle: only while the eyes are open, settled and not reacting (the blink is
-  // deferred, not lost: the deadline stays due).
+  // Reactions: timed ones end with their timeline; a releasing purr ends with its release.
+  if (reacting_ && !reactionTl_.active(now) && (reactionDurationMs(reaction_) > 0 || purrReleasing_)) {
+    reacting_ = false;
+    purrReleasing_ = false;
+    reactionTl_.stop();
+  }
+  if (identity_ == IdentityFrame::Adoption || identity_ == IdentityFrame::Error) {
+    if (!identityTl_.active(now)) clearIdentityFrame();
+  }
+  if (identity_ == IdentityFrame::Ritual && !ritualPulse_.active(now)) ritualPulse_.start(now, kRitualPulseMs);
+  // Blink lifecycle: only while the eyes are open and settled, no reaction, no identity frame
+  // (the blink is deferred, not lost: the deadline stays due).
   if (blinking_ && !blink_.active(now)) {
     blinking_ = false;
+    blink_.stop();
     scheduleBlink();  // the 2–6 s interval is measured from the reopening
   }
   if (!blinking_ && eyesOpen_ && lidsSettled_ && !reacting_ && identity_ == IdentityFrame::None &&
@@ -333,12 +374,12 @@ void EyesRenderer::tick() {
   const int driftX = kDrift[driftStep % 4][0];
   const int driftY = kDrift[driftStep % 4][1];
 
-  Shape s = moodShape(now);
-  if (reacting_) applyReaction(s, now);
   frame_.clear(kBlack);
   if (identity_ != IdentityFrame::None) {
-    drawIdentityFrame(now, s);
+    drawIdentityFrame(now, moodShape(now), driftX, driftY);
   } else {
+    Shape s = moodShape(now);
+    if (reacting_) applyReaction(s, now);
     const int cy = kCentreY + lookY_ + driftY + s.dy;
     drawEye(kLeftCx + lookX_ + driftX + s.dx, cy, s, true, colour_);
     drawEye(kRightCx + lookX_ + driftX + s.dx, cy, s, false, colour_);

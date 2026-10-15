@@ -8,12 +8,11 @@ import os, sys
 from PIL import Image, ImageDraw
 
 names = ["curious", "happy", "bored", "tired", "annoyed", "closed", "blink-1", "blink-2", "blink-3", "blink-4",
-         "touchdown-1", "touchdown-2", "surprise-1", "surprise-2", "joy-1", "joy-2", "lookup-1", "lookup-2",
+         "touchdown", "surprise", "joy-1", "joy-2", "lookup",
          "yawn-1", "yawn-2", "wake-1", "wake-2", "greet-1", "greet-2", "purr",
          "invitation-empty", "invitation-full", "ritual", "adoption-1", "adoption-2", "error"]
-scale, pad, cols = 4, 12, 3
+scale, pad, cols = 4, 12, 4
 w, h = 96 * scale, 64 * scale
-cols = 4
 rows = (len(names) + cols - 1) // cols
 sheet = Image.new("RGB", (cols * (w + pad) + pad, rows * (h + pad + 18) + pad), (40, 40, 40))
 draw = ImageDraw.Draw(sheet)

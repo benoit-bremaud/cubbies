@@ -5,9 +5,33 @@ human context: what was done, why, and by which PR.
 
 ---
 
+## 2026-10-15
+
+### Brick F1b — reactions overlay and identity frames (branch `feat/f1b-expressions`, ADR-0014)
+
+- TDD in two commits (red, then green) on the extraction trigger recorded in the F1 review:
+  `Timeline` (start + duration + phase, wrap-safe, 64-bit phase) now drives blinks, lid moves,
+  reactions and identity animations. `Reaction` enum (TouchDown, Surprise, Joy, Purr, LookUp,
+  Yawn, Wake, Greet) drawn as an overlay on the mood frame; identity frames (invitation with
+  gauge, ritual with pulsing border, adoption wink + arcs, error flashes) replace the face.
+  Three layers: identity > reaction > mood. Blinks are deferred, never dropped.
+- Pre-push `review-local` gate (design, docs, tests): Must Haves applied — identity frames now
+  drift like the mood frame (REQ-NF-08), Purr has its own ramp/hold/release on the reaction
+  timeline instead of borrowing the sleep lid move and never opens eyes the sleep cycle closed,
+  the identity sequence diagrams 02a/02b now use the code names (`playAdoption`, `showError`,
+  `clearIdentityFrame`, `showRitualFrame(palette[i])`), the no-blink-during-reaction test was
+  vacuous (now seeded from the observed blink deadline, 8 seeds), the smile carve on a closing
+  eye was non-monotonic at 18 px (edge depth now follows the centre depth). `Lids` flags
+  became an `Arc` enum, tuning numbers named, static reactions keep one golden each.
+- 73 native tests green, 28 golden states on the contact sheet (owner validated the first
+  draft of the full face vocabulary on 2026-10-15), both board envs build (xiao_c3 273 KB,
+  c3_supermini 298 KB flash).
+- Open for F1c: TouchDown widening vs the double-tap window (owner decision), generalized
+  12-parameter lids, `eyes_lab` native tool, emotion catalogue.
+
 ## 2026-10-14
 
-### Brick F1 — firmware skeleton and eyes (branch `feat/f1-eyes`, ADR-0014)
+### Brick F1 — firmware skeleton and eyes — **PR #9 merged** (`211137e`, ADR-0014)
 
 - **Decisions** (ADR-0014, scored options): `display adapter: LovyanGFX 1.2.33` — SSD1331 and
   ST7735 in one package, DMA keeps the 40 ms tick; Adafruit rejected (no DMA on ESP32), raw

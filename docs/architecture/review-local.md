@@ -1,98 +1,89 @@
 # Local review — cubbies (branch diff)
 
 - Date: 2026-10-15
-- Commit: feat/f1-eyes (findings applied in the third commit of the branch)
-- Scope: branch diff `main...HEAD` on `feat/f1-eyes` (firmware brick F1: ports `IDisplay` and
-  `IClock`, `Prng`, `Mood`, `Framebuffer`, `EyesRenderer`, test doubles, native tests, golden
-  images, ADR-0014, CLAUDE.md test rule, PROJECT_LOG)
-- Checks run: design (architecture-guardian) · docs (doc-auditor) · tests (test-auditor) ·
-  correctness and security (general review with `-Wall -Wextra` compile and PCG32 reference check)
-- Verdict: fix Must Have first, then ship · Must 5 · Should 22 · Nice 15 — **all Must and
-  Should applied before push**; 39 native tests green, both board envs build
+- Commit: feat/f1b-expressions (findings applied in the third commit of the branch)
+- Scope: branch diff `main...HEAD` on `feat/f1b-expressions` (brick F1b: `Timeline`,
+  `Reaction`, reaction overlay and identity frames in `EyesRenderer`, 28 golden states, sheet
+  script, traceability rows, 02a/02b diagram names, PROJECT_LOG)
+- Checks run: design (architecture-guardian) · docs (doc-auditor) · tests and correctness
+  (test-auditor + general review)
+- Verdict: fix Must Have first, then ship · Must 6 · Should 12 · Nice 5 — **all Must and
+  Should applied before push**; 73 native tests green, both board envs build
 
 ## 🔴 Must Have
 
-- `test_eyes.cpp` blink-gap test `[tests]` · Passed only because of the seed: the gap was
-  measured start to start while the renderer schedules from the reopening, and the deadline
-  rounds up to the next tick. · Applied: FS1 now says "eyes stay open 2–6 s between two blinks
-  (measured from the reopening)"; the test runs 32 seeds with the open-interval semantics and a
-  three-tick tolerance.
-- `Golden.h` (then `Png.h`) update mode `[tests]` · Any value of `CUBBIES_UPDATE_GOLDEN` regenerated and passed
-  silently. · Applied: value must be exactly `1`, refused when `CI` is set; a mismatch writes
-  `<name>.actual.png` and the message names it; a missing file fails explicitly.
-- `ADR-0014:30` `[docs]` · Option A total 31 instead of 30. · Applied.
-- `EyesRenderer.cpp` blink comment `[docs]` · "half, closed, closed, half, ≈ 3 ticks" did not
-  match the thresholds. · Applied: named constants `kBlinkHalfMs`, `kBlinkClosedMs`,
-  `kBlinkTotalMs` on the tick, comment describes the real frames, a fourth golden `blink-4`.
-- `IDisplay.h` `[docs]` · No buffer-lifetime contract, wrong "two test doubles" claim. ·
-  Applied: single-buffer contract (present() finishes reading before returning), brightness
-  levels explained.
+- `EyesRenderer.cpp` identity frames `[design|correctness]` · Drawn at fixed coordinates: no
+  burn-in drift during a held invitation or ritual (REQ-NF-08 says every state). · Applied:
+  `drawIdentityFrame` takes the drift; borders and the gauge stay on the edge; test
+  `identity_frames_drift_against_burn_in`.
+- `EyesRenderer.cpp` Purr `[design]` · Borrowed `lidMove_`, the sleep lid timeline: a purr during
+  a lid move corrupted the sleep state, and stopping it snapped the eyes open. · Applied: ramp
+  in, hold and release on `reactionTl_` with `purrReleasing_`; openness is
+  `min(towards, moodOpenness)` so a purr never opens eyes the sleep cycle closed; tests for the
+  gradual release and the closed-eyes cases.
+- `02a`, `02b` diagrams `[docs]` · Called `playAdoptionAnimation`, `showErrorBlink`,
+  `clearInvitation`, `showRitualFrame(paletteIndex)`; the code differs. · Applied: diagrams
+  aligned on the code (the renderer takes a colour, the identity rules own the palette).
+- `test_eyes.cpp` no-blink-during-reaction `[tests]` · Vacuous: the reaction ended before the
+  seed's first blink. · Applied: the deadline is observed on a control rig, the reaction starts
+  three ticks before it, 8 seeds; same approach for identity frames.
+- `EyesRenderer.cpp` smile carve `[correctness]` · The edge depth jumped from 10 to 1 at 18 px
+  of open height, so a closing happy eye briefly gained pixels (purr descent not monotonic). ·
+  Applied: edge depth follows the centre depth; monotonic descent asserted.
+- `EyesRenderer.h` header `[docs]` · "Reaction ends on its own" false for TouchDown and Purr;
+  drift claim did not hold for identity frames. · Applied: layer rules, held vs timed, deferred
+  blinks stated once in the header.
 
 ## 🟡 Should Have
 
-- `EyesRenderer.cpp` `[design]` · Magic blink numbers duplicated; `0x80000000u` idiom written
-  twice; zero used as "never moved" sentinel; geometry hidden in the .cpp. · Applied: constants
-  in the header, `isDue()` in `IClock.h`, `lidsSettled_` flag, geometry constants public.
-- `EyesRenderer.cpp` `[correctness]` · `openEyes()` did not reschedule the blink: waking always
-  blinked on top of the lid opening, and a deadline older than 24.8 days would stall. ·
-  Applied, with a test ("no blink in the first two seconds after waking").
-- `Framebuffer.cpp` `[correctness|security]` · `fillCircle` was O(r²) unbounded (a huge radius
-  would trip the watchdog); `fillRect`/`fillRoundRect` had signed overflow on `x + w` for
-  extreme inputs. · Applied: 64-bit span clipping, circle iterated over its on-screen bounding
-  box only, test with `INT_MAX`/`INT_MIN` inputs.
-- `Framebuffer.h`, `EyesRenderer.h` `[correctness|docs]` · 12 KB object by value undocumented
-  as a stack hazard on the 8 KB loop task. · Applied: both headers say "static in main.cpp,
-  never a local".
-- `test_eyes.cpp` `[tests]` · Drift test did not prove a one-pixel shift; thresholds arbitrary;
-  golden loop hid failures; no test for the `setLook` clamp, the no-blink-while-closed rule,
-  the clock wrap, the clock-start independence. · Applied: shift test over the 4-step square
-  open and closed, named `kClosedDivisor`, per-mood golden tests, four new rule tests.
-- `test_framebuffer.cpp` `[tests]` · Tautological constant asserts, banded count. · Applied:
-  removed, exact deterministic count.
-- `test_prng.cpp` `[tests]` · Rejection loop never exercised. · Applied: large-bound test.
-- `STB_VERSION`, `ADR-0014` `[docs]` · stb licence and versions. · Superseded on 2026-10-15: the
-  vendored stb headers were removed after CodeQL raised 13 high alerts in them (raw RGB565
-  references + an own PNG writer with known-answer tests; no third-party image code).
-- Golden workflow `[docs]` · Documented only in CLAUDE.md. · Applied: `test/golden/README.md`,
-  pointer in `lib/README.md`, script docstring; `sheet.png` and `*.actual.png` ignored by git.
-- `EyesRenderer.h` `[design]` · `setIdleGlances` without a production reason. · Applied:
-  documented as "something else owns the gaze" (reactions in F2); `frame()` removed.
-- `EyesRenderer.cpp` `[docs]` · Happy-arc comment said open/3. · Applied (45 %).
-- `IClock.h`, `Prng.h` `[docs]` · "MillisClock" without its brick; `next()` undocumented. ·
-  Applied.
+- `Lids` bag of flags (`smile`, `arcWhenClosed`) `[design]` · Applied: `Arc` enum
+  `{None, Smile, SmileClosed}`.
+- Magic numbers 153, 192, 60, 6, 4, 8, 45 % `[design]` · Applied: named tuning constants in the
+  anonymous namespace.
+- `ritualStartMs_` next to `Timeline` `[design]` · Applied: `ritualPulse_` timeline restarted
+  every `kRitualPulseMs`.
+- Happy lids duplicated three times `[design]` · Applied: `lidsForMood(Mood::Happy)` reused by
+  Joy and Adoption; `lidsForMood` is static.
+- `reactionDurationMs` undocumented, `Reaction.h` without sources `[docs]` · Applied: 0 = held;
+  per-reaction sources (05a, 05b, 02-presence, UC3/4/7).
+- `Timeline` contract `[docs]` · Applied: zero duration, phase 255 = done, elapsed past the
+  end, owners call `stop()`; 64-bit phase test for long durations.
+- Duplicate static goldens (touchdown, surprise, lookup ×2) `[tests]` · Applied: one each,
+  sheet list in sync.
+- `wake-2` timing at 680 ms sat on the stretch boundary; `joy-1 == joy-2` risk `[tests]` ·
+  Applied: peak and trough frames differ, wake stretch frame regenerated.
+- Missing rule tests `[tests]` · Applied: restart on replay, every timed reaction lasts its
+  duration, closeEyes during a yawn, purr on closed eyes, identity frames defer blinks,
+  reaction does not leak into an identity frame, purr snap-open.
+- Traceability rows REQ-F-01/03/07 `[docs]` · Applied.
+- PROJECT_LOG F1b entry and PR #9 stamp `[docs]` · Applied.
+- `golden_sheet.py` duplicate `cols` `[tests]` · Applied.
 
 ## 🔵 Nice to Have
 
-- `static_assert(kEyeW > 1)` for the annoyed wedge division · Applied.
-- `kGoldenDir` cwd-relative · Kept: `pio test` runs from `firmware/`, documented in the golden
-  README; a build flag would add a second source of truth.
-- `fillRoundRect` corners slightly fuller than a true circle (3 px cut at r = 6) · Kept:
-  cosmetic and pinned by the goldens; changing it invalidates every image.
-- Single-responsibility of `EyesRenderer` · Kept at this size; split trigger recorded: the
-  third timed animation in F2 (blink and lid move already share the start+duration+phase
-  lifecycle).
-- `Lids` as a bag of flags, `kMoodCount` without consumer · Kept; revisit when F2 adds a third
-  shape modifier or the mood engine consumes the count.
+- TouchDown widening vs the double-tap window (a tap shows TouchDown then Surprise) · Open:
+  owner decision in F1c (the gesture classifier does not exist yet).
+- Error frame "three flashes" vs "two alternating frames" wording · Applied in the header.
+- `Shape` carries `winkLeft` only for adoption · Kept: one field, one consumer, no abstraction.
+- `applyReaction` switch length · Kept: eight cases, each three lines; a table of lambdas would
+  hide the shapes F1c will generalize.
+- Golden README name-sync note · Already present.
 
 ## ⚪ Disagree / Intentional
 
-- `Framebuffer` by value inside the renderer `[design]` · The single-buffer design of the
-  component diagram; the port receives a `const&`, nothing is copied; documented as static-only.
-- `Prng` concrete class, no port `[design]` · ADR-0013 D1.
-- Long simulated runs (120–180 s of virtual time) `[tests]` · Milliseconds of wall time on the
-  fake clock; FIRST "fast" holds.
-- Exact pixel comparison of the goldens `[tests]` · Deterministic integer rendering; no
-  tolerance needed.
+- Reactions as an enum + switch rather than polymorphic objects `[design]` · F1c replaces the
+  shapes with a parameter model; objects now would be thrown away.
+- `reactionTl_` reused for the purr ramp and release `[design]` · One reaction at a time by
+  contract; a second timeline would be a second source of truth for "is a reaction running".
+- Exact golden comparison `[tests]` · Deterministic integer rendering.
 
 ## Per-dimension summary
 
-- Design: conforms to 03-component (renderer owns the buffer and the port, brightness through
-  the renderer, Prng injected, no Arduino include); no over-engineering; split trigger noted.
-- Docs: contracts stated on every port and class; ADR total fixed; golden workflow documented
-  where contributors look.
-- Tests: 34 native tests, one per rule of FS1 / REQ-F-01 / REQ-NF-08 plus goldens per mood;
-  doubles only at the ports; no false-confidence test left.
-- Security: no network or storage in this brick; primitives bounded against hostile inputs;
-  stack hazard documented for the MCU.
-- Correctness: PCG32 and `uniform()` verified against the reference; `-Wall -Wextra` clean;
-  wrap arithmetic through `ageMs`/`isDue` only.
+- Design: three explicit layers; one timeline type for every animation; no port change; the
+  renderer still knows nothing of sleep policy, gestures or sound.
+- Docs: header is the single statement of the layer rules; diagrams and code agree on names;
+  traceability and log updated.
+- Tests: 73 native tests, 28 goldens; seeded tests derive deadlines from observation, not
+  from luck; monotonicity and timing rules asserted.
+- Security / correctness: no new inputs from outside the lib; 64-bit phase arithmetic;
+  wrap-safe through `ageMs`/`isDue` only; both boards build with margin.
