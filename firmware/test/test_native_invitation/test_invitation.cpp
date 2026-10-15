@@ -169,6 +169,48 @@ static void test_late_tick_clamps_the_gauge() {
   TEST_ASSERT_TRUE(r.window.entered());
 }
 
+// After the window, the classifier is handed back clean: no gesture left over (PR #20 review).
+static void assertNoLeftoverGesture(Rig& r) {
+  r.touch.set(false);
+  for (uint32_t t = 0; t < 600; t += kTick) {
+    r.clock.advance(kTick);
+    TEST_ASSERT_EQUAL(cubbies::Gesture::None, r.gestures.tick());
+  }
+}
+
+// Inviting -> Declined: a tap released just before the expiry does not leak a Tap.
+static void test_pending_tap_is_dropped_when_the_window_closes() {
+  Rig r;
+  r.settle();
+  r.run(false, InvitationWindow::kInviteMs - 200);
+  r.run(true, kTick);   // short press
+  r.run(false, 200);    // release; the window expires while the classifier waits
+  TEST_ASSERT_TRUE(r.window.declined());
+  assertNoLeftoverGesture(r);
+}
+
+// Holding -> Declined: a short press released after T_invite does not leak a Tap.
+static void test_short_press_released_after_the_window_leaks_nothing() {
+  Rig r;
+  r.settle();
+  r.run(false, InvitationWindow::kInviteMs - 200);
+  r.run(true, 280);
+  r.touch.set(false);
+  r.step();
+  TEST_ASSERT_TRUE(r.window.declined());
+  assertNoLeftoverGesture(r);
+}
+
+// Settling -> Inviting: a press whose edge is the settle-end tick is consumed too.
+static void test_press_on_the_settle_end_tick_is_consumed() {
+  Rig r;
+  r.run(false, InvitationWindow::kSettleMs - kTick);
+  r.touch.set(true);
+  TEST_ASSERT_EQUAL(IdentityFrame::Invitation, r.step().frame);  // settle end + pressed edge
+  r.run(true, InvitationWindow::kSecretMs + 200);
+  TEST_ASSERT_FALSE(r.window.entered());
+}
+
 // Ages survive the uint32 clock wrap.
 static void test_window_survives_the_clock_wrap() {
   Rig r(0xFFFFFFFFu - 1500);
@@ -190,6 +232,9 @@ int main(int, char**) {
   RUN_TEST(test_window_elapsed_declines);
   RUN_TEST(test_press_on_the_last_tick_of_the_window_counts);
   RUN_TEST(test_late_tick_clamps_the_gauge);
+  RUN_TEST(test_pending_tap_is_dropped_when_the_window_closes);
+  RUN_TEST(test_short_press_released_after_the_window_leaks_nothing);
+  RUN_TEST(test_press_on_the_settle_end_tick_is_consumed);
   RUN_TEST(test_window_survives_the_clock_wrap);
   return UNITY_END();
 }
