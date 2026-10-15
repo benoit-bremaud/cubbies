@@ -26,7 +26,7 @@ SoundClass SoundClassifier::tick() {
       } else if (voiceLevel) {
         state_ = State::Sound;
         sinceMs_ = now;
-        voiceSent_ = loudSent_ = false;
+        voiceSent_ = loudSent_ = loudRun_ = false;
       } else {  // learn only in quiet: running mean over kBaselineTicks
         const int32_t delta = static_cast<int32_t>(static_cast<uint32_t>(in.rms) << 8) -
                               static_cast<int32_t>(baselineQ8_);
@@ -42,7 +42,7 @@ SoundClass SoundClassifier::tick() {
       }
       if (age >= kClapMs) {  // a long bang: treat it as a sound from the burst start
         state_ = State::Sound;
-        voiceSent_ = loudSent_ = false;
+        voiceSent_ = loudSent_ = loudRun_ = false;
       }
       return SoundClass::None;
 
@@ -51,11 +51,18 @@ SoundClass SoundClassifier::tick() {
         state_ = State::Quiet;
         return SoundClass::None;
       }
+      if (!loudLevel) {
+        loudRun_ = false;
+      } else if (!loudRun_) {
+        loudRun_ = true;
+        loudSinceMs_ = now;
+      }
       if (!voiceSent_ && age >= kVoiceMs) {
         voiceSent_ = true;
         return SoundClass::Voice;
       }
-      if (!loudSent_ && loudLevel && age >= kLoudMs) {
+      // Loud only when the loud level itself has lasted T_loud (05d), not the whole sound.
+      if (!loudSent_ && loudRun_ && ageMs(now, loudSinceMs_) >= kLoudMs) {
         loudSent_ = true;
         return SoundClass::Loud;
       }
