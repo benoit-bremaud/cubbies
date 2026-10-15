@@ -7,7 +7,8 @@ namespace {
 IdentityOutput invitation(uint32_t holdMs) {
   IdentityOutput o;
   o.frame = IdentityFrame::Invitation;
-  o.progress = static_cast<uint8_t>(holdMs * 255u / InvitationWindow::kSecretMs);
+  const uint32_t h = holdMs < InvitationWindow::kSecretMs ? holdMs : InvitationWindow::kSecretMs;
+  o.progress = static_cast<uint8_t>(h * 255u / InvitationWindow::kSecretMs);  // clamped: late tick
   return o;
 }
 
@@ -42,13 +43,15 @@ IdentityOutput InvitationWindow::tick() {
       return invitation(0);
 
     case State::Inviting:
-      if (age >= kInviteMs) {
-        state_ = State::Declined;
-        return clear();
+      // The press first: its edge tick reads holdMs() == 0, so a press begun on the last tick
+      // inside T_invite is only seen held on the next one.
+      if (hold > 0) {
+        state_ = State::Holding;
+        return invitation(hold);
       }
-      if (hold == 0) return {};
-      state_ = State::Holding;
-      return invitation(hold);
+      if (age < kInviteMs) return {};
+      state_ = State::Declined;
+      return clear();
 
     case State::Holding:
       if (hold == 0) {
