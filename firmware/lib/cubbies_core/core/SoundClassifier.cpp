@@ -44,14 +44,17 @@ SoundClass SoundClassifier::tick() {
       return SoundClass::None;
 
     case State::Burst:
+      // Age first: a burst that reached T_clap is a long bang, a sound from the burst start, even
+      // if its peak falls on this very tick (05d); its loud run is kept.
+      if (age >= kClapMs) {
+        state_ = State::Sound;
+        voiceSent_ = loudSent_ = false;
+        return SoundClass::None;
+      }
       if (!clapPeak) {
         state_ = State::Quiet;
         loudRun_ = false;  // the clap is over: a loud tail is a new sound (05d)
-        return age < kClapMs ? SoundClass::Clap : SoundClass::None;
-      }
-      if (age >= kClapMs) {  // a long bang: treat it as a sound from the burst start
-        state_ = State::Sound;
-        voiceSent_ = loudSent_ = false;
+        return SoundClass::Clap;
       }
       return SoundClass::None;
 
