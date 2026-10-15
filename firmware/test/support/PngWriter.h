@@ -5,6 +5,10 @@
 // for humans and GitHub.
 #pragma once
 
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
 #include <cstdint>
 #include <cstdio>
 #include <vector>
@@ -12,6 +16,16 @@
 #include "eyes/Framebuffer.h"
 
 namespace cubbies::test {
+
+// Opens `path` for writing with an explicit 0644 mode (never world-writable), truncating it.
+// Host-only test support (POSIX).
+inline FILE* openForWrite(const char* path) {
+  const int fd = ::open(path, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+  if (fd < 0) return nullptr;
+  FILE* f = ::fdopen(fd, "wb");
+  if (f == nullptr) ::close(fd);
+  return f;
+}
 
 inline uint32_t crc32(const uint8_t* data, size_t len, uint32_t crc = 0) {
   crc = ~crc;
@@ -99,7 +113,7 @@ inline std::vector<uint8_t> encodePng(const Framebuffer& fb) {
 
 inline bool writePng(const char* path, const Framebuffer& fb) {
   const auto png = encodePng(fb);
-  FILE* f = std::fopen(path, "wb");
+  FILE* f = openForWrite(path);
   if (f == nullptr) return false;
   const bool ok = std::fwrite(png.data(), 1, png.size(), f) == png.size();
   std::fclose(f);

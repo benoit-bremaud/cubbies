@@ -20,7 +20,7 @@ inline bool updateGoldenRequested() {
 }
 
 inline bool writeRaw(const std::string& path, const Framebuffer& fb) {
-  FILE* f = std::fopen(path.c_str(), "wb");
+  FILE* f = openForWrite(path.c_str());
   if (f == nullptr) return false;
   const size_t bytes = Framebuffer::kPixels * sizeof(uint16_t);
   const bool ok = std::fwrite(fb.data(), 1, bytes, f) == bytes;
