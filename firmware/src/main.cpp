@@ -133,8 +133,8 @@ void runBoot() {
   window.start();
   while (!window.entered() && !window.declined()) {
     waitForTick();
+    gate.tick();  // first: a sound that just ended must not block this tick's sound
     apply(window.tick());
-    gate.tick();
     present();
   }
   if (!window.entered()) return;
@@ -143,8 +143,8 @@ void runBoot() {
   apply(ritual.start(identity));
   while (!ritual.isDone()) {
     waitForTick();
-    apply(ritual.tick(gestures.tick()));
     gate.tick();
+    apply(ritual.tick(gestures.tick()));
     present();
   }
   identity = ritual.identity();
@@ -168,8 +168,11 @@ void setup() {
   if (!mic.begin()) Serial.println("mic: init failed");
   if (!display.begin()) Serial.println("display: init failed");
 
-  Mac mac;
-  if (esp_read_mac(mac.data(), ESP_MAC_WIFI_STA) != ESP_OK) Serial.println("mac: read failed");
+  Mac mac{};  // all zeros if the read fails: a defined, stable default colour
+  if (esp_read_mac(mac.data(), ESP_MAC_WIFI_STA) != ESP_OK) {
+    mac = Mac{};
+    Serial.println("mac: read failed");
+  }
   identity = resolveIdentity(mac, storage);
 
   gate.setSleepState(sleepCycle.state());
@@ -178,18 +181,19 @@ void setup() {
   runBoot();
   radio.discardPending();
   mood.restart();
+  gate.play(SoundId::WakeMelody);  // normal start (identity/02a)
 }
 
 void loop() {
   waitForTick();
   EyesRenderer& eyes = seeded->eyes;
+  gate.tick();  // first: a sound that just ended must not block this tick's sounds
 
   const Gesture g = gestures.tick();
   if (g != Gesture::None) applyRoute(route(g, sleepCycle.state()), g);
 
   const SoundClass s = sounds.tick();
   if (s != SoundClass::None) applyRoute(route(s, sleepCycle.state()), s);
-  gate.tick();
 
   const SocialOutput social = seeded->social.tick(SelfState{identity.paletteIndex, identity.adopted,
                                                             sleepCycle.state(),
