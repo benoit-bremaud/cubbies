@@ -7,6 +7,32 @@ human context: what was done, why, and by which PR.
 
 ## 2026-10-14
 
+### Brick F1 — firmware skeleton and eyes (branch `feat/f1-eyes`, ADR-0014)
+
+- **Decisions** (ADR-0014, scored options): `display adapter: LovyanGFX 1.2.33` — SSD1331 and
+  ST7735 in one package, DMA keeps the 40 ms tick; Adafruit rejected (no DMA on ESP32), raw
+  SPI rejected (driver to maintain). `tests: TDD on lib/, golden images for the eyes, bench
+  for adapters` — the conception is tabular, each row is a test; test-after rejected (tests
+  would describe the code, not the table).
+- First code of the project, TDD in two commits (red tests, then green): ports `IDisplay` and
+  `IClock`, `Prng` (PCG32, reference value checked), `Framebuffer` 96×64 RGB565 with clipped
+  primitives, `EyesRenderer` (two rounded eyes in the identity colour, five mood shapes,
+  blink every 2–6 s aligned on the 40 ms tick, idle glances, one-pixel drift per minute in every
+  state, closed eyes for sleep). 34 native tests green, both board envs build.
+- Golden images (10 states) generated and reviewed on the contact sheet. References are raw
+  RGB565 dumps; the PNGs come from a minimal encoder of our own (stored deflate, CRC-32,
+  Adler-32, known-answer tests). The vendored stb headers were dropped the next day: 9 700
+  third-party lines and 13 high CodeQL alerts for two functions used (owner decision after
+  scored options; the CodeQL exclusion alternative rejected).
+- Pre-push `review-local` gate (design, docs, tests, correctness): 5 Must Have and 22 Should
+  Have applied before push, notably the blink-gap test that only passed thanks to its seed
+  (FS1 reworded: 2–6 s of open eyes measured from the reopening), the golden update mode that
+  passed silently, `openEyes()` rescheduling the blink, framebuffer primitives bounded against
+  extreme inputs, the 12 KB-on-the-stack hazard documented for `main.cpp`.
+- Owner validated the five mood frames and the closed eyes as golden references (2026-10-15)
+  and chose to complete the face vocabulary in a dedicated brick **F1b** before F2 (reactions
+  and identity frames with a shared `Timeline`; ADR-0014 amended), after scored options.
+
 ### cube-core PDR passed (branch `docs/pdr-cube-core`, ADR-0013)
 
 - Four-pass review of the eight diagrams against the requirements: five blocking
