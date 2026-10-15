@@ -132,6 +132,14 @@ static void test_loud_must_be_sustained_for_t_loud() {
   assertSeq({SoundClass::Loud}, b.play(kRoom * 5, kRoom * 5, 2 * kTick));
 }
 
+// The loud run starts on the very tick that enters Sound: a loud sound whose first sample is
+// loud emits Loud exactly T_loud later (PR #12 review).
+static void test_loud_counts_from_the_first_loud_tick() {
+  Rig r;
+  // 14 ticks: the first enters Sound, the 14th is 520 ms later (≥ T_loud, the 13th is 480 ms).
+  assertSeq({SoundClass::Voice, SoundClass::Loud}, r.play(kRoom * 5, kRoom * 5, 14 * kTick));
+}
+
 // Loud held for less than T_loud is only a voice.
 static void test_short_loud_is_only_a_voice() {
   Rig r;
@@ -163,6 +171,7 @@ static void test_clap_boundary_is_t_clap() {
 int main(int, char**) {
   UNITY_BEGIN();
   RUN_TEST(test_loud_must_be_sustained_for_t_loud);
+  RUN_TEST(test_loud_counts_from_the_first_loud_tick);
   RUN_TEST(test_short_loud_is_only_a_voice);
   RUN_TEST(test_ratio_thresholds_are_inclusive);
   RUN_TEST(test_clap_boundary_is_t_clap);
