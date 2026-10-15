@@ -378,7 +378,8 @@ static void test_purr_holds_until_stopped() {
   r.run(5000);
   TEST_ASSERT_FALSE(framesEqual(base, r.display.last));
   r.eyes.stopReaction();
-  r.run(EyesRenderer::kLidMoveMs + kTickMs);
+  // Lids reopen over kLidMoveMs, then the blink deferred during the purr fires and ends.
+  r.run(EyesRenderer::kLidMoveMs + EyesRenderer::kBlinkTotalMs + 2 * kTickMs);
   TEST_ASSERT_TRUE(framesEqual(base, r.display.last));
 }
 
