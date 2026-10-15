@@ -63,8 +63,10 @@ cost (2), avoided false confidence (2).
   board envs build; bench when the prototypes arrive). Ports and fakes are created by the
   brick that first uses them (YAGNI).
 - Randomness: PCG32 (Apache-2.0 minimal implementation) as decided in ADR-0013.
-- Golden-image tooling: `stb_image.h` / `stb_image_write.h` vendored under `test/support/`
-  (dual licence MIT / public domain, upstream commit and versions recorded in `STB_VERSION`).
+- Golden-image tooling: references are raw RGB565 dumps compared byte for byte; a minimal PNG
+  encoder of our own (stored deflate, ~80 lines under `test/support/`) writes the images for
+  humans. No third-party image code in the tree (the vendored stb headers were dropped on
+  2026-10-15: 9 700 lines and 13 CodeQL alerts for two functions used).
 
 ## Consequences
 

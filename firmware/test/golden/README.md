@@ -1,8 +1,10 @@
 # Golden images
 
-`test_native_eyes` compares each rendered state with the PNG of the same name here (exact
-pixel match, the rendering is deterministic). On a mismatch the test writes `<name>.actual.png`
-next to the reference (ignored by git) and fails with the pixel count.
+`test_native_eyes` compares each rendered state with the raw RGB565 dump of the same name
+(`<name>.rgb565`, exact match, the rendering is deterministic). The PNG next to it is written by
+the same regeneration for humans and GitHub (our own minimal encoder, `test/support/PngWriter.h`,
+no third-party code). On a mismatch the test writes `<name>.actual.png` next to the reference
+(ignored by git) and fails with the pixel count.
 
 After an intended visual change, from `firmware/`:
 

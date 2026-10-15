@@ -1,15 +1,13 @@
 // Eyes renderer: the rules of FS1 / REQ-F-01 / REQ-NF-08 (one test per rule, ADR-0014) and
 // golden images of every mood (characterisation tests). Regenerate goldens with
 // CUBBIES_UPDATE_GOLDEN=1 from firmware/, review the PNG sheet in the pull request, then commit.
-#define STB_IMAGE_IMPLEMENTATION
-#define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <unity.h>
 
 #include <cstdio>
 #include <string>
 
 #include "FakeClock.h"
-#include "Png.h"
+#include "Golden.h"
 #include "RecordingDisplay.h"
 #include "core/Mood.h"
 #include "core/Prng.h"
@@ -66,15 +64,17 @@ bool shiftedBy(const Framebuffer& a, const Framebuffer& b, int dx, int dy) {
 }
 
 void checkGolden(const char* name, const Framebuffer& fb) {
-  const std::string path = kGoldenDir + name + ".png";
+  const std::string raw = kGoldenDir + name + ".rgb565";
+  const std::string png = kGoldenDir + name + ".png";
   if (cubbies::test::updateGoldenRequested()) {
-    TEST_ASSERT_TRUE_MESSAGE(cubbies::test::writePng(path, fb), path.c_str());
+    TEST_ASSERT_TRUE_MESSAGE(cubbies::test::writeRaw(raw, fb), raw.c_str());
+    TEST_ASSERT_TRUE_MESSAGE(cubbies::test::writePng(png.c_str(), fb), png.c_str());
     TEST_MESSAGE("golden regenerated, not compared: review the PNG sheet in the PR");
     return;
   }
-  const long diff = cubbies::test::comparePng(path, fb);
-  if (diff < 0) TEST_FAIL_MESSAGE(("golden missing or wrong size, run from firmware/: " + path).c_str());
-  if (diff > 0) cubbies::test::writePng(kGoldenDir + name + ".actual.png", fb);
+  const long diff = cubbies::test::compareRaw(raw, fb);
+  if (diff < 0) TEST_FAIL_MESSAGE(("golden missing or wrong size, run from firmware/: " + raw).c_str());
+  if (diff > 0) cubbies::test::writePng((kGoldenDir + name + ".actual.png").c_str(), fb);
   char msg[200];
   std::snprintf(msg, sizeof msg, "%s: %ld pixels differ, see %s.actual.png; regenerate only if the change is intended",
                 name, diff, name);
