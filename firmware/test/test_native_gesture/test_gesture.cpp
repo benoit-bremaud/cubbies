@@ -200,6 +200,18 @@ static void test_second_press_can_be_consumed() {
   TEST_ASSERT_EQUAL(Gesture::None, r.hold(false, 1000));  // no DoubleTap, no Released
 }
 
+// consumeCurrentPress() with the pad released: the pending Tap is dropped, Idle at once.
+static void test_consume_while_released_drops_the_pending_tap() {
+  Rig r;
+  r.hold(true, 80);
+  r.touch.set(false);
+  r.step();  // WaitSecond, Tap pending
+  r.gestures.consumeCurrentPress();
+  TEST_ASSERT_EQUAL(Gesture::None, r.hold(false, 1000));
+  r.touch.set(true);
+  TEST_ASSERT_EQUAL(Gesture::TouchDown, r.step());  // the very next press is fresh
+}
+
 int main(int, char**) {
   UNITY_BEGIN();
   RUN_TEST(test_pressed_edge_emits_touchdown_on_the_same_tick);
@@ -216,5 +228,6 @@ int main(int, char**) {
   RUN_TEST(test_consumed_press_emits_nothing_while_held);
   RUN_TEST(test_consumed_press_release_is_silent_then_idle);
   RUN_TEST(test_second_press_can_be_consumed);
+  RUN_TEST(test_consume_while_released_drops_the_pending_tap);
   return UNITY_END();
 }

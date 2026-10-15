@@ -33,6 +33,7 @@ stateDiagram-v2
   Pressed --> Consumed: consumeCurrentPress()
   Pressed2 --> Consumed: consumeCurrentPress()
   Stroking --> Consumed: consumeCurrentPress()
+  WaitSecond --> Idle: consumeCurrentPress() while released
   Consumed --> Idle: released
 ```
 
@@ -52,7 +53,8 @@ Each row is one native test (ADR-0014).
 | Pressed2 | released, press ≥ T_tapMax | Idle | `Released` |
 | Pressed2 | press reaches T_stroke | Stroking | `Stroke` (the first tap is absorbed) |
 | Stroking | released | Idle | `Released` (once, however long the contact) |
-| any | `consumeCurrentPress()` | Consumed | nothing; `holdMs()` reads 0 from now on |
+| any | `consumeCurrentPress()`, pad pressed | Consumed | nothing; `holdMs()` reads 0 from now on |
+| any | `consumeCurrentPress()`, pad released | Idle | nothing; a pending `Tap` is dropped (PR #20 review) |
 | Consumed | still pressed | Consumed | nothing |
 | Consumed | released | Idle | nothing (no `Released`) |
 

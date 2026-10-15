@@ -28,6 +28,8 @@ class InvitationWindow {
  private:
   enum class State : uint8_t { Idle, Settling, Inviting, Holding, Entered, Declined };
 
+  IdentityOutput decline();
+
   IClock& clock_;
   GestureClassifier& gestures_;
   State state_ = State::Idle;

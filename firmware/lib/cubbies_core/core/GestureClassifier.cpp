@@ -62,6 +62,9 @@ uint32_t GestureClassifier::holdMs() const {
   return held ? ageMs(clock_.nowMs(), sinceMs_) : 0;
 }
 
-void GestureClassifier::consumeCurrentPress() { state_ = State::Consumed; }
+void GestureClassifier::consumeCurrentPress() {
+  // Released now: drop any pending Tap and be Idle at once, so the next press is fresh.
+  state_ = touch_.pressed() ? State::Consumed : State::Idle;
+}
 
 }  // namespace cubbies

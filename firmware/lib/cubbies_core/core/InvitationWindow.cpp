@@ -12,13 +12,17 @@ IdentityOutput invitation(uint32_t holdMs) {
   return o;
 }
 
-IdentityOutput clear() {
+}  // namespace
+
+// Hands the classifier back clean: a pending Tap or a finger still down must not reach the
+// normal loop as a gesture.
+IdentityOutput InvitationWindow::decline() {
+  gestures_.consumeCurrentPress();
+  state_ = State::Declined;
   IdentityOutput o;
   o.frame = IdentityFrame::Clear;
   return o;
 }
-
-}  // namespace
 
 InvitationWindow::InvitationWindow(IClock& clock, GestureClassifier& gestures)
     : clock_(clock), gestures_(gestures) {}
@@ -37,7 +41,9 @@ IdentityOutput InvitationWindow::tick() {
   switch (state_) {
     case State::Settling:
       if (age < kSettleMs) return {};
-      if (hold > 0) gestures_.consumeCurrentPress();  // may have been calibrated away
+      // Always: a press may have been calibrated away, or its edge is this very tick
+      // (holdMs() still 0); with the pad released the classifier is back to Idle next tick.
+      gestures_.consumeCurrentPress();
       state_ = State::Inviting;
       sinceMs_ = now;
       return invitation(0);
@@ -50,15 +56,11 @@ IdentityOutput InvitationWindow::tick() {
         return invitation(hold);
       }
       if (age < kInviteMs) return {};
-      state_ = State::Declined;
-      return clear();
+      return decline();
 
     case State::Holding:
       if (hold == 0) {
-        if (age >= kInviteMs) {
-          state_ = State::Declined;
-          return clear();
-        }
+        if (age >= kInviteMs) return decline();
         state_ = State::Inviting;
         return invitation(0);
       }

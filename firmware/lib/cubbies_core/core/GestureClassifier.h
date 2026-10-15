@@ -22,7 +22,8 @@ class GestureClassifier {
 
   // Age of the current press in ms, 0 when released or consumed.
   uint32_t holdMs() const;
-  // Swallows the rest of the current press: nothing is emitted until the pad is released.
+  // Swallows the rest of the current press (nothing is emitted until the pad is released) and
+  // any pending Tap; with the pad released it returns to Idle at once.
   void consumeCurrentPress();
 
   // Tuning values (05c).

@@ -48,16 +48,16 @@ Each row is one native test (ADR-0014). Times are ages on the injected clock.
 |------|---------|----|----------------------|
 | — | `start()` | Settling | none (the eyes already show the colour) |
 | Settling | tick before T_settle_touch | Settling | none (a touch here is never read: TTP223 calibration) |
-| Settling | T_settle_touch elapsed, pad released | Inviting | `showInvitation(0)` |
-| Settling | T_settle_touch elapsed, pad already pressed | Inviting | `consumeCurrentPress()`, `showInvitation(0)` — the finger must lift and press again |
+| Settling | T_settle_touch elapsed, pad released | Inviting | `consumeCurrentPress()` (drops a Tap pending from the settle), `showInvitation(0)` |
+| Settling | T_settle_touch elapsed, pad pressed (edge on this tick included) | Inviting | `consumeCurrentPress()`, `showInvitation(0)` — the finger must lift and press again |
 | Inviting | pressed (`holdMs() > 0`) | Holding | `showInvitation(progress)` |
 | Inviting | press whose edge came inside T_invite, first seen held on a tick past it | Holding | `showInvitation(progress)` — the press is checked before the expiry (`holdMs()` is 0 on the edge tick) |
 | Inviting | pressed, hold already ≥ T_secret (late tick) | Holding | `showInvitation(255)` — progress clamped; enters on the next tick |
 | Holding | still pressed, hold < T_secret | Holding | `showInvitation(progress)`, progress = hold × 255 / T_secret |
 | Holding | released, T_invite not elapsed | Inviting | `showInvitation(0)` |
-| Holding | released, T_invite elapsed | Declined | `clearIdentityFrame()` |
+| Holding | released, T_invite elapsed | Declined | `consumeCurrentPress()` (no Tap leaks to the normal loop), `clearIdentityFrame()` |
 | Holding | hold reaches T_secret (even after T_invite) | Entered | `consumeCurrentPress()`; frame left for the ritual to replace |
-| Inviting | T_invite elapsed | Declined | `clearIdentityFrame()` |
+| Inviting | T_invite elapsed | Declined | `consumeCurrentPress()` (no Tap leaks to the normal loop), `clearIdentityFrame()` |
 
 Durations (tuning values, 02a): T_settle_touch 1 s, T_invite 4 s counted from the end of the
 settle, T_secret 2 s.
