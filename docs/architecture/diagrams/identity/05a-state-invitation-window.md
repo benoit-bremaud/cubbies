@@ -6,6 +6,8 @@
 > **Sequence**: [02a-sequence-first-boot.md](02a-sequence-first-boot.md)
 > **Module**: `Invitation window` → `Gesture classifier` in [cube-core/03-component.md](../cube-core/03-component.md)
 
+> **Status**: validated by the owner 2026-10-15 (F3 PDR, derived choices scored: double tap +2 470/500, settle press consumed 470/500, `IdentityOutput` returned 445/500, any gesture restarts the timeout 470/500)
+
 ## Context
 
 This diagram answers "after boot, when does a touch open the adoption ritual?". It refines the

@@ -6,6 +6,8 @@
 > **Sequence**: [02b-sequence-adoption-ritual.md](02b-sequence-adoption-ritual.md)
 > **Module**: `Identity rules` → `IStorage` in [cube-core/03-component.md](../cube-core/03-component.md)
 
+> **Status**: validated by the owner 2026-10-15 (F3 PDR, derived choices scored: double tap +2 470/500, settle press consumed 470/500, `IdentityOutput` returned 445/500, any gesture restarts the timeout 470/500)
+
 ## Context
 
 This diagram answers "which gesture does what during the ritual, and what is written to NVS?".
@@ -64,5 +66,5 @@ T_ritual_timeout 60 s (tuning value, 02b), restarted by every gesture, not only 
   violet, pink. The table and the MAC hash (FNV-1a 32-bit over the six MAC bytes, mod 8) live in
   the Identity rules, one source of truth for 02a and this diagram.
 - **Sounds** go through the Sound gate (05e amended): `RitualChime` and `RitualTick` rank 0,
-  `Adoption` rank 2 so it is never dropped behind a tick.
+  `Adoption` rank 0 too: the confirming stroke lasts 1.5 s, so the tick (≈ 40 ms) is long over.
 - **Volume step (V1.x, UC6)** is not in V1: the machine ends at the colour.

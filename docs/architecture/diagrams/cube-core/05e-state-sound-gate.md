@@ -59,7 +59,7 @@ Each row is one native test (ADR-0014).
   the bench; tests check the routing rules, not the music.
 - **One volume, one place**: no caller passes a level; the V1.x ritual step will make `kVolume`
   a stored setting read here (a `Gate --> PStore` edge then, not before, YAGNI).
-- **Ritual sounds (F3)**: `RitualChime` and `RitualTick` (rank 0) and `Adoption` (rank 2), for
+- **Ritual sounds (F3)**: `RitualChime`, `RitualTick` and `Adoption` (rank 0), for
   the adoption ritual ([identity/05b](../identity/05b-state-adoption-ritual.md)). The tick has one
   fixed pitch in V1; a pitch per palette index waits for the sound-design brick. The ritual runs
   before the Sleep cycle ticks, while the gate holds its initial Awake state.
