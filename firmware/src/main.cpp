@@ -181,7 +181,13 @@ void setup() {
   runBoot();
   radio.discardPending();
   mood.restart();
-  gate.play(SoundId::WakeMelody);  // normal start (identity/02a)
+  // Normal start (identity/02a): the wake-up melody follows the adoption sound, never cuts it.
+  while (gate.playing()) {
+    waitForTick();
+    gate.tick();
+    present();
+  }
+  gate.play(SoundId::WakeMelody);
 }
 
 void loop() {
