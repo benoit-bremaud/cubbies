@@ -7,7 +7,7 @@ human context: what was done, why, and by which PR.
 
 ## 2026-10-15
 
-### Brick F1b — reactions overlay and identity frames (branch `feat/f1b-expressions`, ADR-0014)
+### Brick F1b — reactions overlay and identity frames — **PR #10 merged** (`35daf50`, ADR-0014)
 
 - TDD in two commits (red, then green) on the extraction trigger recorded in the F1 review:
   `Timeline` (start + duration + phase, wrap-safe, 64-bit phase) now drives blinks, lid moves,
@@ -26,8 +26,14 @@ human context: what was done, why, and by which PR.
 - 73 native tests green, 28 golden states on the contact sheet (owner validated the first
   draft of the full face vocabulary on 2026-10-15), both board envs build (xiao_c3 273 KB,
   c3_supermini 298 KB flash).
+- Codex review (P2, confirmed): a purr released before its 240 ms ramp-in restarted the release
+  from the floor and dropped one frame; the release now starts from the openness reached
+  (`purrTarget`, regression test). 74 native tests at merge.
 - Open for F1c: TouchDown widening vs the double-tap window (owner decision), generalized
-  12-parameter lids, `eyes_lab` native tool, emotion catalogue.
+  12-parameter lids, emotion catalogue. The simulator becomes a web app (decision 2026-10-15,
+  ADR-0015 to write): `cubbies_core` compiled to WebAssembly in `web/`, simulator + eye-rhythm
+  sliders first, GitHub Pages; first-boot setup stays the touch ritual in V1, captive portal
+  (name, Wi-Fi OTA) modelled for V1.x.
 
 ## 2026-10-14
 
