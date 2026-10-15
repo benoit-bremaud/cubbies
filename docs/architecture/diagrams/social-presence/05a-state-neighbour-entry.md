@@ -44,6 +44,7 @@ stateDiagram-v2
   Absent --> Greeted: valid PRESENCE, was greeted, absent ≤ T_regreet / refresh
   Absent --> Waiting: valid PRESENCE, absent > T_regreet or never greeted / refresh
   Absent --> Waiting: unknown MAC, no Free slot, oldest Absent / evict, store newcomer
+  Absent --> Free: tick, age(lastSeen) > T_regreet
 ```
 
 `Absent` remembers whether the entry had been greeted (a `greeted` bit) and when it was last
@@ -67,6 +68,7 @@ Each row is one native test (ADR-0014). Ages are `ageMs(now, then)` on the injec
 | Absent | valid PRESENCE, absent `age > T_regreet` | Waiting | refresh (greeted again) |
 | Absent | valid PRESENCE, never greeted | Waiting | refresh (left before its turn, still owed a hello) |
 | Absent (oldest `lastSeen`) | valid PRESENCE, unknown MAC, no Free slot | Waiting | evict, store the newcomer |
+| Absent | tick, `age(lastSeen) > T_regreet` | Free | none (owed a fresh greeting anyway; keeps every Absent age under 10 min, PR #22) |
 | — | valid PRESENCE, unknown MAC, every slot Waiting or Greeted | — | drop, count `dropFull` |
 | — | frame failing the allowlist (06) | — | drop, count by reason: `dropLen`, `dropMagic`, `dropVersion`, `dropType`, `dropRange` |
 
@@ -87,6 +89,6 @@ Timers (02, tuning values): T_presence 5 s ± 1 s, T_ttl 15 s, T_greet_cooldown 
   `SocialProtocol`.
 - **Wrap-safe**: every age is `ageMs(now, then)`; a native test starts the clock just below the
   32-bit wrap. Ages longer than the 2^32 ms period (49.7 days) would alias back to fresh, so the
-  tick forgets them once they stop mattering: an Absent entry loses its `greeted` bit past
-  T_regreet, and the greeting ring is cleared once its newest greeting is past the window
+  tick forgets them once they stop mattering: an Absent entry is freed past T_regreet (so the
+  eviction order never compares aliased ages, Codex PR #22), and the greeting ring is cleared once its newest greeting is past the window
   (review-local F4, tested).

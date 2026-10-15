@@ -82,8 +82,9 @@ Neighbour* SocialProtocol::findSlot(const Mac& mac, uint32_t now) {
 void SocialProtocol::expire(uint32_t now) {
   for (Neighbour& n : table_) {
     if (present(n.state) && ageMs(now, n.lastSeen) > kTtlMs) n.state = EntryState::Absent;
-    // Forget the greeting once it is owed again, so a 2^32 ms absence cannot alias back to fresh.
-    if (n.state == EntryState::Absent && ageMs(now, n.lastSeen) > kRegreetMs) n.greeted = false;
+    // Past T_regreet the entry would be greeted as new anyway: free it, so no Absent age grows
+    // towards the 2^32 ms wrap where it would alias to fresh and mislead eviction (PR #22).
+    if (n.state == EntryState::Absent && ageMs(now, n.lastSeen) > kRegreetMs) n.state = EntryState::Free;
   }
 }
 
