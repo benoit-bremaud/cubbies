@@ -23,10 +23,10 @@ human context: what was done, why, and by which PR.
   budget, jittered broadcast, wrap), `LoopbackRadio` fake, two cubes greeting each other once.
 - Local review: Must 1 · Should 11 applied (Waiting refresh row, exact boundaries, flood
   assertions, `ports/Mac.h` so the port no longer includes core, `findSlot()`, 2^32 aliasing of
-  absent entries and of the greeting ring); Nice 6 grouped in a backlog issue.
+  absent entries and of the greeting ring); Nice 6 grouped in issue #23.
 - 219 native tests green, both board envs build. `EspNowRadio` and the `main.cpp` wiring are F5.
 
-### Brick F3 — identity and boot (branch `feat/f3-identity`, ADR-0014)
+### Brick F3 — identity and boot — **PR #20 merged** (`93c9019`, ADR-0014)
 
 - Design first: new state diagrams identity/05a (invitation window) and 05b (adoption ritual),
   amendments to 02a, 02b, 03, 05c (`holdMs()`, `consumeCurrentPress()`, `Consumed` state) and
@@ -39,8 +39,14 @@ human context: what was done, why, and by which PR.
 - Five TDD steps, each red then green: `resolveIdentity` (FNV-1a MAC hash mod 8, typed
   `IStorage` port, `FakeStorage`); Gesture classifier hold/consume; ritual sounds in the Sound
   gate; `InvitationWindow`; `AdoptionRitual` (single NVS write, fail closed, timeout).
-- Local review: Must 4 · Should 6 applied (02b aligned, window press read before expiry + gauge clamp, edge tests); Nice grouped in a backlog issue.
-- 185 native tests green, both board envs build. NVS adapter and `main.cpp` wiring are F5.
+- Local review: Must 4 · Should 6 applied (02b aligned, window press read before expiry +
+  gauge clamp, edge tests); Nice grouped in #19.
+- Codex review (2 rounds, no Copilot): two P2 threads, both verified and fixed in TDD — a Tap
+  pending at the window close leaked to the normal loop, and a press whose edge was the
+  settle-end tick was not consumed. `consumeCurrentPress()` now drops a pending Tap and returns
+  to Idle at once when the pad is released; the window consumes at the settle end and on
+  Declined (owner choice 465/500). Second round clean.
+- 189 native tests green, both board envs build. NVS adapter and `main.cpp` wiring are F5.
 
 ### Brick F2 — behaviours — **PR #12 merged** (`ef10f61`, ADR-0014)
 
