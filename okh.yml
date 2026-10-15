@@ -1,0 +1,40 @@
+# Open Know-How Manifest 1.0
+# Describes this project for open-hardware indexes: what it is, under which licences, where the
+# entry points of each discipline live. Updated by every PR that adds a discipline or a release.
+okh-manifest-version: 1.0.0
+title: cubbies
+description: >-
+  Cube desk companions with colour OLED eyes that react to touch and sound and greet each other
+  over ESP-NOW. One cube per colleague, one colour per cube, 3D-printed enclosure.
+intended-use: Desk companion offered to a team on an adoption day.
+keywords: [esp32-c3, oled, esp-now, desk-robot, 3d-printed, companion]
+project-link: https://github.com/benoit-bremaud/cubbies
+documentation-home: https://github.com/benoit-bremaud/cubbies/blob/main/README.md
+version: 0.1.0
+development-stage: prototype
+date-created: 2026-10-14
+manifest-language: en-GB
+manifest-author:
+  name: Benoît Bremaud
+licensor:
+  name: Benoît Bremaud
+license:
+  hardware: CC-BY-SA-4.0   # mechanics/ (ADR-0009); electronics/ licence decided by the first KiCad PR (superseding ADR)
+  documentation: MIT       # docs/
+  software: MIT            # firmware/, web/
+contact:
+  social:
+    - platform: GitHub
+      user-handle: benoit-bremaud
+bom: docs/bom.md
+design-files:
+  - path: mechanics/
+    title: Enclosure (FreeCAD parametric script and generated exports)
+schematics: []            # filled by the first KiCad PR (electronics/kicad/)
+software:
+  - path: firmware/
+    title: Firmware (PlatformIO, pioarduino)
+making-instructions:
+  - path: docs/mechanics/assembly.md
+    title: Assembly
+standards-used: []

@@ -25,11 +25,13 @@ owner validation in the PR.
 Applies once, before the parts for the series are ordered; a mechanical CDR applies before the
 series print.
 
-- [ ] GPIO allocation signed: `docs/hardware/electronics-spec.md` table matches
+- [ ] GPIO allocation signed: `docs/electronics/electronics-spec.md` table matches
       `firmware/include/pins.h` and passes ERC.
 - [ ] Strapping pins (GPIO2, GPIO8, GPIO9 on the ESP32-C3): the level each attached circuit
       forces at reset checked against the datasheet boot-mode table.
 - [ ] Every calculation and simulation of `verification-plan.md` marked "approved" with evidence.
+- [ ] Debt review: the "Kept" and "Disagree" items of every report under
+      `docs/architecture/reviews/` re-read; each one either closed or carried into the backlog.
 - [ ] Bench measurements on at least two prototypes recorded: current, dB, range, latency.
 - [ ] BOM confirmed with suppliers and prices; reference designators consistent with the schematic.
 - [ ] Assembly procedure tried once end to end on a prototype, time recorded.

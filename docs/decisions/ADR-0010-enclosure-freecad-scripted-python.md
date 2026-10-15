@@ -43,3 +43,5 @@ iteration; the owner opens the generated model in FreeCAD 1.1.
 - A regenerate step (`freecadcmd cubbies_case.py`) is documented in `hardware/case/README.md`;
   CI does not run FreeCAD.
 - Reusing third-party models stays possible as imported STEP files with their own licence credit.
+
+> Note (2026-10-15, repo layout PR): `hardware/case/` became `mechanics/`.

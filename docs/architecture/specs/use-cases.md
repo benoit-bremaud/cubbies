@@ -104,5 +104,5 @@
 
 ### UC11 — Build and flash a cube
 - Primary actor: Maker. Requirements: REQ-NF-09, REQ-NF-10.
-- Main success scenario: follow `docs/hardware/assembly.md`; flash the single image; the cube
+- Main success scenario: follow `docs/mechanics/assembly.md`; flash the single image; the cube
   boots, shows the invitation, and the end-of-line check adopts it once (UC1) to prove the pad.

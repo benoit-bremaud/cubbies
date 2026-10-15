@@ -3,7 +3,7 @@
 > **Status**: draft. The GPIO allocation becomes a **signed contract** at the CDR
 > ([gates.md](../architecture/gates.md)); changing a pin afterwards reopens a decision with the owner.
 > Decisions: ADR-0002 (power), ADR-0003 (board), ADR-0006 (display), ADR-0007 (pin budget).
-> Native KiCad schematic: `hardware/electronics/cubbies-v1.kicad_sch` (to create), PDF export next
+> Native KiCad schematic: `electronics/cubbies-v1.kicad_sch` (to create), PDF export next
 > to it.
 
 ## Block diagram

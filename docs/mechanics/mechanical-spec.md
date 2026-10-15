@@ -1,7 +1,7 @@
 # Mechanical specification — cubbies V1 enclosure
 
 > **Status**: draft. Decisions: ADR-0006 (display size), ADR-0010 (FreeCAD scripted). Source of
-> truth: `hardware/case/cubbies_case.py` (to create); generated `.FCStd`, `.step` and `.stl`
+> truth: `mechanics/cubbies_case.py` (to create); generated `.FCStd`, `.step` and `.stl`
 > committed as artefacts for printing and sharing.
 
 ## Envelope and layout
@@ -35,6 +35,6 @@
 
 ## Deliverables
 
-- `hardware/case/cubbies_case.py` (parametric, all values above as named parameters).
-- `hardware/case/export/cubbies-front.stl`, `cubbies-rear.stl`, `cubbies.step`, `cubbies.FCStd`.
-- `hardware/case/README.md`: how to regenerate with FreeCAD 1.1 (GUI or `freecadcmd`).
+- `mechanics/cubbies_case.py` (parametric, all values above as named parameters).
+- `mechanics/export/cubbies-front.stl`, `cubbies-rear.stl`, `cubbies.step`, `cubbies.FCStd`.
+- `mechanics/README.md`: how to regenerate with FreeCAD 1.1 (GUI or `freecadcmd`).

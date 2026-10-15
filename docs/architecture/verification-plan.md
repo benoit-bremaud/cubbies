@@ -9,14 +9,14 @@
 
 | Method | Tool | Lives in | Used for |
 |--------|------|----------|----------|
-| Calculation | spreadsheet-free Markdown tables with formulas and values | `docs/hardware/calculations.md` | current budget, buzzer drive, RC values, battery (V2) |
-| Analog simulation | KiCad 9 simulator / ngspice 42, batch via `kicad-cli sch export netlist --format spice` then `ngspice -b` | `hardware/electronics/sim/*.cir` + exported plots | only where a real question exists: buzzer driver (flyback spike, MOSFET dissipation), battery divider (V2) |
+| Calculation | spreadsheet-free Markdown tables with formulas and values | `docs/electronics/calculations.md` | current budget, buzzer drive, RC values, battery (V2) |
+| Analog simulation | KiCad 9 simulator / ngspice 42, batch via `kicad-cli sch export netlist --format spice` then `ngspice -b` | `electronics/sim/*.cir` + exported plots | only where a real question exists: buzzer driver (flyback spike, MOSFET dissipation), battery divider (V2) |
 | Native unit tests | PlatformIO `env:native`, Unity | `firmware/test/` | moods, sleep, identity, gestures, protocol, rate limits |
 | Golden images | native display adapter rendering the 96×64 framebuffer to PNG, compared to references | `firmware/test/golden/` | every expression and transition (REQ-F-01, REQ-F-02, REQ-NF-08) |
 | Fuzzing | native test feeding random and malformed frames to the parser | `firmware/test/` | REQ-NF-06 |
 | ERC | `kicad-cli sch erc` | CI (later) and local | GPIO contract, net sanity |
-| Bench measurement | multimeter, phone sound meter, two prototypes, camera for latency | results recorded in `docs/hardware/measurements.md` | current, dB, range, latency, frame rate |
-| Print trial | the printed enclosure on prototype hardware | photos in `docs/hardware/assembly.md` | REQ-NF-10, REQ-NF-11 |
+| Bench measurement | multimeter, phone sound meter, two prototypes, camera for latency | results recorded in `docs/electronics/measurements.md` (to come, first bench session) | current, dB, range, latency, frame rate |
+| Print trial | the printed enclosure on prototype hardware | photos in `docs/mechanics/assembly.md` | REQ-NF-10, REQ-NF-11 |
 | Exploration only | Wokwi (XIAO ESP32-C3, buzzer, MPU6050, SSD1306 as a stand-in) | not versioned | prototyping gestures without hardware; no SSD1331, no I2S mic |
 
 ## Matrix: decision or requirement → control → validation → approval

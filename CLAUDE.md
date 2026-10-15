@@ -24,7 +24,7 @@ this repository.
   UML views under `docs/architecture/diagrams/<feature>/`, traceability matrix updated, owner
   validation. Hardware is frozen at the CDR before the series is ordered (ADR-0011).
 - **Component choices are verified, not assumed.** Calculations, ngspice netlists and bench
-  measurements live in `docs/hardware/` and `hardware/electronics/sim/` and are reviewed in PRs
+  measurements live in `docs/electronics/` and `electronics/sim/` and are reviewed in PRs
   (`docs/architecture/verification-plan.md`). Eyes are verified by golden images in the native
   tests.
 - **Validated decisions are not reopened silently.** Changing an ADR requires a superseding ADR
@@ -66,8 +66,9 @@ docs/roadmap.md           versions and prioritised backlog
 docs/decisions/           ADRs (Nygard format, ADR-NNNN-<slug>.md)
 docs/architecture/        design dossier: README (arc42-lite), specs/ (requirements, use cases),
                           diagrams/ (UML), traceability matrix, verification plan, gates
-docs/hardware/            electronics spec (signed GPIO contract), calculations, mechanical spec,
-                          assembly guide, measurements
+docs/architecture/reviews/   pre-push review reports, one per branch
+docs/electronics/         electronics spec (signed GPIO contract), calculations, measurements
+docs/mechanics/           mechanical spec, assembly guide
 docs/research/            state of the art
 firmware/platformio.ini   envs: xiao_c3 (series), c3_supermini (prototypes), native (tests)
 firmware/include/         pin maps and shared headers
@@ -75,9 +76,36 @@ firmware/lib/             pure behaviour logic (no Arduino)
 firmware/src/             adapters and main
 firmware/test/            native unit tests (Unity): one folder per test program, shared doubles
                           in test/support, golden images in test/golden
-hardware/electronics/     KiCad schematic (native) + PDF export, sim/ (ngspice netlists and plots)
-hardware/case/            enclosure: FreeCAD Python script (source) + generated exports (CC BY-SA 4.0)
+electronics/              KiCad schematic (native) + PDF export, sim/ (ngspice netlists and plots)
+mechanics/                enclosure: FreeCAD Python script (source) + generated exports (CC BY-SA 4.0)
+web/                      simulator and configurator: firmware/lib compiled to WebAssembly, Vite + TS
+                          (depends on firmware/lib, never the reverse)
+okh.yml                   Open Know-How manifest: project, licences per discipline, entry points
 ```
+
+One discipline per root directory. Allowed cross-discipline references, every other one is
+forbidden:
+
+- `web/ → firmware/lib/` (compiled to WebAssembly) and `web/ → firmware/test/golden/` (read-only
+  test oracle: the web canvas must match the cube's pixels).
+- `mechanics/ → docs/electronics/` (board and module dimensions).
+- Each discipline ↔ its own `docs/<discipline>/` (documentation links, not a code dependency).
+- Root aggregators (`README.md`, `okh.yml`, `docs/bom.md`, `.github/`) may reference any discipline.
+
+Nothing under `firmware/` references `web/`, `electronics/` or `mechanics/`. The GPIO contract in
+`docs/electronics/electronics-spec.md` is the source of truth; `firmware/include/pins.h` is
+hand-written against it and checked in review, never generated from `electronics/`.
+
+## Commit scopes
+
+Conventional Commits scopes: `firmware` (with `eyes` as its sub-scope for the renderer and
+goldens), `electronics`, `mechanics`, `web`, `architecture` (dossier, diagrams, ADRs), `docs`
+(top-level docs only: files under `docs/<discipline>/` take that discipline's scope), `ci`,
+`deps`, `log`. One scope per commit. A PR touching two disciplines is split, except a
+`firmware/lib` API change and its `web/` bridge update, which ship together.
+
+Recurring audits (trigger, tool, blocking rule, trace): `docs/architecture/audits.md`. Review
+reports live in `docs/architecture/reviews/<branch>.md`.
 
 ## Toolchain
 

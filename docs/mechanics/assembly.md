@@ -25,7 +25,7 @@
 1. **Flash first.** Connect the bare XIAO by USB-C, flash the release image
    (`pio run -e xiao_c3 -t upload`), check the serial banner. A flashed board fails fast.
 2. **Prepare the modules.** Solder short wires on DS1, MK1, U2, SW1 per the pin table of
-   [electronics-spec.md](electronics-spec.md). Set MK1 L/R to GND. Set SW1 to momentary, active high.
+   [electronics-spec.md](../electronics/electronics-spec.md). Set MK1 L/R to GND. Set SW1 to momentary, active high.
 3. **Buzzer stage.** Build Q1/D1/R1–R3 on a 10 × 10 mm perfboard scrap; test with a 3.3 V
    square wave at 2 kHz on the gate.
 4. **Wire to the XIAO.** Follow the contract table; one colour per bus. Test on the bench:

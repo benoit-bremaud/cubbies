@@ -13,7 +13,8 @@ in their own files; this page is the map.
 | How each requirement is checked | [verification-plan.md](verification-plan.md) |
 | When design is frozen | [gates.md](gates.md) (PDR per feature, CDR before the series) |
 | Proof of coverage | [traceability-matrix.md](traceability-matrix.md) |
-| Electronics, enclosure, assembly | [../hardware/](../hardware/electronics-spec.md) |
+| Electronics (spec, calculations, measurements) | [../electronics/](../electronics/electronics-spec.md) |
+| Enclosure and assembly | [../mechanics/](../mechanics/mechanical-spec.md) |
 
 ## 1. Introduction and goals
 

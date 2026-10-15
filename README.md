@@ -33,13 +33,18 @@ Full bill of materials: [docs/bom.md](docs/bom.md). Roadmap and prioritised back
 docs/bom.md               bill of materials per cube and for the prototypes
 docs/roadmap.md           V1 → V3 and the prioritised behaviour backlog
 docs/decisions/           ADRs (Nygard format), one per structuring decision
-docs/architecture/        UML study (Mermaid), see its README for conventions
+docs/architecture/        design dossier and UML study (Mermaid), see its README
+docs/electronics/         electronics spec, calculations, measurements (to come)
+docs/mechanics/           mechanical spec, assembly guide
 firmware/                 PlatformIO project (pioarduino platform, Arduino core 3.3.x)
-hardware/case/            3D-printable enclosure (CC BY-SA 4.0), to come
+electronics/              KiCad schematic and ngspice simulations, to come
+mechanics/                3D-printable enclosure (CC BY-SA 4.0), to come
+web/                      browser simulator and configurator (WebAssembly build of the firmware lib), to come
+okh.yml                   Open Know-How manifest (what this project is, under which licences)
 PROJECT_LOG.md            operational logbook
 ```
 
 ## Licence
 
-Firmware and documentation: [MIT](LICENSE). Enclosure files under `hardware/case/`:
-[CC BY-SA 4.0](hardware/case/LICENSE.md).
+Firmware and documentation: [MIT](LICENSE). Enclosure files under `mechanics/`:
+[CC BY-SA 4.0](mechanics/LICENSE.md).
