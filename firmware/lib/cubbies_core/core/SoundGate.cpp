@@ -12,6 +12,9 @@ constexpr Note kHello[] = {{1047, 80}, {1319, 120}};
 constexpr Note kYawn[] = {{784, 200}, {659, 200}, {523, 300}};
 constexpr Note kGrumpy[] = {{220, 150}, {185, 250}};
 constexpr Note kWakeMelody[] = {{523, 150}, {659, 150}, {784, 150}, {1047, 300}};
+constexpr Note kRitualChime[] = {{1047, 100}, {1568, 100}, {2093, 160}};
+constexpr Note kRitualTick[] = {{1760, 40}};  // one fixed pitch until the sound-design brick
+constexpr Note kAdoption[] = {{784, 100}, {1047, 100}, {1319, 100}, {1568, 100}, {2093, 250}};
 
 struct Sound {
   const Note* notes;
@@ -27,7 +30,8 @@ constexpr Sound sound(const Note (&notes)[N], uint8_t rank) {
 // Indexed by SoundId.
 constexpr Sound kSounds[] = {
     sound(kSurprise, 0), sound(kJoy, 0),    sound(kPurr, 0),       sound(kHello, 0),
-    sound(kYawn, 1),     sound(kGrumpy, 2), sound(kWakeMelody, 3), sound(kHello, 9), sound(kHello, 9), sound(kHello, 9),
+    sound(kYawn, 1),     sound(kGrumpy, 2), sound(kWakeMelody, 3),
+    sound(kRitualChime, 0), sound(kRitualTick, 0), sound(kAdoption, 0),
 };
 
 static_assert(sizeof(kSounds) / sizeof(kSounds[0]) == kSoundCount,
