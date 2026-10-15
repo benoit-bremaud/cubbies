@@ -8,7 +8,7 @@
 - Checks run: design (architecture-guardian) · docs (doc-auditor) · tests (test-auditor) ·
   correctness and security (general review with `-Wall -Wextra` compile and PCG32 reference check)
 - Verdict: fix Must Have first, then ship · Must 5 · Should 22 · Nice 15 — **all Must and
-  Should applied before push**; 34 native tests green, both board envs build
+  Should applied before push**; 39 native tests green, both board envs build
 
 ## 🔴 Must Have
 
@@ -17,7 +17,7 @@
   rounds up to the next tick. · Applied: FS1 now says "eyes stay open 2–6 s between two blinks
   (measured from the reopening)"; the test runs 32 seeds with the open-interval semantics and a
   three-tick tolerance.
-- `Png.h` update mode `[tests]` · Any value of `CUBBIES_UPDATE_GOLDEN` regenerated and passed
+- `Golden.h` (then `Png.h`) update mode `[tests]` · Any value of `CUBBIES_UPDATE_GOLDEN` regenerated and passed
   silently. · Applied: value must be exactly `1`, refused when `CI` is set; a mismatch writes
   `<name>.actual.png` and the message names it; a missing file fails explicitly.
 - `ADR-0014:30` `[docs]` · Option A total 31 instead of 30. · Applied.
@@ -50,8 +50,9 @@
 - `test_framebuffer.cpp` `[tests]` · Tautological constant asserts, banded count. · Applied:
   removed, exact deterministic count.
 - `test_prng.cpp` `[tests]` · Rejection loop never exercised. · Applied: large-bound test.
-- `STB_VERSION`, `ADR-0014` `[docs]` · stb is dual-licensed MIT / public domain; versions not
-  recorded. · Applied.
+- `STB_VERSION`, `ADR-0014` `[docs]` · stb licence and versions. · Superseded on 2026-10-15: the
+  vendored stb headers were removed after CodeQL raised 13 high alerts in them (raw RGB565
+  references + an own PNG writer with known-answer tests; no third-party image code).
 - Golden workflow `[docs]` · Documented only in CLAUDE.md. · Applied: `test/golden/README.md`,
   pointer in `lib/README.md`, script docstring; `sheet.png` and `*.actual.png` ignored by git.
 - `EyesRenderer.h` `[design]` · `setIdleGlances` without a production reason. · Applied:
