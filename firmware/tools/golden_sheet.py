@@ -7,7 +7,10 @@ the golden files written by test_native_eyes; missing files are skipped silently
 import os, sys
 from PIL import Image, ImageDraw
 
-names = ["curious", "happy", "bored", "tired", "annoyed", "closed", "blink-1", "blink-2", "blink-3", "blink-4"]
+names = ["curious", "happy", "bored", "tired", "annoyed", "closed", "blink-1", "blink-2", "blink-3", "blink-4",
+         "touchdown-1", "touchdown-2", "surprise-1", "surprise-2", "joy-1", "joy-2", "lookup-1", "lookup-2",
+         "yawn-1", "yawn-2", "wake-1", "wake-2", "greet-1", "greet-2", "purr",
+         "invitation-empty", "invitation-full", "ritual", "adoption-1", "adoption-2", "error"]
 scale, pad, cols = 4, 12, 3
 w, h = 96 * scale, 64 * scale
 cols = 4

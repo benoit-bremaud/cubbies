@@ -12,6 +12,7 @@
 #include "core/Mood.h"
 #include "core/Prng.h"
 #include "eyes/EyesRenderer.h"
+#include "eyes/Reaction.h"
 
 using namespace cubbies;
 using cubbies::test::FakeClock;
@@ -332,6 +333,187 @@ static void test_golden_blink_sequence() {
   }
 }
 
+// ---- F1b: reactions (overlay on the mood) and identity frames -------------------------------
+
+// A reaction ends on its own and the mood frame comes back unchanged.
+static void test_reaction_overlay_ends_and_restores_the_mood_frame() {
+  Rig r = goldenRig(Mood::Curious);
+  r.eyes.tick();
+  const Framebuffer before = r.display.last;
+  r.eyes.play(Reaction::Surprise);
+  r.clock.advance(kTickMs);
+  r.eyes.tick();
+  TEST_ASSERT_FALSE(framesEqual(before, r.display.last));
+  r.run(EyesRenderer::reactionDurationMs(Reaction::Surprise) + kTickMs);
+  TEST_ASSERT_TRUE(framesEqual(before, r.display.last));
+}
+
+// Every timed reaction lasts its table duration (± one tick) and changes the frame.
+static void test_every_timed_reaction_changes_the_frame_for_its_duration() {
+  const Reaction timed[] = {Reaction::TouchDown, Reaction::Surprise, Reaction::Joy, Reaction::LookUp,
+                            Reaction::Yawn, Reaction::Wake, Reaction::Greet};
+  for (Reaction re : timed) {
+    Rig r = goldenRig(Mood::Curious);
+    r.eyes.tick();
+    const Framebuffer base = r.display.last;
+    r.eyes.play(re);
+    uint32_t changedMs = 0;
+    const uint32_t limit = EyesRenderer::reactionDurationMs(re) + 4 * kTickMs;
+    for (uint32_t t = 0; t < limit; t += kTickMs) {
+      r.clock.advance(kTickMs);
+      r.eyes.tick();
+      if (!framesEqual(base, r.display.last)) changedMs += kTickMs;
+    }
+    TEST_ASSERT_GREATER_OR_EQUAL_UINT32(EyesRenderer::reactionDurationMs(re) - kTickMs, changedMs);
+    TEST_ASSERT_LESS_OR_EQUAL_UINT32(EyesRenderer::reactionDurationMs(re) + kTickMs, changedMs);
+  }
+}
+
+// Purr lasts as long as the stroke: it holds until stopReaction().
+static void test_purr_holds_until_stopped() {
+  Rig r = goldenRig(Mood::Happy);
+  r.eyes.tick();
+  const Framebuffer base = r.display.last;
+  r.eyes.play(Reaction::Purr);
+  r.run(5000);
+  TEST_ASSERT_FALSE(framesEqual(base, r.display.last));
+  r.eyes.stopReaction();
+  r.run(EyesRenderer::kLidMoveMs + kTickMs);
+  TEST_ASSERT_TRUE(framesEqual(base, r.display.last));
+}
+
+// A reaction never blinks in the middle (the blink is deferred, not lost).
+static void test_no_blink_during_a_reaction() {
+  for (uint64_t seed = 1; seed <= 8; ++seed) {
+    Rig r(seed);
+    r.eyes.setColour(kCyan);
+    r.eyes.setIdleGlances(false);
+    r.eyes.setMood(Mood::Curious);
+    r.eyes.tick();
+    const int open = litPixels(r.display.last);
+    r.run(1900);  // close to the earliest possible blink
+    r.eyes.play(Reaction::Joy);
+    for (uint32_t t = 0; t < EyesRenderer::reactionDurationMs(Reaction::Joy); t += kTickMs) {
+      r.clock.advance(kTickMs);
+      r.eyes.tick();
+      TEST_ASSERT_GREATER_THAN_INT(open / kClosedDivisor, litPixels(r.display.last));
+    }
+  }
+}
+
+// Identity frames replace the mood frame until cleared; the invitation gauge grows with progress.
+static void test_invitation_gauge_grows_with_progress_and_clears() {
+  Rig r = goldenRig(Mood::Curious);
+  r.eyes.tick();
+  const Framebuffer plain = r.display.last;
+  r.eyes.showInvitation(0);
+  r.eyes.tick();
+  const int empty = litPixels(r.display.last);
+  r.eyes.showInvitation(255);
+  r.eyes.tick();
+  const int full = litPixels(r.display.last);
+  TEST_ASSERT_GREATER_THAN_INT(empty, full);
+  TEST_ASSERT_FALSE(framesEqual(plain, r.display.last));
+  r.eyes.clearIdentityFrame();
+  r.eyes.tick();
+  TEST_ASSERT_TRUE(framesEqual(plain, r.display.last));
+}
+
+static void test_ritual_frame_pulses_and_shows_the_candidate_colour() {
+  Rig r = goldenRig(Mood::Curious);
+  r.eyes.showRitualFrame(rgb565(255, 0, 0));
+  r.eyes.tick();
+  const Framebuffer a = r.display.last;
+  bool red = false;
+  for (int y = 0; y < Framebuffer::kHeight; ++y)
+    for (int x = 0; x < Framebuffer::kWidth; ++x)
+      if (a.at(x, y).value == rgb565(255, 0, 0).value) red = true;
+  TEST_ASSERT_TRUE(red);
+  bool changed = false;
+  for (uint32_t t = 0; t < 2000 && !changed; t += kTickMs) {
+    r.clock.advance(kTickMs);
+    r.eyes.tick();
+    changed = !framesEqual(a, r.display.last);
+  }
+  TEST_ASSERT_TRUE_MESSAGE(changed, "ritual frame does not pulse");
+}
+
+static void test_adoption_and_error_animations_end_on_their_own() {
+  Rig r = goldenRig(Mood::Curious);
+  r.eyes.tick();
+  const Framebuffer plain = r.display.last;
+  r.eyes.playAdoption(rgb565(0, 255, 0));
+  r.clock.advance(kTickMs);
+  r.eyes.tick();
+  TEST_ASSERT_FALSE(framesEqual(plain, r.display.last));
+  r.run(EyesRenderer::kAdoptionMs + kTickMs);
+  r.eyes.setColour(kCyan);  // the ritual's caller re-applies the final colour, as in 02a
+  r.eyes.tick();
+  TEST_ASSERT_TRUE(framesEqual(plain, r.display.last));
+  r.eyes.showError();
+  r.clock.advance(kTickMs);
+  r.eyes.tick();
+  TEST_ASSERT_FALSE(framesEqual(plain, r.display.last));
+  r.run(EyesRenderer::kErrorMs + kTickMs);
+  TEST_ASSERT_TRUE(framesEqual(plain, r.display.last));
+}
+
+// Goldens: two key frames per reaction, invitation empty/full, ritual, adoption, error.
+static void goldenReaction(Reaction re, const char* name, uint32_t atMs1, uint32_t atMs2) {
+  Rig r = goldenRig(Mood::Curious);
+  r.eyes.tick();
+  r.eyes.play(re);
+  r.run(atMs1);
+  checkGolden((std::string(name) + "-1").c_str(), r.display.last);
+  r.run(atMs2 - atMs1);
+  checkGolden((std::string(name) + "-2").c_str(), r.display.last);
+}
+static void test_golden_touchdown() { goldenReaction(Reaction::TouchDown, "touchdown", 40, 80); }
+static void test_golden_surprise() { goldenReaction(Reaction::Surprise, "surprise", 80, 200); }
+static void test_golden_joy() { goldenReaction(Reaction::Joy, "joy", 120, 360); }
+static void test_golden_lookup() { goldenReaction(Reaction::LookUp, "lookup", 120, 400); }
+static void test_golden_yawn() { goldenReaction(Reaction::Yawn, "yawn", 400, 1000); }
+static void test_golden_wake() { goldenReaction(Reaction::Wake, "wake", 200, 600); }
+static void test_golden_greet() { goldenReaction(Reaction::Greet, "greet", 120, 280); }
+static void test_golden_purr() {
+  Rig r = goldenRig(Mood::Happy);
+  r.eyes.tick();
+  r.eyes.play(Reaction::Purr);
+  r.run(EyesRenderer::kLidMoveMs + kTickMs);
+  checkGolden("purr", r.display.last);
+}
+static void test_golden_invitation() {
+  Rig r = goldenRig(Mood::Curious);
+  r.eyes.showInvitation(0);
+  r.eyes.tick();
+  checkGolden("invitation-empty", r.display.last);
+  r.eyes.showInvitation(255);
+  r.eyes.tick();
+  checkGolden("invitation-full", r.display.last);
+}
+static void test_golden_ritual() {
+  Rig r = goldenRig(Mood::Curious);
+  r.eyes.showRitualFrame(rgb565(255, 120, 0));
+  r.eyes.tick();
+  checkGolden("ritual", r.display.last);
+}
+static void test_golden_adoption() {
+  Rig r = goldenRig(Mood::Curious);
+  r.eyes.tick();
+  r.eyes.playAdoption(rgb565(255, 120, 0));
+  r.run(200);
+  checkGolden("adoption-1", r.display.last);
+  r.run(600);
+  checkGolden("adoption-2", r.display.last);
+}
+static void test_golden_error() {
+  Rig r = goldenRig(Mood::Curious);
+  r.eyes.tick();
+  r.eyes.showError();
+  r.run(kTickMs);
+  checkGolden("error", r.display.last);
+}
+
 int main() {
   UNITY_BEGIN();
   RUN_TEST(test_first_tick_presents_two_eyes_in_the_identity_colour_only);
@@ -352,5 +534,24 @@ int main() {
   RUN_TEST(test_golden_annoyed);
   RUN_TEST(test_golden_closed);
   RUN_TEST(test_golden_blink_sequence);
+  RUN_TEST(test_reaction_overlay_ends_and_restores_the_mood_frame);
+  RUN_TEST(test_every_timed_reaction_changes_the_frame_for_its_duration);
+  RUN_TEST(test_purr_holds_until_stopped);
+  RUN_TEST(test_no_blink_during_a_reaction);
+  RUN_TEST(test_invitation_gauge_grows_with_progress_and_clears);
+  RUN_TEST(test_ritual_frame_pulses_and_shows_the_candidate_colour);
+  RUN_TEST(test_adoption_and_error_animations_end_on_their_own);
+  RUN_TEST(test_golden_touchdown);
+  RUN_TEST(test_golden_surprise);
+  RUN_TEST(test_golden_joy);
+  RUN_TEST(test_golden_lookup);
+  RUN_TEST(test_golden_yawn);
+  RUN_TEST(test_golden_wake);
+  RUN_TEST(test_golden_greet);
+  RUN_TEST(test_golden_purr);
+  RUN_TEST(test_golden_invitation);
+  RUN_TEST(test_golden_ritual);
+  RUN_TEST(test_golden_adoption);
+  RUN_TEST(test_golden_error);
   return UNITY_END();
 }
