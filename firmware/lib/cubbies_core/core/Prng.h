@@ -11,6 +11,7 @@ namespace cubbies {
 class Prng {
  public:
   Prng(uint64_t seed, uint64_t stream);
+  // Next raw 32-bit output; the reference sequence is checked in test_prng.
   uint32_t next();
   // Uniform draw in [0, n). Returns 0 for n <= 1. Unbiased (rejection sampling).
   uint32_t uniform(uint32_t n);

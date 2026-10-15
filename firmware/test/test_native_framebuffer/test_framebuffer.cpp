@@ -1,6 +1,8 @@
 // Framebuffer 96×64 RGB565: primitives and clipping (no out-of-bounds writes).
 #include <unity.h>
 
+#include <climits>
+
 #include "eyes/Framebuffer.h"
 
 using cubbies::Framebuffer;
@@ -20,8 +22,6 @@ static int countColour(const Framebuffer& fb, Rgb565 c) {
 
 static void test_dimensions_and_clear() {
   Framebuffer fb;
-  TEST_ASSERT_EQUAL_INT(96, Framebuffer::kWidth);
-  TEST_ASSERT_EQUAL_INT(64, Framebuffer::kHeight);
   fb.clear(rgb565(255, 0, 0));
   TEST_ASSERT_EQUAL_INT(96 * 64, countColour(fb, rgb565(255, 0, 0)));
 }
@@ -54,6 +54,26 @@ static void test_fill_rect_clips_at_every_edge() {
   TEST_ASSERT_EQUAL_INT(25 + 24, countColour(fb, rgb565(0, 0, 255)));
 }
 
+static void test_extreme_coordinates_leave_the_frame_untouched_and_terminate() {
+  Framebuffer fb;
+  fb.clear(rgb565(0, 0, 0));
+  fb.fillRect(INT_MAX, INT_MAX, INT_MAX, INT_MAX, rgb565(8, 4, 8));
+  fb.fillRect(INT_MIN, 0, 10, 10, rgb565(8, 4, 8));
+  fb.fillRect(-10, -10, INT_MAX, INT_MAX, rgb565(255, 255, 255));  // covers the whole screen
+  TEST_ASSERT_EQUAL_INT(96 * 64, countColour(fb, rgb565(255, 255, 255)));
+  fb.clear(rgb565(0, 0, 0));
+  fb.fillRoundRect(INT_MAX - 5, 0, 10, 10, 3, rgb565(8, 4, 8));
+  fb.fillRoundRect(-5, -5, INT_MAX, INT_MAX, 50, rgb565(255, 255, 255));
+  TEST_ASSERT_EQUAL_INT(96 * 64, countColour(fb, rgb565(255, 255, 255)));
+  fb.clear(rgb565(0, 0, 0));
+  fb.fillCircle(INT_MIN, INT_MIN, INT_MAX, rgb565(8, 4, 8));
+  fb.fillCircle(48, 32, INT_MAX, rgb565(255, 255, 255));
+  TEST_ASSERT_EQUAL_INT(96 * 64, countColour(fb, rgb565(255, 255, 255)));
+  fb.clear(rgb565(0, 0, 0));
+  fb.fillCircle(-1000, 32, 5, rgb565(8, 4, 8));
+  TEST_ASSERT_EQUAL_INT(0, countColour(fb, rgb565(8, 4, 8)));
+}
+
 static void test_at_outside_returns_black_and_does_not_crash() {
   Framebuffer fb;
   fb.clear(rgb565(255, 255, 255));
@@ -69,9 +89,8 @@ static void test_round_rect_leaves_corners_unfilled() {
   TEST_ASSERT_EQUAL_HEX16(0x0000, fb.at(10, 10).value);  // corner pixel is outside the radius
   TEST_ASSERT_EQUAL_HEX16(0xFFFF, fb.at(20, 20).value);  // centre is filled
   TEST_ASSERT_EQUAL_HEX16(0xFFFF, fb.at(10, 20).value);  // mid-left edge is filled
-  const int n = countColour(fb, rgb565(255, 255, 255));
-  TEST_ASSERT_LESS_THAN_INT(400, n);
-  TEST_ASSERT_GREATER_THAN_INT(300, n);
+  // 20×20 minus the 3 pixels per corner outside the radius-6 arc (deterministic rendering).
+  TEST_ASSERT_EQUAL_INT(20 * 20 - 4 * 3, countColour(fb, rgb565(255, 255, 255)));
 }
 
 static void test_data_is_row_major_rgb565() {
@@ -79,7 +98,6 @@ static void test_data_is_row_major_rgb565() {
   fb.clear(rgb565(0, 0, 0));
   fb.fillRect(1, 0, 1, 1, rgb565(255, 0, 0));
   TEST_ASSERT_EQUAL_HEX16(0xF800, fb.data()[1]);
-  TEST_ASSERT_EQUAL_size_t(96u * 64u, Framebuffer::kPixels);
 }
 
 int main() {
@@ -88,6 +106,7 @@ int main() {
   RUN_TEST(test_rgb565_packing);
   RUN_TEST(test_fill_rect_sets_exactly_its_pixels);
   RUN_TEST(test_fill_rect_clips_at_every_edge);
+  RUN_TEST(test_extreme_coordinates_leave_the_frame_untouched_and_terminate);
   RUN_TEST(test_at_outside_returns_black_and_does_not_crash);
   RUN_TEST(test_round_rect_leaves_corners_unfilled);
   RUN_TEST(test_data_is_row_major_rgb565);

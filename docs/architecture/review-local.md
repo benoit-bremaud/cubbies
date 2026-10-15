@@ -1,82 +1,97 @@
 # Local review — cubbies (branch diff)
 
-- Date: 2026-10-14
-- Commit: b28246c (findings applied in this amended commit)
-- Scope: branch diff `main...HEAD` on `docs/pdr-cube-core` (cube-core PDR: eight diagrams, specs,
-  traceability matrix, ADR-0013, ADR-0008 amendment note, roadmap, assembly check, CLAUDE.md rules,
-  PROJECT_LOG)
-- Checks run: design (architecture-guardian) · docs (doc-auditor) · correctness: datasheet facts
-  of the decisions verified in the PDR session (ESP32-C3 RNG, TTP223 calibration, PCG32) ·
-  security: not applicable (no code) · tests: not applicable
-- Verdict: fix Must Have first, then ship · Must 6 · Should 15 · Nice 7 — **all Must and Should
-  applied before push**
+- Date: 2026-10-15
+- Commit: feat/f1-eyes (findings applied in the third commit of the branch)
+- Scope: branch diff `main...HEAD` on `feat/f1-eyes` (firmware brick F1: ports `IDisplay` and
+  `IClock`, `Prng`, `Mood`, `Framebuffer`, `EyesRenderer`, test doubles, native tests, golden
+  images, ADR-0014, CLAUDE.md test rule, PROJECT_LOG)
+- Checks run: design (architecture-guardian) · docs (doc-auditor) · tests (test-auditor) ·
+  correctness and security (general review with `-Wall -Wextra` compile and PCG32 reference check)
+- Verdict: fix Must Have first, then ship · Must 5 · Should 22 · Nice 15 — **all Must and
+  Should applied before push**; 34 native tests green, both board envs build
 
 ## 🔴 Must Have
 
-- `ADR-0013:53,66` `[design|docs]` · Two scoring totals wrong (D2 option D = 26 not 23, D3
-  option C = 19 not 20); E now beats D by one point. · Applied, with a sentence on why E still
-  wins (ships in V1.x without V1.5 infrastructure).
-- `identity/02a:44-50`, `02b`, `use-cases.md` UC1 `[design]` · The 2 s entry hold could be read
-  as the 1.5 s confirming stroke and write the MAC-default colour to NVS. · Applied: the entry
-  press is consumed by the Gesture classifier; first ritual gesture is the next pressed edge
-  (diagram step, notes, UC1 step 1).
-- `cube-core/03:66-67` `[design]` · The codec computes `moodByte(sleepState, wakeOrigin, mood)`
-  but no `Social --> MoodE` edge was drawn; Waking's origin was not exposed. · Applied: edge
-  added, `wakeOrigin` named in 03 and 05b.
-- `cube-core/03:166` `[docs]` · "until the UC6 gesture is decided" after the decision. ·
-  Applied.
-- `docs/architecture/README.md:29` `[docs]` · Index still named "held-at-boot" as the only
-  entry. · Applied.
-- `CLAUDE.md:41-46` `[docs|design]` · Rules contradicted ADR-0013 (RNG injected, duty level,
-  volume gesture). · Applied.
+- `test_eyes.cpp` blink-gap test `[tests]` · Passed only because of the seed: the gap was
+  measured start to start while the renderer schedules from the reopening, and the deadline
+  rounds up to the next tick. · Applied: FS1 now says "eyes stay open 2–6 s between two blinks
+  (measured from the reopening)"; the test runs 32 seeds with the open-interval semantics and a
+  three-tick tolerance.
+- `Png.h` update mode `[tests]` · Any value of `CUBBIES_UPDATE_GOLDEN` regenerated and passed
+  silently. · Applied: value must be exactly `1`, refused when `CI` is set; a mismatch writes
+  `<name>.actual.png` and the message names it; a missing file fails explicitly.
+- `ADR-0014:30` `[docs]` · Option A total 31 instead of 30. · Applied.
+- `EyesRenderer.cpp` blink comment `[docs]` · "half, closed, closed, half, ≈ 3 ticks" did not
+  match the thresholds. · Applied: named constants `kBlinkHalfMs`, `kBlinkClosedMs`,
+  `kBlinkTotalMs` on the tick, comment describes the real frames, a fourth golden `blink-4`.
+- `IDisplay.h` `[docs]` · No buffer-lifetime contract, wrong "two test doubles" claim. ·
+  Applied: single-buffer contract (present() finishes reading before returning), brightness
+  levels explained.
 
 ## 🟡 Should Have
 
-- ADR-0013 amends ADR-0008 without saying so · Applied: status line, index row, forward note in
-  ADR-0008.
-- `03:78` BuzzerAudio "duty level" · Applied: "volume level → duty → tone".
-- `README.md` "Maintenance" domain vs "Making" · Applied.
-- `02a` hold starting late in the window undefined · Applied: a hold in progress extends the
-  window by up to T_secret, gauge never resets mid-hold.
-- `use-cases.md:78` UC7 "30 s" vs T_ttl 15 s · Applied.
-- UC5 requirement lists differ between 01 and the spec · Applied: REQ-F-06, F-05, NF-08 in both.
-- ADR-0013 D4 called the rare gag tier A while S12 is tier C · Applied: wording fixed.
-- `requirements.md:59` "secret gesture" · Applied.
-- `02b` confirm path lacked the tick plumbing · Applied: `M->>I: tick(stroke, nowMs)`.
-- `02a`/`02b` colour applied before the ritual, not re-applied after · Applied: setColour
-  re-applied with the final identity, 02b note reworded.
-- PROJECT_LOG entry as prose · Applied: decisions as labelled bullets with rejected alternatives.
-- `03` sound table: loud also wakes from Dozing · Applied.
-- `03` tick budget 16 + 24 ms · Applied.
-- `traceability-matrix.md` "sleep controller" → "Sleep cycle" · Applied.
-- `ADR-0013` link to gates.md, T_settle_touch rationale, T_doubletap listed with the other
-  gesture durations · Applied.
+- `EyesRenderer.cpp` `[design]` · Magic blink numbers duplicated; `0x80000000u` idiom written
+  twice; zero used as "never moved" sentinel; geometry hidden in the .cpp. · Applied: constants
+  in the header, `isDue()` in `IClock.h`, `lidsSettled_` flag, geometry constants public.
+- `EyesRenderer.cpp` `[correctness]` · `openEyes()` did not reschedule the blink: waking always
+  blinked on top of the lid opening, and a deadline older than 24.8 days would stall. ·
+  Applied, with a test ("no blink in the first two seconds after waking").
+- `Framebuffer.cpp` `[correctness|security]` · `fillCircle` was O(r²) unbounded (a huge radius
+  would trip the watchdog); `fillRect`/`fillRoundRect` had signed overflow on `x + w` for
+  extreme inputs. · Applied: 64-bit span clipping, circle iterated over its on-screen bounding
+  box only, test with `INT_MAX`/`INT_MIN` inputs.
+- `Framebuffer.h`, `EyesRenderer.h` `[correctness|docs]` · 12 KB object by value undocumented
+  as a stack hazard on the 8 KB loop task. · Applied: both headers say "static in main.cpp,
+  never a local".
+- `test_eyes.cpp` `[tests]` · Drift test did not prove a one-pixel shift; thresholds arbitrary;
+  golden loop hid failures; no test for the `setLook` clamp, the no-blink-while-closed rule,
+  the clock wrap, the clock-start independence. · Applied: shift test over the 4-step square
+  open and closed, named `kClosedDivisor`, per-mood golden tests, four new rule tests.
+- `test_framebuffer.cpp` `[tests]` · Tautological constant asserts, banded count. · Applied:
+  removed, exact deterministic count.
+- `test_prng.cpp` `[tests]` · Rejection loop never exercised. · Applied: large-bound test.
+- `STB_VERSION`, `ADR-0014` `[docs]` · stb is dual-licensed MIT / public domain; versions not
+  recorded. · Applied.
+- Golden workflow `[docs]` · Documented only in CLAUDE.md. · Applied: `test/golden/README.md`,
+  pointer in `lib/README.md`, script docstring; `sheet.png` and `*.actual.png` ignored by git.
+- `EyesRenderer.h` `[design]` · `setIdleGlances` without a production reason. · Applied:
+  documented as "something else owns the gaze" (reactions in F2); `frame()` removed.
+- `EyesRenderer.cpp` `[docs]` · Happy-arc comment said open/3. · Applied (45 %).
+- `IClock.h`, `Prng.h` `[docs]` · "MillisClock" without its brick; `next()` undocumented. ·
+  Applied.
 
 ## 🔵 Nice to Have
 
-- `03` Prng node without edges · Intentional (cross-cutting like `IClock`), label says so.
-- Historical mentions of `IRng`, `localMac`, UC2, "held while plugging in" in explanatory or
-  dated sentences · Kept, they record the change.
-- The previous report (design dossier) mentioned UC12/UC13 · Superseded by this file (git keeps
-  it).
+- `static_assert(kEyeW > 1)` for the annoyed wedge division · Applied.
+- `kGoldenDir` cwd-relative · Kept: `pio test` runs from `firmware/`, documented in the golden
+  README; a build flag would add a second source of truth.
+- `fillRoundRect` corners slightly fuller than a true circle (3 px cut at r = 6) · Kept:
+  cosmetic and pinned by the goldens; changing it invalidates every image.
+- Single-responsibility of `EyesRenderer` · Kept at this size; split trigger recorded: the
+  third timed animation in F2 (blink and lid move already share the start+duration+phase
+  lifecycle).
+- `Lids` as a bag of flags, `kMoodCount` without consumer · Kept; revisit when F2 adds a third
+  shape modifier or the mood engine consumes the count.
 
 ## ⚪ Disagree / Intentional
 
-- Deferred ovals UC8/UC9 and the `Team` actor in the use-case diagram `[design]` · Justified:
-  the matrix needs a target for explicitly deferred tier-A goals.
-- One `Prng` instance per consumer `[design]` · Keeps test sequences independent; ADR-0013 D1.
-- `kFrameSize` included by the adapter from `lib/` `[design]` · src → lib is the allowed
-  direction and removes a duplicated constant.
-- Touch-down stimulus as a second gesture output `[design]` · Smallest change meeting REQ-NF-01
-  with a 250 ms double-tap window.
+- `Framebuffer` by value inside the renderer `[design]` · The single-buffer design of the
+  component diagram; the port receives a `const&`, nothing is copied; documented as static-only.
+- `Prng` concrete class, no port `[design]` · ADR-0013 D1.
+- Long simulated runs (120–180 s of virtual time) `[tests]` · Milliseconds of wall time on the
+  fake clock; FIRST "fast" holds.
+- Exact pixel comparison of the goldens `[tests]` · Deterministic integer rendering; no
+  tolerance needed.
 
 ## Per-dimension summary
 
-- Design: dependency rule holds (no lib → src edge, Identity no longer depends on `IRadio`);
-  one behavioural defect (entry press) and one missing edge fixed; no over-engineering.
-- Docs: numbers consistent everywhere (1 s / 4 s / 2 s invitation, 250 ms double tap, 40 ms
-  tick, 10 / 30 min sleep chain), UC numbering unified, every diagram keeps the template, all
-  blocks render with `mmdc`, no broken relative link.
-- Tests: not applicable; the native test seams (fakes per port, seeded Prng) are named in 03.
-- Security: privacy boundary of the microphone written into 03; nothing else in scope.
-- Correctness: facts behind the decisions verified against primary sources during the PDR.
+- Design: conforms to 03-component (renderer owns the buffer and the port, brightness through
+  the renderer, Prng injected, no Arduino include); no over-engineering; split trigger noted.
+- Docs: contracts stated on every port and class; ADR total fixed; golden workflow documented
+  where contributors look.
+- Tests: 34 native tests, one per rule of FS1 / REQ-F-01 / REQ-NF-08 plus goldens per mood;
+  doubles only at the ports; no false-confidence test left.
+- Security: no network or storage in this brick; primitives bounded against hostile inputs;
+  stack hazard documented for the MCU.
+- Correctness: PCG32 and `uniform()` verified against the reference; `-Wall -Wextra` clean;
+  wrap arithmetic through `ageMs`/`isDue` only.

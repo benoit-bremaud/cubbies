@@ -1,6 +1,6 @@
-// Eyes renderer: timing rules of FS1 / REQ-F-01 / REQ-NF-08 and golden images of every mood.
-// Golden images are characterisation tests: regenerate with CUBBIES_UPDATE_GOLDEN=1 and review
-// the PNGs in the pull request before committing them.
+// Eyes renderer: the rules of FS1 / REQ-F-01 / REQ-NF-08 (one test per rule, ADR-0014) and
+// golden images of every mood (characterisation tests). Regenerate goldens with
+// CUBBIES_UPDATE_GOLDEN=1 from firmware/, review the PNG sheet in the pull request, then commit.
 #define STB_IMAGE_IMPLEMENTATION
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <unity.h>
@@ -20,14 +20,19 @@ using cubbies::test::FakeClock;
 using cubbies::test::RecordingDisplay;
 
 namespace {
-constexpr uint32_t kTickMs = 40;
+constexpr uint32_t kTickMs = EyesRenderer::kTickMs;
 const std::string kGoldenDir = "test/golden/";
+const Rgb565 kCyan = rgb565(0, 200, 255);
+// A frame is "closed" when fewer than 1/10 of the open pixels are lit: the half-open blink
+// phase keeps about 1/2, the closed line about 1/30.
+constexpr int kClosedDivisor = 10;
 
 struct Rig {
+  explicit Rig(uint64_t seed = 1234, uint32_t startMs = 0) : clock(startMs), prng(seed, 1), eyes(clock, prng, display) {}
   FakeClock clock;
-  Prng prng{1234, 1};
+  Prng prng;
   RecordingDisplay display;
-  EyesRenderer eyes{clock, prng, display};
+  EyesRenderer eyes;
   void run(uint32_t ms) {
     for (uint32_t t = 0; t < ms; t += kTickMs) {
       clock.advance(kTickMs);
@@ -50,121 +55,194 @@ bool framesEqual(const Framebuffer& a, const Framebuffer& b) {
   return true;
 }
 
+// True when b is a shifted by (dx, dy) pixels (pixels shifted out are ignored).
+bool shiftedBy(const Framebuffer& a, const Framebuffer& b, int dx, int dy) {
+  for (int y = 0; y < Framebuffer::kHeight; ++y)
+    for (int x = 0; x < Framebuffer::kWidth; ++x)
+      if (x + dx >= 0 && x + dx < Framebuffer::kWidth && y + dy >= 0 && y + dy < Framebuffer::kHeight &&
+          b.at(x + dx, y + dy).value != a.at(x, y).value)
+        return false;
+  return true;
+}
+
 void checkGolden(const char* name, const Framebuffer& fb) {
   const std::string path = kGoldenDir + name + ".png";
   if (cubbies::test::updateGoldenRequested()) {
     TEST_ASSERT_TRUE_MESSAGE(cubbies::test::writePng(path, fb), path.c_str());
+    TEST_MESSAGE("golden regenerated, not compared: review the PNG sheet in the PR");
     return;
   }
   const long diff = cubbies::test::comparePng(path, fb);
-  char msg[160];
-  std::snprintf(msg, sizeof msg, "%s: %ld pixels differ (run with CUBBIES_UPDATE_GOLDEN=1 to regenerate)", name, diff);
+  if (diff < 0) TEST_FAIL_MESSAGE(("golden missing or wrong size, run from firmware/: " + path).c_str());
+  if (diff > 0) cubbies::test::writePng(kGoldenDir + name + ".actual.png", fb);
+  char msg[200];
+  std::snprintf(msg, sizeof msg, "%s: %ld pixels differ, see %s.actual.png; regenerate only if the change is intended",
+                name, diff, name);
   TEST_ASSERT_EQUAL_INT_MESSAGE(0, diff, msg);
+}
+
+Rig goldenRig(Mood mood) {
+  Rig r;
+  r.eyes.setColour(kCyan);
+  r.eyes.setIdleGlances(false);
+  r.eyes.setMood(mood);
+  return r;
 }
 }  // namespace
 
 void setUp() {}
 void tearDown() {}
 
-static void test_first_tick_presents_a_frame_with_two_eyes_in_the_identity_colour() {
+// REQ-F-01: two eyes, in the identity colour only.
+static void test_first_tick_presents_two_eyes_in_the_identity_colour_only() {
   Rig r;
-  r.eyes.setColour(rgb565(0, 200, 255));
+  r.eyes.setColour(kCyan);
+  r.eyes.setIdleGlances(false);
   r.eyes.setMood(Mood::Curious);
   r.eyes.tick();
   TEST_ASSERT_EQUAL_UINT32(1, r.display.presentCount);
-  TEST_ASSERT_GREATER_THAN_INT(400, litPixels(r.display.last));
-  // left and right halves both lit: two eyes
   int left = 0, right = 0;
-  for (int y = 0; y < Framebuffer::kHeight; ++y)
-    for (int x = 0; x < Framebuffer::kWidth; ++x)
-      if (r.display.last.at(x, y).value != 0) (x < 48 ? left : right)++;
-  TEST_ASSERT_GREATER_THAN_INT(150, left);
-  TEST_ASSERT_GREATER_THAN_INT(150, right);
-  // the only non-black colour is the identity colour
   for (int y = 0; y < Framebuffer::kHeight; ++y)
     for (int x = 0; x < Framebuffer::kWidth; ++x) {
       const uint16_t v = r.display.last.at(x, y).value;
-      TEST_ASSERT_TRUE(v == 0 || v == rgb565(0, 200, 255).value);
+      TEST_ASSERT_TRUE(v == 0 || v == kCyan.value);
+      if (v != 0) (x < Framebuffer::kWidth / 2 ? left : right)++;
     }
+  // Each eye is a rounded kEyeW × kEyeH rectangle: at least 80 % of that area is lit.
+  const int minPerEye = EyesRenderer::kEyeW * EyesRenderer::kEyeH * 8 / 10;
+  TEST_ASSERT_GREATER_THAN_INT(minPerEye, left);
+  TEST_ASSERT_GREATER_THAN_INT(minPerEye, right);
 }
 
-static void test_blinks_happen_every_2_to_6_seconds_while_awake() {
-  Rig r;
-  r.eyes.setColour(rgb565(255, 255, 255));
+// FS1: eyes stay open 2–6 s between two blinks (measured from the reopening), for any seed.
+static void checkBlinkGaps(uint64_t seed) {
+  Rig r(seed);
+  r.eyes.setColour(kCyan);
   r.eyes.setMood(Mood::Curious);
   r.eyes.tick();
   const int openLit = litPixels(r.display.last);
-  uint32_t lastBlinkStart = r.clock.nowMs();
+  uint32_t lastReopen = r.clock.nowMs();
   bool inBlink = false;
   int blinks = 0;
   for (uint32_t t = 0; t < 120000; t += kTickMs) {
     r.clock.advance(kTickMs);
     r.eyes.tick();
-    const bool closedNow = litPixels(r.display.last) < openLit / 3;
+    const bool closedNow = litPixels(r.display.last) < openLit / kClosedDivisor;
+    if (!closedNow && inBlink) lastReopen = r.clock.nowMs();
     if (closedNow && !inBlink) {
-      const uint32_t gap = r.clock.nowMs() - lastBlinkStart;
-      if (blinks > 0) {
-        TEST_ASSERT_GREATER_OR_EQUAL_UINT32(2000, gap);
-        TEST_ASSERT_LESS_OR_EQUAL_UINT32(6000, gap);
-      }
-      lastBlinkStart = r.clock.nowMs();
+      const uint32_t gap = r.clock.nowMs() - lastReopen;
+      // Measured between the first non-closed frame and the next closed frame: the scheduled
+      // 2000..6000 ms plus up to three ticks (the trailing and leading half-open frames count as
+      // open, and the blink starts on the first tick at or after its deadline).
+      TEST_ASSERT_GREATER_OR_EQUAL_UINT32(EyesRenderer::kBlinkMinMs, gap);
+      TEST_ASSERT_LESS_OR_EQUAL_UINT32(EyesRenderer::kBlinkMaxMs + 3 * kTickMs, gap);
       ++blinks;
     }
     inBlink = closedNow;
   }
-  TEST_ASSERT_GREATER_OR_EQUAL_INT(20, blinks);
+  TEST_ASSERT_GREATER_OR_EQUAL_INT(18, blinks);
   TEST_ASSERT_LESS_OR_EQUAL_INT(60, blinks);
 }
+static void test_blinks_keep_eyes_open_2_to_6_seconds_for_any_seed() {
+  for (uint64_t seed = 1; seed <= 32; ++seed) checkBlinkGaps(seed);
+}
 
-static void test_a_blink_lasts_between_80_and_240_ms() {
+// FS1: a blink is short (closed for about two ticks) and the eyes reopen fully.
+static void test_a_blink_closes_for_about_80_ms_then_reopens_fully() {
   Rig r;
-  r.eyes.setColour(rgb565(255, 255, 255));
+  r.eyes.setColour(kCyan);
+  r.eyes.setIdleGlances(false);
   r.eyes.setMood(Mood::Curious);
   r.eyes.tick();
   const int openLit = litPixels(r.display.last);
   r.eyes.blinkNow();
   uint32_t closedMs = 0;
-  for (int i = 0; i < 20; ++i) {
+  for (int i = 0; i < 8; ++i) {
     r.clock.advance(kTickMs);
     r.eyes.tick();
-    if (litPixels(r.display.last) < openLit / 3) closedMs += kTickMs;
+    if (litPixels(r.display.last) < openLit / kClosedDivisor) closedMs += kTickMs;
   }
-  TEST_ASSERT_GREATER_OR_EQUAL_UINT32(80, closedMs);
-  TEST_ASSERT_LESS_OR_EQUAL_UINT32(240, closedMs);
+  TEST_ASSERT_EQUAL_UINT32(EyesRenderer::kBlinkClosedMs, closedMs);
+  TEST_ASSERT_EQUAL_INT(openLit, litPixels(r.display.last));
 }
 
+// FS1: never a static frame for more than 10 s while awake, even with idle glances disabled
+// (the drift alone must carry the rule).
 static void test_frame_never_stays_identical_for_more_than_10_seconds() {
-  Rig r;
-  r.eyes.setColour(rgb565(255, 255, 255));
-  r.eyes.setMood(Mood::Bored);  // the calmest mood
-  r.eyes.tick();
-  Framebuffer previous = r.display.last;
-  uint32_t staticMs = 0;
-  for (uint32_t t = 0; t < 180000; t += kTickMs) {
-    r.clock.advance(kTickMs);
+  for (bool glances : {true, false}) {
+    Rig r;
+    r.eyes.setColour(kCyan);
+    r.eyes.setIdleGlances(glances);
+    r.eyes.setMood(Mood::Bored);  // the calmest mood
     r.eyes.tick();
-    if (framesEqual(previous, r.display.last)) {
-      staticMs += kTickMs;
-      TEST_ASSERT_LESS_THAN_UINT32(10000, staticMs);
-    } else {
-      staticMs = 0;
-      previous = r.display.last;
+    Framebuffer previous = r.display.last;
+    uint32_t staticMs = 0;
+    for (uint32_t t = 0; t < 180000; t += kTickMs) {
+      r.clock.advance(kTickMs);
+      r.eyes.tick();
+      if (framesEqual(previous, r.display.last)) {
+        staticMs += kTickMs;
+        TEST_ASSERT_LESS_THAN_UINT32(10000, staticMs);
+      } else {
+        staticMs = 0;
+        previous = r.display.last;
+      }
     }
   }
 }
 
-static void test_closed_eyes_show_almost_nothing_and_open_eyes_restore() {
+// Sleep: closed eyes show only the thin lines, no blink while closed, reopening restores them.
+static void test_closed_eyes_never_blink_and_open_eyes_restore() {
   Rig r;
-  r.eyes.setColour(rgb565(255, 255, 255));
+  r.eyes.setColour(kCyan);
+  r.eyes.setIdleGlances(false);
   r.eyes.setMood(Mood::Curious);
   r.eyes.tick();
   const int open = litPixels(r.display.last);
   r.eyes.closeEyes();
-  r.run(400);
-  TEST_ASSERT_LESS_THAN_INT(open / 4, litPixels(r.display.last));
+  r.run(EyesRenderer::kLidMoveMs + kTickMs);
+  const int closed = litPixels(r.display.last);
+  TEST_ASSERT_LESS_THAN_INT(open / kClosedDivisor, closed);
+  for (uint32_t t = 0; t < 30000; t += kTickMs) {  // 30 s closed: the lit count never rises
+    r.clock.advance(kTickMs);
+    r.eyes.tick();
+    TEST_ASSERT_LESS_OR_EQUAL_INT(closed, litPixels(r.display.last));
+  }
   r.eyes.openEyes();
-  r.run(400);
-  TEST_ASSERT_GREATER_THAN_INT(open * 3 / 4, litPixels(r.display.last));
+  r.run(EyesRenderer::kLidMoveMs + kTickMs);
+  TEST_ASSERT_EQUAL_INT(open, litPixels(r.display.last));
+}
+
+// Waking never starts with a blink on top of the lid opening: the sleep-time deadline is stale.
+static void test_no_blink_in_the_first_two_seconds_after_waking() {
+  Rig r;
+  r.eyes.setColour(kCyan);
+  r.eyes.setIdleGlances(false);
+  r.eyes.setMood(Mood::Curious);
+  r.eyes.tick();
+  const int open = litPixels(r.display.last);
+  r.eyes.closeEyes();
+  r.run(60000);
+  r.eyes.openEyes();
+  r.run(EyesRenderer::kLidMoveMs + kTickMs);
+  for (uint32_t t = 0; t < EyesRenderer::kBlinkMinMs - EyesRenderer::kLidMoveMs - kTickMs; t += kTickMs) {
+    r.clock.advance(kTickMs);
+    r.eyes.tick();
+    TEST_ASSERT_EQUAL_INT(open, litPixels(r.display.last));
+  }
+}
+
+// A rig whose clock does not start at 0 renders the same first frame (no zero sentinel).
+static void test_first_frame_does_not_depend_on_the_clock_start() {
+  Rig a(1234, 0);
+  Rig b(1234, 100);
+  for (Rig* r : {&a, &b}) {
+    r->eyes.setColour(kCyan);
+    r->eyes.setIdleGlances(false);
+    r->eyes.setMood(Mood::Curious);
+    r->eyes.tick();
+  }
+  TEST_ASSERT_TRUE(framesEqual(a.display.last, b.display.last));
 }
 
 static void test_brightness_is_forwarded_to_the_display() {
@@ -175,72 +253,104 @@ static void test_brightness_is_forwarded_to_the_display() {
   TEST_ASSERT_EQUAL(Brightness::Minimum, r.display.brightness);
 }
 
-static void test_drift_moves_the_frame_by_one_pixel_within_each_minute() {
+static void test_setLook_clamps_to_max_look() {
+  Rig a, b;
+  for (Rig* r : {&a, &b}) {
+    r->eyes.setColour(kCyan);
+    r->eyes.setIdleGlances(false);
+  }
+  a.eyes.setLook(100, -100);
+  b.eyes.setLook(EyesRenderer::kMaxLook, -EyesRenderer::kMaxLook);
+  a.eyes.tick();
+  b.eyes.tick();
+  TEST_ASSERT_TRUE(framesEqual(a.display.last, b.display.last));
+}
+
+// REQ-NF-08: the frame drifts one pixel per minute around a square, open or closed.
+static void checkDrift(bool closed) {
   Rig r;
-  r.eyes.setColour(rgb565(255, 255, 255));
+  r.eyes.setColour(kCyan);
+  r.eyes.setIdleGlances(false);
   r.eyes.setMood(Mood::Bored);
-  r.eyes.setIdleGlances(false);  // isolate the drift from the random glances
+  if (closed) {
+    r.eyes.closeEyes();
+    r.run(EyesRenderer::kLidMoveMs + kTickMs);
+  }
   r.eyes.tick();
   const Framebuffer first = r.display.last;
-  bool moved = false;
-  for (uint32_t t = 0; t < 61000 && !moved; t += kTickMs) {
-    r.clock.advance(kTickMs);
-    r.eyes.tick();
-    moved = !framesEqual(first, r.display.last) && litPixels(r.display.last) == litPixels(first);
+  const int steps[4][2] = {{1, 0}, {1, 1}, {0, 1}, {0, 0}};
+  for (const auto& s : steps) {
+    r.run(EyesRenderer::kDriftPeriodMs);
+    TEST_ASSERT_TRUE_MESSAGE(shiftedBy(first, r.display.last, s[0], s[1]), closed ? "closed" : "open");
   }
-  TEST_ASSERT_TRUE_MESSAGE(moved, "no one-pixel drift within 61 s");
+}
+static void test_drift_moves_one_pixel_per_minute_around_a_square_open_and_closed() {
+  checkDrift(false);
+  checkDrift(true);
 }
 
-static void test_golden_images_of_every_mood_and_of_closed_eyes() {
-  const struct { Mood mood; const char* name; } cases[] = {
-      {Mood::Curious, "curious"}, {Mood::Happy, "happy"}, {Mood::Bored, "bored"},
-      {Mood::Tired, "tired"},     {Mood::Annoyed, "annoyed"},
-  };
-  for (const auto& c : cases) {
-    Rig r;
-    r.eyes.setColour(rgb565(0, 200, 255));
-    r.eyes.setIdleGlances(false);
-    r.eyes.setMood(c.mood);
-    r.eyes.tick();
-    checkGolden(c.name, r.display.last);
-  }
-  Rig r;
-  r.eyes.setColour(rgb565(0, 200, 255));
-  r.eyes.setIdleGlances(false);
-  r.eyes.setMood(Mood::Tired);
-  r.eyes.closeEyes();
-  r.run(400);
-  checkGolden("closed", r.display.last);
-}
-
-static void test_golden_images_of_a_blink_sequence() {
-  Rig r;
-  r.eyes.setColour(rgb565(0, 200, 255));
-  r.eyes.setIdleGlances(false);
+// IClock contract: blinks keep coming across the 49.7-day wrap.
+static void test_blinks_survive_the_uint32_clock_wrap() {
+  Rig r(1234, 0xFFFFFFFFu - 3000);
+  r.eyes.setColour(kCyan);
   r.eyes.setMood(Mood::Curious);
   r.eyes.tick();
+  const int openLit = litPixels(r.display.last);
+  int blinks = 0;
+  bool in = false;
+  for (uint32_t t = 0; t < 30000; t += kTickMs) {
+    r.clock.advance(kTickMs);
+    r.eyes.tick();
+    const bool c = litPixels(r.display.last) < openLit / kClosedDivisor;
+    if (c && !in) ++blinks;
+    in = c;
+  }
+  TEST_ASSERT_GREATER_OR_EQUAL_INT(4, blinks);
+}
+
+// Golden images, one test per state so one broken mood does not hide the others.
+static void test_golden_curious() { Rig r = goldenRig(Mood::Curious); r.eyes.tick(); checkGolden("curious", r.display.last); }
+static void test_golden_happy() { Rig r = goldenRig(Mood::Happy); r.eyes.tick(); checkGolden("happy", r.display.last); }
+static void test_golden_bored() { Rig r = goldenRig(Mood::Bored); r.eyes.tick(); checkGolden("bored", r.display.last); }
+static void test_golden_tired() { Rig r = goldenRig(Mood::Tired); r.eyes.tick(); checkGolden("tired", r.display.last); }
+static void test_golden_annoyed() { Rig r = goldenRig(Mood::Annoyed); r.eyes.tick(); checkGolden("annoyed", r.display.last); }
+static void test_golden_closed() {
+  Rig r = goldenRig(Mood::Tired);
+  r.eyes.closeEyes();
+  r.run(EyesRenderer::kLidMoveMs + kTickMs);
+  checkGolden("closed", r.display.last);
+}
+static void test_golden_blink_sequence() {
+  Rig r = goldenRig(Mood::Curious);
+  r.eyes.tick();
   r.eyes.blinkNow();
-  r.clock.advance(kTickMs);
-  r.eyes.tick();
-  checkGolden("blink-1", r.display.last);
-  r.clock.advance(kTickMs);
-  r.eyes.tick();
-  checkGolden("blink-2", r.display.last);
-  r.clock.advance(kTickMs);
-  r.eyes.tick();
-  checkGolden("blink-3", r.display.last);
+  const char* names[] = {"blink-1", "blink-2", "blink-3", "blink-4"};
+  for (const char* n : names) {  // 40 ms: half, 80: closed, 120: closed, 160: half
+    r.clock.advance(kTickMs);
+    r.eyes.tick();
+    checkGolden(n, r.display.last);
+  }
 }
 
 int main() {
   UNITY_BEGIN();
-  RUN_TEST(test_first_tick_presents_a_frame_with_two_eyes_in_the_identity_colour);
-  RUN_TEST(test_blinks_happen_every_2_to_6_seconds_while_awake);
-  RUN_TEST(test_a_blink_lasts_between_80_and_240_ms);
+  RUN_TEST(test_first_tick_presents_two_eyes_in_the_identity_colour_only);
+  RUN_TEST(test_blinks_keep_eyes_open_2_to_6_seconds_for_any_seed);
+  RUN_TEST(test_a_blink_closes_for_about_80_ms_then_reopens_fully);
   RUN_TEST(test_frame_never_stays_identical_for_more_than_10_seconds);
-  RUN_TEST(test_closed_eyes_show_almost_nothing_and_open_eyes_restore);
+  RUN_TEST(test_closed_eyes_never_blink_and_open_eyes_restore);
+  RUN_TEST(test_no_blink_in_the_first_two_seconds_after_waking);
+  RUN_TEST(test_first_frame_does_not_depend_on_the_clock_start);
   RUN_TEST(test_brightness_is_forwarded_to_the_display);
-  RUN_TEST(test_drift_moves_the_frame_by_one_pixel_within_each_minute);
-  RUN_TEST(test_golden_images_of_every_mood_and_of_closed_eyes);
-  RUN_TEST(test_golden_images_of_a_blink_sequence);
+  RUN_TEST(test_setLook_clamps_to_max_look);
+  RUN_TEST(test_drift_moves_one_pixel_per_minute_around_a_square_open_and_closed);
+  RUN_TEST(test_blinks_survive_the_uint32_clock_wrap);
+  RUN_TEST(test_golden_curious);
+  RUN_TEST(test_golden_happy);
+  RUN_TEST(test_golden_bored);
+  RUN_TEST(test_golden_tired);
+  RUN_TEST(test_golden_annoyed);
+  RUN_TEST(test_golden_closed);
+  RUN_TEST(test_golden_blink_sequence);
   return UNITY_END();
 }

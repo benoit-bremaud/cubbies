@@ -18,9 +18,14 @@ human context: what was done, why, and by which PR.
   `IClock`, `Prng` (PCG32, reference value checked), `Framebuffer` 96×64 RGB565 with clipped
   primitives, `EyesRenderer` (two rounded eyes in the identity colour, five mood shapes,
   blink every 2–6 s aligned on the 40 ms tick, idle glances, one-pixel drift per minute in every
-  state, closed eyes for sleep). 23 native tests green, both board envs build.
-- Golden images (9 PNG) generated and reviewed on the contact sheet; vendored stb headers
-  (public domain) for PNG read/write in tests.
+  state, closed eyes for sleep). 34 native tests green, both board envs build.
+- Golden images (10 PNG) generated and reviewed on the contact sheet; vendored stb headers
+  (MIT / public domain) for PNG read/write in tests.
+- Pre-push `review-local` gate (design, docs, tests, correctness): 5 Must Have and 22 Should
+  Have applied before push, notably the blink-gap test that only passed thanks to its seed
+  (FS1 reworded: 2–6 s of open eyes measured from the reopening), the golden update mode that
+  passed silently, `openEyes()` rescheduling the blink, framebuffer primitives bounded against
+  extreme inputs, the 12 KB-on-the-stack hazard documented for `main.cpp`.
 
 ### cube-core PDR passed (branch `docs/pdr-cube-core`, ADR-0013)
 

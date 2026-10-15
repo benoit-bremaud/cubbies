@@ -27,7 +27,7 @@ maintenance (2), binary size (1).
 | Simplicity (2) | 2 | 3 | 1 |
 | Maintenance (2) | 3 | 2 | 1 |
 | Binary size (1) | 2 | 3 | 3 |
-| **Total /33** | **31** | 22 | 16 |
+| **Total /33** | **30** | 22 | 16 |
 
 ## Options and scoring (test discipline; TDD is opt-in per project)
 
@@ -60,7 +60,7 @@ cost (2), avoided false confidence (2).
   brick that first uses them (YAGNI).
 - Randomness: PCG32 (Apache-2.0 minimal implementation) as decided in ADR-0013.
 - Golden-image tooling: `stb_image.h` / `stb_image_write.h` vendored under `test/support/`
-  (public domain, upstream commit recorded in `STB_VERSION`).
+  (dual licence MIT / public domain, upstream commit and versions recorded in `STB_VERSION`).
 
 ## Consequences
 

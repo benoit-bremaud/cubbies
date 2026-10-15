@@ -1,10 +1,11 @@
-// PNG read/write helpers for golden-image tests, on top of the vendored stb headers
-// (public domain, see STB_VERSION). The including test defines STB_IMAGE_IMPLEMENTATION and
-// STB_IMAGE_WRITE_IMPLEMENTATION once before including this header.
+// PNG read/write helpers for golden-image tests, on top of the vendored stb headers (dual
+// licence MIT / public domain, see STB_VERSION). The including test defines
+// STB_IMAGE_IMPLEMENTATION and STB_IMAGE_WRITE_IMPLEMENTATION once before including this header.
 #pragma once
 
 #include <cstdint>
 #include <cstdlib>
+#include <cstring>
 #include <string>
 #include <vector>
 
@@ -61,6 +62,11 @@ inline long comparePng(const std::string& path, const Framebuffer& fb) {
   return diff;
 }
 
-inline bool updateGoldenRequested() { return std::getenv("CUBBIES_UPDATE_GOLDEN") != nullptr; }
+// Golden regeneration is explicit (value exactly "1") and refused under CI, so a leaked
+// environment variable can never turn the comparison into a silent pass.
+inline bool updateGoldenRequested() {
+  const char* v = std::getenv("CUBBIES_UPDATE_GOLDEN");
+  return v != nullptr && std::strcmp(v, "1") == 0 && std::getenv("CI") == nullptr;
+}
 
 }  // namespace cubbies::test

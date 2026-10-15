@@ -1,5 +1,10 @@
-// Port: the face. One real adapter (SSD1331 over SPI), two test doubles (RecordingDisplay,
-// PNG writer for golden images). The renderer owns the framebuffer; the adapter only pushes it.
+// Port: the face. One real adapter (SSD1331 over SPI, brick F5); test double: RecordingDisplay
+// (golden images are written from its last frame through test/support/Png.h).
+// Single buffer: the renderer owns the only framebuffer and redraws it every tick, so
+// present() must finish reading `frame` before it returns (a DMA adapter copies it or waits
+// for the transfer) and the adapter keeps no reference to it.
+// Brightness: three levels used by the sleep cycle (05b): Full awake, Low dozing, Minimum
+// asleep; the adapter maps them to panel contrast values.
 #pragma once
 
 #include <cstdint>

@@ -1,5 +1,7 @@
 // 96×64 RGB565 framebuffer (12 KB), the only thing the display port receives. Every
-// primitive clips to the bounds, so callers never check coordinates.
+// primitive clips to the bounds and tolerates extreme coordinates, so callers never check.
+// 12 KB by value: never a local on the target (the Arduino loop task stack is 8 KB); own it
+// statically or inside a static owner (the EyesRenderer in main.cpp).
 #pragma once
 
 #include <cstddef>

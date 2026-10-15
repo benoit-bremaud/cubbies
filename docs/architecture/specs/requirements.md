@@ -19,7 +19,7 @@ are not makers: the cube works from the moment it is plugged in.
 
 | Id | Service function | Beneficiary | Assessment criterion | Level | Flexibility |
 |----|------------------|-------------|----------------------|-------|-------------|
-| FS1 | Show a living, expressive face | owner | number of distinguishable expressions; idle motion never freezes | ≥ 6 expressions; blink every 2–6 s; never a static frame for more than 10 s while awake | F1 (negotiable above 4) |
+| FS1 | Show a living, expressive face | owner | number of distinguishable expressions; idle motion never freezes | ≥ 6 expressions; eyes stay open 2–6 s between two blinks (measured from the reopening); never a static frame for more than 10 s while awake | F1 (negotiable above 4) |
 | FS2 | React to the owner's attention | owner | touch gestures recognised; reaction latency | tap, double tap, long stroke; visible reaction within 150 ms | F0 (latency) |
 | FS3 | React to the sound environment | owner | wake on noise; react to voice level | wakes on a clap or voice at 1 m; no reaction to office hum | F1 |
 | FS4 | Be heard without disturbing | owner, neighbours | sound level at 1 m; silence when nobody is there; adjustable volume | ≤ 55 dB(A) at max, ≤ 40 dB(A) default; silent while asleep and (from S8) when the office is dark; volume constant in V1, 4 steps once a gesture exists | F1 (steps) |

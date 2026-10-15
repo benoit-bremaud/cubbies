@@ -13,3 +13,5 @@ Layout of `cubbies_core/`: `ports/` (interfaces owned by lib), `core/` (Prng, Mo
 `eyes/` (Framebuffer, EyesRenderer); `behaviour/`, `identity/` and `social/` arrive with
 bricks F2–F4 (ADR-0014). Include paths are relative to `cubbies_core/`, e.g.
 `#include "eyes/EyesRenderer.h"`.
+
+Golden images of the eyes: see `../test/golden/README.md`.

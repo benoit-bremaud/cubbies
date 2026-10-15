@@ -3,6 +3,8 @@ firmware/.pio/
 firmware/.vscode/
 firmware/*.bin
 firmware/*.elf
+firmware/test/golden/*.actual.png
+firmware/test/golden/sheet.png
 
 # Environment variables — only the placeholder template is committed
 .env

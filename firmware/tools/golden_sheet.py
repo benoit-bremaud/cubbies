@@ -1,11 +1,16 @@
 #!/usr/bin/env python3
-"""Contact sheet of the golden eye images, upscaled for human review (needs Pillow)."""
+"""Contact sheet of the golden eye images, upscaled x4 for PR review (needs Pillow).
+
+Usage: golden_sheet.py [out.png]  (default: test/golden/sheet.png). Keep `names` in sync with
+the golden files written by test_native_eyes; missing files are skipped silently.
+"""
 import os, sys
 from PIL import Image, ImageDraw
 
-names = ["curious", "happy", "bored", "tired", "annoyed", "closed", "blink-1", "blink-2", "blink-3"]
+names = ["curious", "happy", "bored", "tired", "annoyed", "closed", "blink-1", "blink-2", "blink-3", "blink-4"]
 scale, pad, cols = 4, 12, 3
 w, h = 96 * scale, 64 * scale
+cols = 4
 rows = (len(names) + cols - 1) // cols
 sheet = Image.new("RGB", (cols * (w + pad) + pad, rows * (h + pad + 18) + pad), (40, 40, 40))
 draw = ImageDraw.Draw(sheet)
