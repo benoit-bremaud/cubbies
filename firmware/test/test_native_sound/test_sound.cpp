@@ -159,6 +159,15 @@ static void test_expired_burst_whose_peak_falls_stays_a_sound() {
   assertSeq({SoundClass::Voice, SoundClass::Loud}, r.play(kRoom * 5, kRoom * 5, 11 * kTick));
 }
 
+// Voice needs rms ≥ R_voice·ref for the whole T_voice: after a long low-rms bang, a voice that
+// rises counts from its own first voice-level tick, not from the bang (PR #12 review).
+static void test_voice_after_a_low_rms_bang_counts_from_its_own_start() {
+  Rig r;
+  assertSeq({}, r.play(kRoom, kRoom * SoundClassifier::kClapRatio, 3 * kTick));  // 0..80 ms
+  assertSeq({}, r.play(kRoom * 3, kRoom * 3, 5 * kTick));  // voice ticks at 0..160 ms of voice
+  assertSeq({SoundClass::Voice}, r.play(kRoom * 3, kRoom * 3, kTick));  // 200 ms of voice
+}
+
 // Burst -> Quiet: a clap ends its loud run; a loud tail after it is a new sound (05d).
 static void test_clap_does_not_leak_its_loud_run_into_the_next_sound() {
   Rig r;
@@ -200,6 +209,7 @@ int main(int, char**) {
   RUN_TEST(test_loud_counts_from_the_first_loud_tick);
   RUN_TEST(test_long_loud_bang_counts_loud_from_the_burst_start);
   RUN_TEST(test_expired_burst_whose_peak_falls_stays_a_sound);
+  RUN_TEST(test_voice_after_a_low_rms_bang_counts_from_its_own_start);
   RUN_TEST(test_clap_does_not_leak_its_loud_run_into_the_next_sound);
   RUN_TEST(test_short_loud_is_only_a_voice);
   RUN_TEST(test_ratio_thresholds_are_inclusive);
