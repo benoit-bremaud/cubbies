@@ -7,7 +7,7 @@ human context: what was done, why, and by which PR.
 
 ## 2026-10-15
 
-### Brick F2 — behaviours (branch `feat/f2-behaviours`, ADR-0014)
+### Brick F2 — behaviours — **PR #12 merged** (`ef10f61`, ADR-0014)
 
 - Seven TDD steps, each a red then a green commit: Surprise/Joy blend from a held TouchDown;
   `GestureClassifier` ← `ITouchSource` (new 05c); `SoundClassifier` ← `IMic` rms + peak over an
@@ -19,7 +19,14 @@ human context: what was done, why, and by which PR.
   sounds are note tables in `lib/`, volume level 0..3 (V1 constant 1), gate muted while Dozing
   or Asleep via `setSleepState()`, overlap by rank (strictly higher replaces, no queue);
   `Released` is a mood stimulus so a medium press wakes a Bored or Tired mood (note in 05a).
-- 145 native tests green, both board envs build. `main.cpp` wiring and adapters are F5.
+- Codex review (5 rounds, no Copilot: out of credits), every thread answered inline. Fixed in
+  TDD: Loud started a tick late; a clap leaked its loud run; an expired burst whose peak fell was
+  dropped; Voice was timed from a low-rms bang (voice and loud now use their own runs of
+  at-level ticks); the Asleep wake Yawn (1.2 s) outlived Waking (now 1 s from Dozing, 1.2 s from
+  Asleep). Doc fix: the 03 sound-class table in ratio form (`e0df866`). Kept by owner decision:
+  the 40 ms tick resolution of the double-tap window (05c note).
+- 155 native tests green, both board envs build. `main.cpp` wiring and adapters are F5.
+- Backlog: #13 (lib refactor), #15 (test nits), #16 (F5 wiring checks); #14 fixed in the PR.
 
 ### Brick F1b — reactions overlay and identity frames (branch `feat/f1b-expressions`, ADR-0014)
 
