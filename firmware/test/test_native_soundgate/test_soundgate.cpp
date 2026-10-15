@@ -31,7 +31,8 @@ struct Rig {
 };
 
 const SoundId kAll[] = {SoundId::Surprise, SoundId::Joy,    SoundId::Purr,      SoundId::Hello,
-                        SoundId::Yawn,     SoundId::Grumpy, SoundId::WakeMelody};
+                        SoundId::Yawn,     SoundId::Grumpy, SoundId::WakeMelody,
+                        SoundId::RitualChime, SoundId::RitualTick, SoundId::Adoption};
 }  // namespace
 
 void setUp() {}
@@ -124,7 +125,7 @@ static void test_entering_doze_or_sleep_stops_the_sound() {
   }
 }
 
-// Ranks: wake-up melody > grumpy > yawn > surprise, joy, purr, hello; every sound has notes.
+// Ranks: wake-up melody > grumpy > yawn > surprise, joy, purr, hello, ritual sounds; every sound has notes.
 static void test_rank_order_and_durations() {
   TEST_ASSERT_EQUAL(0, SoundGate::rank(SoundId::Surprise));
   TEST_ASSERT_EQUAL(0, SoundGate::rank(SoundId::Joy));
@@ -133,6 +134,9 @@ static void test_rank_order_and_durations() {
   TEST_ASSERT_EQUAL(1, SoundGate::rank(SoundId::Yawn));
   TEST_ASSERT_EQUAL(2, SoundGate::rank(SoundId::Grumpy));
   TEST_ASSERT_EQUAL(3, SoundGate::rank(SoundId::WakeMelody));
+  TEST_ASSERT_EQUAL(0, SoundGate::rank(SoundId::RitualChime));  // identity/05b
+  TEST_ASSERT_EQUAL(0, SoundGate::rank(SoundId::RitualTick));
+  TEST_ASSERT_EQUAL(0, SoundGate::rank(SoundId::Adoption));
   for (SoundId id : kAll) TEST_ASSERT_GREATER_THAN(0, SoundGate::durationMs(id));
 }
 

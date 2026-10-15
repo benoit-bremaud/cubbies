@@ -41,7 +41,12 @@ sequenceDiagram
     opt tap
       I->>I: paletteIndex = (paletteIndex + 1) mod paletteSize
       I->>E: showRitualFrame(palette[paletteIndex])
-      I->>A: play(tick, pitch follows the index)
+      I->>A: play(RitualTick) — one fixed pitch until the sound-design brick
+    end
+    opt double tap
+      I->>I: paletteIndex = (paletteIndex + 2) mod paletteSize
+      I->>E: showRitualFrame(palette[paletteIndex])
+      I->>A: play(RitualTick)
     end
   end
 
@@ -62,6 +67,7 @@ sequenceDiagram
     end
   else No gesture for T_ritual_timeout
     I->>I: ritual abandoned — identity unchanged
+    I->>E: clearIdentityFrame()
     Note over I: Re-adoption keeps the stored colour. First adoption keeps the MAC default, adopted stays false
   end
   I-->>M: isDone, Identity {mac, paletteIndex, adopted}
@@ -80,9 +86,9 @@ sequenceDiagram
   advances `FakeClock` between ticks. The Stimulus router, Sleep cycle and Social protocol start
   ticking only once `isDone()`.
 - **Durations**: T_stroke 1.5 s, T_doubletap 250 ms (shared with the mood domain, defined in 03), T_ritual_timeout 60 s of inactivity (the timer restarts at every
-  tap), all through the injected clock so the ritual replays in a native test. Tuning values, not
+  gesture), all through the injected clock so the ritual replays in a native test. Tuning values, not
   decisions.
-- **Palette**: 8–12 entries chosen for OLED rendering (ADR-0008). The palette table lives in
+- **Palette**: 8 entries chosen for OLED rendering (ADR-0008 range 8–12, F3 decision). The palette table lives in
   `Identity rules`, so the hash in 02a and the cycling here share one source of truth.
 - **Volume as a second ritual step** (owner decision, ADR-0013): the colleague is already
   "configuring" the cube, the gesture alphabet (tap, long stroke) is reused with no collision with
@@ -94,5 +100,7 @@ sequenceDiagram
 - **Ritual entry only from the invitation window**: owner decision, validated 2026-10-14 (an
   automatic offer on the first boot was rejected because the Maker's tests would consume it);
   the window replaces "held while plugging in" for the TTP223 calibration reason stated in 02a.
-- **Open**: whether a double tap cycles backwards (friendlier for 12 colours, at the price of
-  overloading the "joy" gesture of the mood domain). To be decided with the palette size.
+- **Palette and double tap (decided 2026-10-15, F3)**: 8 colours, forward only; a double tap
+  moves forward by two. The ritual is the state machine of [05b](05b-state-adoption-ritual.md),
+  which returns the frame and sound for `main.cpp` to apply (the `I->>E` and `I->>A` arrows
+  above go through `main.cpp`). The tick has one fixed pitch until the sound-design brick.

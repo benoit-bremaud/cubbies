@@ -7,6 +7,22 @@ human context: what was done, why, and by which PR.
 
 ## 2026-10-15
 
+### Brick F3 — identity and boot (branch `feat/f3-identity`, ADR-0014)
+
+- Design first: new state diagrams identity/05a (invitation window) and 05b (adoption ritual),
+  amendments to 02a, 02b, 03, 05c (`holdMs()`, `consumeCurrentPress()`, `Consumed` state) and
+  05e (ritual sounds). PDR validated by the owner.
+- Owner decisions (scored options): 8-colour palette, forward only (445/500); one fixed ritual
+  tick, pitch per index deferred to the sound brick (425/500); `InvitationWindow` as its own lib
+  class (435/500); double tap = +2 (470/500); a press already down at the end of the settle is
+  consumed (470/500); window and ritual return an `IdentityOutput` that `main.cpp` applies
+  (445/500); any gesture restarts the 60 s timeout (470/500). Adoption sound rank 0.
+- Five TDD steps, each red then green: `resolveIdentity` (FNV-1a MAC hash mod 8, typed
+  `IStorage` port, `FakeStorage`); Gesture classifier hold/consume; ritual sounds in the Sound
+  gate; `InvitationWindow`; `AdoptionRitual` (single NVS write, fail closed, timeout).
+- Local review: Must 4 · Should 6 applied (02b aligned, window press read before expiry + gauge clamp, edge tests); Nice grouped in a backlog issue.
+- 185 native tests green, both board envs build. NVS adapter and `main.cpp` wiring are F5.
+
 ### Brick F2 — behaviours — **PR #12 merged** (`ef10f61`, ADR-0014)
 
 - Seven TDD steps, each a red then a green commit: Surprise/Joy blend from a held TouchDown;

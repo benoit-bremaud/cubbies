@@ -49,8 +49,22 @@ Gesture GestureClassifier::tick() {
       if (down) return Gesture::None;
       state_ = State::Idle;
       return Gesture::Released;
+
+    case State::Consumed:
+      if (!down) state_ = State::Idle;
+      return Gesture::None;
   }
   return Gesture::None;
+}
+
+uint32_t GestureClassifier::holdMs() const {
+  const bool held = state_ == State::Pressed || state_ == State::Pressed2 || state_ == State::Stroking;
+  return held ? ageMs(clock_.nowMs(), sinceMs_) : 0;
+}
+
+void GestureClassifier::consumeCurrentPress() {
+  // Released now: drop any pending Tap and be Idle at once, so the next press is fresh.
+  state_ = touch_.pressed() ? State::Consumed : State::Idle;
 }
 
 }  // namespace cubbies

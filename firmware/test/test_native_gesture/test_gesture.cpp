@@ -156,6 +156,62 @@ static void test_tap_and_stroke_survive_the_clock_wrap() {
   TEST_ASSERT_EQUAL(Gesture::Stroke, s.hold(true, 2000));
 }
 
+// holdMs(): age of the current press, 0 when released (identity/05a reads it).
+static void test_hold_ms_reports_the_age_of_the_current_press() {
+  Rig r;
+  TEST_ASSERT_EQUAL_UINT32(0, r.gestures.holdMs());
+  r.hold(true, 1000);
+  TEST_ASSERT_EQUAL_UINT32(1000 - kTick, r.gestures.holdMs());
+  r.hold(true, 1000);  // past T_stroke, still counting
+  TEST_ASSERT_EQUAL_UINT32(2000 - kTick, r.gestures.holdMs());
+  r.hold(false, kTick);
+  TEST_ASSERT_EQUAL_UINT32(0, r.gestures.holdMs());
+}
+
+// any -> Consumed: consumeCurrentPress(); holdMs() reads 0, nothing is emitted while held.
+static void test_consumed_press_emits_nothing_while_held() {
+  Rig r;
+  r.hold(true, 200);
+  r.gestures.consumeCurrentPress();
+  TEST_ASSERT_EQUAL_UINT32(0, r.gestures.holdMs());
+  TEST_ASSERT_EQUAL(Gesture::None, r.hold(true, 3000));  // no Stroke
+}
+
+// Consumed -> Idle: the release emits nothing, and the next press is a fresh gesture.
+static void test_consumed_press_release_is_silent_then_idle() {
+  Rig r;
+  r.touch.set(true);
+  for (uint32_t t = 0; t < 2000; t += kTick) r.step();  // TouchDown then Stroke
+  r.gestures.consumeCurrentPress();
+  TEST_ASSERT_EQUAL(Gesture::None, r.hold(false, 1000));  // no Released, no Tap
+  r.touch.set(true);
+  TEST_ASSERT_EQUAL(Gesture::TouchDown, r.step());
+}
+
+// Pressed2 -> Consumed: the second press of a double tap can be consumed too.
+static void test_second_press_can_be_consumed() {
+  Rig r;
+  r.hold(true, 80);
+  r.hold(false, 80);
+  r.touch.set(true);
+  TEST_ASSERT_EQUAL(Gesture::TouchDown, r.step());  // Pressed2
+  r.gestures.consumeCurrentPress();
+  TEST_ASSERT_EQUAL(Gesture::None, r.hold(true, 2000));
+  TEST_ASSERT_EQUAL(Gesture::None, r.hold(false, 1000));  // no DoubleTap, no Released
+}
+
+// consumeCurrentPress() with the pad released: the pending Tap is dropped, Idle at once.
+static void test_consume_while_released_drops_the_pending_tap() {
+  Rig r;
+  r.hold(true, 80);
+  r.touch.set(false);
+  r.step();  // WaitSecond, Tap pending
+  r.gestures.consumeCurrentPress();
+  TEST_ASSERT_EQUAL(Gesture::None, r.hold(false, 1000));
+  r.touch.set(true);
+  TEST_ASSERT_EQUAL(Gesture::TouchDown, r.step());  // the very next press is fresh
+}
+
 int main(int, char**) {
   UNITY_BEGIN();
   RUN_TEST(test_pressed_edge_emits_touchdown_on_the_same_tick);
@@ -168,5 +224,10 @@ int main(int, char**) {
   RUN_TEST(test_tap_then_long_contact_is_a_stroke);
   RUN_TEST(test_third_tap_starts_a_new_gesture);
   RUN_TEST(test_tap_and_stroke_survive_the_clock_wrap);
+  RUN_TEST(test_hold_ms_reports_the_age_of_the_current_press);
+  RUN_TEST(test_consumed_press_emits_nothing_while_held);
+  RUN_TEST(test_consumed_press_release_is_silent_then_idle);
+  RUN_TEST(test_second_press_can_be_consumed);
+  RUN_TEST(test_consume_while_released_drops_the_pending_tap);
   return UNITY_END();
 }

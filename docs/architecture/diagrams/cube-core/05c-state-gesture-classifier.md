@@ -30,6 +30,11 @@ stateDiagram-v2
   Pressed2 --> Idle: released after T_tapMax / Released
   Pressed2 --> Stroking: held T_stroke / Stroke
   Stroking --> Idle: released / Released
+  Pressed --> Consumed: consumeCurrentPress()
+  Pressed2 --> Consumed: consumeCurrentPress()
+  Stroking --> Consumed: consumeCurrentPress()
+  WaitSecond --> Idle: consumeCurrentPress() while released
+  Consumed --> Idle: released
 ```
 
 ## Transition table
@@ -48,6 +53,13 @@ Each row is one native test (ADR-0014).
 | Pressed2 | released, press ≥ T_tapMax | Idle | `Released` |
 | Pressed2 | press reaches T_stroke | Stroking | `Stroke` (the first tap is absorbed) |
 | Stroking | released | Idle | `Released` (once, however long the contact) |
+| any | `consumeCurrentPress()`, pad pressed | Consumed | nothing; `holdMs()` reads 0 from now on |
+| any | `consumeCurrentPress()`, pad released | Idle | nothing; a pending `Tap` is dropped (PR #20 review) |
+| Consumed | still pressed | Consumed | nothing |
+| Consumed | released | Idle | nothing (no `Released`) |
+
+`holdMs()` returns the age of the current press in Pressed, Pressed2 and Stroking, and 0
+otherwise (F3, read by the invitation window, [identity/05a](../identity/05a-state-invitation-window.md)).
 
 Starting values (tuning, not decisions): T_tapMax 400 ms, T_doubletap 250 ms, T_stroke 1.5 s.
 A third quick tap after a double tap starts a new gesture.
@@ -62,6 +74,7 @@ A third quick tap after a double tap starts a new gesture.
 - **No `Released` after a short press**: the touch-down widening stays until `Tap` or
   `DoubleTap` replaces it, which is what lets Surprise and Joy grow from the touch-down size
   (F2 step 1) instead of the eyes shrinking then popping again.
-- **The boot hold is not here**: the invitation-window hold and its progress gauge (02a) are
-  identity behaviour, added by F3 when it first uses them (YAGNI).
+- **The boot hold is not here**: the invitation window and its gauge are a separate machine
+  ([identity/05a](../identity/05a-state-invitation-window.md), F3); the classifier only exposes
+  `holdMs()` and `consumeCurrentPress()`, so the pad is still sampled in one place.
 - **Wrap-safe**: durations are ages on the uint32 clock (`ageMs`), never `now > then + T`.

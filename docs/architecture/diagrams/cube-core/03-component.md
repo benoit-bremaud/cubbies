@@ -31,7 +31,7 @@ flowchart LR
       MoodE["Mood engine<br/>five moods, transitions, decay"]
       Sleep["Sleep cycle<br/>idle timer, doze, wake"]
       Eyes["Eyes renderer<br/>procedural eyes, 96×64 framebuffer, brightness level"]
-      Ident["Identity rules<br/>MAC hash → palette, adoption ritual"]
+      Ident["Identity rules<br/>MAC hash → palette, invitation window, adoption ritual"]
       Social["Social protocol<br/>frame codec, neighbour table, greeting policy"]
       Gate["Sound gate<br/>single sound egress — applies the volume setting"]
       Prng["Prng<br/>PCG32, one instance per consumer, seeded by main — cross-cutting, see text"]
@@ -117,6 +117,11 @@ logic. Identity rules run at boot only, tick-driven: `main.cpp` resolves the ide
 by value), shows the invitation window, and if a hold is detected calls `startRitual()` then
 `tick()` until `isDone()` ([identity/02a](../identity/02a-sequence-first-boot.md), [02b](../identity/02b-sequence-adoption-ritual.md)).
 The Stimulus router, Sleep cycle and Social protocol start ticking only after the ritual ends.
+In F3 the module holds three parts ([identity/05a](../identity/05a-state-invitation-window.md),
+[05b](../identity/05b-state-adoption-ritual.md)): `resolveIdentity` (palette, MAC hash, `IStorage`
+read), `InvitationWindow` (reads `holdMs()` from the Gesture classifier) and `AdoptionRitual`.
+The window and the ritual return an `IdentityOutput` (frame, gauge, sound) that `main.cpp` applies,
+like the router's `Route`, so the `Ident --> Eyes` and `Ident --> Gate` edges pass through `main.cpp`.
 
 Routing rule of the Stimulus router (pure functions `route(gesture | sound, sleepState)` and
 `routeNewcomer(sleepState)`, plus `effects(MoodEffect | SleepEffect)`, each returning a `Route`

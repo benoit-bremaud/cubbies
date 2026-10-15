@@ -24,7 +24,7 @@ owner decisions of 2026-10-15 (F2, scored options):
   starts on entering Waking) and rejects every sound in Dozing and Asleep; entering Dozing or
   Asleep stops a sound in progress.
 - **Overlap by rank**: wake-up melody (3) > grumpy (2) > yawn (1) > surprise, joy, purr,
-  hello (0). A request whose rank is strictly higher than the sound in progress replaces it;
+  hello and the ritual sounds (0). A request whose rank is strictly higher than the sound in progress replaces it;
   otherwise it is dropped. Requests are never queued, so a burst of taps cannot turn into a
   burst of beeps.
 
@@ -59,5 +59,9 @@ Each row is one native test (ADR-0014).
   the bench; tests check the routing rules, not the music.
 - **One volume, one place**: no caller passes a level; the V1.x ritual step will make `kVolume`
   a stored setting read here (a `Gate --> PStore` edge then, not before, YAGNI).
+- **Ritual sounds (F3)**: `RitualChime`, `RitualTick` and `Adoption` (rank 0), for
+  the adoption ritual ([identity/05b](../identity/05b-state-adoption-ritual.md)). The tick has one
+  fixed pitch in V1; a pitch per palette index waits for the sound-design brick. The ritual runs
+  before the Sleep cycle ticks, while the gate holds its initial Awake state.
 - **Time is injected**: the gate knows a sound is over from the injected clock and the note
   durations, so `IAudio` needs no "done" callback.
