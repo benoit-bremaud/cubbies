@@ -37,7 +37,7 @@ sequenceDiagram
 
   M->>E: setColour(palette[paletteIndex])
   Note over M,E: T_settle_touch (1 s) — the TTP223 calibrates during its first 0.5 s and must not be touched
-  M->>E: showInvitation()
+  M->>E: showInvitation(0)
   Note over E: Eyes in the cube's colour with a question mark and an empty gauge, for T_invite (4 s)
   loop Each tick during T_invite — the one boot-time loop, driven by main
     M->>G: tick(nowMs)
@@ -52,7 +52,7 @@ sequenceDiagram
     Note over M,I: Adoption ritual — 02b — tick-driven, returns the final identity
     M->>E: setColour(palette[paletteIndex]) — re-applied with the final identity
   else Window elapsed without a hold
-    M->>E: clearInvitation()
+    M->>E: clearIdentityFrame()
   end
   Note over M,E: Normal start — wake-up melody through the Sound gate, mood engine enters Curious, presence broadcast begins
 ```
