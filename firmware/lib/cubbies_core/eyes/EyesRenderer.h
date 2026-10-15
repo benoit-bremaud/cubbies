@@ -105,6 +105,7 @@ class EyesRenderer {
   static Lids lidsForMood(Mood mood);
   Shape moodShape(uint32_t now) const;
   void applyReaction(Shape& s, uint32_t now) const;
+  uint8_t purrTarget(uint32_t now) const;
   void drawEye(int cx, int cy, const Shape& s, bool left, Rgb565 colour);
   void drawIdentityFrame(uint32_t now, Shape s, int driftX, int driftY);
   void drawQuestionMark(int cx, int cy, Rgb565 colour);
@@ -138,6 +139,7 @@ class EyesRenderer {
   Reaction reaction_ = Reaction::TouchDown;
   Timeline reactionTl_;   // timed reactions, and the purr ramp in / release
   bool purrReleasing_ = false;
+  uint8_t purrFrom_ = 0;  // openness reached when the release started (a purr may be released mid-ramp)
 
   IdentityFrame identity_ = IdentityFrame::None;
   uint8_t invitationProgress_ = 0;

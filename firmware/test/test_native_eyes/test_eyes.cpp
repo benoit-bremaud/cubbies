@@ -442,6 +442,26 @@ static void test_purr_holds_until_stopped_then_releases_gradually() {
   TEST_ASSERT_TRUE(framesEqual(base, r.display.last));
 }
 
+// A purr released during its ramp-in reopens from where it was: no frame drops first (Codex, PR #10).
+static void test_purr_released_mid_ramp_reopens_without_a_snap() {
+  Rig r = goldenRig(Mood::Happy);
+  r.eyes.tick();
+  const int open = litPixels(r.display.last);
+  r.eyes.play(Reaction::Purr);
+  r.run(kTickMs);
+  const int atRelease = litPixels(r.display.last);
+  TEST_ASSERT_LESS_THAN_INT(open, atRelease);
+  r.eyes.stopReaction();
+  int previous = atRelease;
+  for (uint32_t t = 0; t < EyesRenderer::kLidMoveMs + kTickMs; t += kTickMs) {  // monotonic ascent
+    r.clock.advance(kTickMs);
+    r.eyes.tick();
+    TEST_ASSERT_GREATER_OR_EQUAL_INT(previous, litPixels(r.display.last));
+    previous = litPixels(r.display.last);
+  }
+  TEST_ASSERT_EQUAL_INT(open, previous);
+}
+
 static void test_purr_never_opens_eyes_the_sleep_cycle_closed() {
   Rig r = goldenRig(Mood::Happy);
   r.eyes.tick();
@@ -706,6 +726,7 @@ int main() {
   RUN_TEST(test_touchdown_is_visible_next_tick_and_held_until_release);
   RUN_TEST(test_replaying_a_timed_reaction_restarts_it);
   RUN_TEST(test_purr_holds_until_stopped_then_releases_gradually);
+  RUN_TEST(test_purr_released_mid_ramp_reopens_without_a_snap);
   RUN_TEST(test_purr_never_opens_eyes_the_sleep_cycle_closed);
   RUN_TEST(test_close_eyes_during_a_yawn_ends_closed);
   RUN_TEST(test_blink_due_during_a_reaction_is_deferred_until_it_ends);

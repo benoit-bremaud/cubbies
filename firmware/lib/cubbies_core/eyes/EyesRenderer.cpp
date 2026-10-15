@@ -99,8 +99,10 @@ void EyesRenderer::play(Reaction reaction) {
 void EyesRenderer::stopReaction() {
   if (!reacting_ || reactionDurationMs(reaction_) != 0) return;
   if (reaction_ == Reaction::Purr && !purrReleasing_) {
+    const uint32_t now = clock_.nowMs();
+    purrFrom_ = purrTarget(now);                             // released mid-ramp: no snap
     purrReleasing_ = true;                                   // release over kLidMoveMs, then end
-    reactionTl_.start(clock_.nowMs(), kLidMoveMs);
+    reactionTl_.start(now, kLidMoveMs);
     return;
   }
   reacting_ = false;
@@ -167,6 +169,14 @@ EyesRenderer::Shape EyesRenderer::moodShape(uint32_t now) const {
   return Shape{lidsForMood(mood_), kEyeW, kEyeH, 0, 0, currentOpenness(now), false};
 }
 
+// Purr openness ceiling: ramp 255 -> kPurrOpenness, hold, then release from where it was.
+uint8_t EyesRenderer::purrTarget(uint32_t now) const {
+  const uint8_t p = reactionTl_.phase(now);
+  if (purrReleasing_) return static_cast<uint8_t>(purrFrom_ + ((255 - purrFrom_) * p) / 255);
+  if (reactionTl_.active(now)) return static_cast<uint8_t>(255 - ((255 - kPurrOpenness) * p) / 255);
+  return kPurrOpenness;  // ramp done: hold
+}
+
 void EyesRenderer::applyReaction(Shape& s, uint32_t now) const {
   const uint8_t p = reactionTl_.phase(now);
   const Lids open{0, 0, 0, Arc::None};
@@ -185,10 +195,7 @@ void EyesRenderer::applyReaction(Shape& s, uint32_t now) const {
     }
     case Reaction::Purr: {     // soft closed arcs "^ ^": ramp down, hold, release; never opens
       s.lids = {0, 0, 0, Arc::SmileClosed};   // eyes the sleep cycle closed
-      uint8_t towards;
-      if (purrReleasing_) towards = static_cast<uint8_t>(kPurrOpenness + ((255 - kPurrOpenness) * p) / 255);
-      else if (reactionTl_.active(now)) towards = static_cast<uint8_t>(255 - ((255 - kPurrOpenness) * p) / 255);
-      else towards = kPurrOpenness;             // ramp done: hold
+      const uint8_t towards = purrTarget(now);
       if (towards < s.openness) s.openness = towards;
       break;
     }
