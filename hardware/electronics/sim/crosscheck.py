@@ -22,16 +22,21 @@ SI = {"n": 1e-9, "p": 1e-12, "u": 1e-6, "m": 1e-3, "k": 1e3}
 
 def num(text: str) -> float:
     """'0.6m' -> 0.0006, '100p' -> 1e-10, '9E-08' -> 9e-08 (ngspice table cells)."""
-    m = re.fullmatch(r"([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)([npumk]?)", text)
-    if not m:
+    scale = SI.get(text[-1:], 1.0)
+    body = text[:-1] if text[-1:] in SI else text
+    try:
+        value = float(body)
+    except ValueError:
+        raise ValueError(f"unreadable cell: {text!r}") from None
+    if not math.isfinite(value):
         raise ValueError(f"unreadable cell: {text!r}")
-    return float(m.group(1)) * SI.get(m.group(2), 1.0)
+    return value * scale
 
 
 def rows(text: str, width: int, expect: int) -> list[list[float]]:
     """Numeric rows of a bench table ('<inputs> | <out> | <out>' lines, header skipped).
 
-    Exits when the count differs from `expect`, so a row lost by the run.sh filter cannot pass.
+    Raises ValueError when the count differs from `expect`, so a row lost by the run.sh filter cannot pass.
     """
     out = []
     for line in text.splitlines():
@@ -39,7 +44,7 @@ def rows(text: str, width: int, expect: int) -> list[list[float]]:
         if "|" in line and len(cells) == width and re.match(r"[-\d.]", cells[0]):
             out.append([num(c) for c in cells])
     if len(out) != expect:
-        raise SystemExit(f"expected {expect} rows, found {len(out)}: rerun the benches")
+        raise ValueError(f"expected {expect} rows, found {len(out)}: rerun the benches")
     return out
 
 

@@ -16,7 +16,7 @@ def test_num() -> None:
         "4.7k": 4700,
     }.items():
         assert abs(num(text) - expected) <= abs(expected) * 1e-9, text
-    for bad in ("1meg", "abc", ""):
+    for bad in ("1meg", "abc", "", "nan", "infk"):
         try:
             num(bad)
         except ValueError:
@@ -29,7 +29,7 @@ def test_rows_counts_and_skips() -> None:
     assert rows(table, 5, 1) == [[4700, 3.3, 1e-10, 397.9, 0.617]]
     try:
         rows(table, 5, 2)
-    except SystemExit:
+    except ValueError:
         return
     raise AssertionError("a missing row passed")
 
