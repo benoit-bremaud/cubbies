@@ -20,6 +20,7 @@ Vp0  vp0 0 DC 3.25
 Rpu0 vp0 gb0 {r5*1.05}
 Ilk0 gb0 0 50n
 Vp   vp 0 DC 3.2
+* R5 || 4.7k || 4.7k, +5 %
 Rpu  vp gb {1.05/(1/r5 + 2/4.7k)}
 Ilkb gb 0 50n
 .op

@@ -9,8 +9,12 @@ set -u
 cd "$(dirname "$0")"
 status=0
 if command -v kicad-cli > /dev/null 2>&1; then
+  # keep going on failure: every bench still reports
   python3 schematic_values.py || { echo "schematic value extraction failed"; status=1; }
+else
+  echo "kicad-cli not found: using the committed schematic.lib"
 fi
+python3 test_schematic_values.py || status=1
 for bench in buzzer-driver oled-reset-rc i2c-bus strapping-gpio2; do
   out="results/$bench.txt"
   if ! ngspice -b "$bench.cir" > "$out.raw" 2>&1; then

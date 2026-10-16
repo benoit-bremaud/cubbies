@@ -3,7 +3,8 @@
 * ----------------------------------------------------------------------------
 * Validates (calculations C-0003, C-0004): coil peak current vs the 40 mA rating, drain spike with
 *   the 1N4148 flyback (and without it: negative control), AO3400 dissipation, gate current.
-* Circuit: 3V3 - Rs 82 ohm (+/-5 %, ADR-0015; 68 ohm gave 43.7 mA, C-0003) - coil (Rcoil 12/16/20 ohm, L ASSUMED 1 mH or 4 mH: not published)
+* Values: Rs = R1, gate resistor = R2, pull-down = R3, nominal from the schematic (schematic.lib).
+* Circuit: 3V3 - Rs R1 +/-5 % (82 ohm, ADR-0015; 68 ohm gave 43.7 mA, C-0003) - coil (Rcoil 12/16/20 ohm, L ASSUMED 1 mH or 4 mH: not published)
 *   - drain; D1 1N4148 across the coil; gate through 100 ohm from the GPIO, 100 kohm to GND.
 * Corners: 3V3 3.25/3.35 V (TLV75733 +/-1.5 % ASSUMED), GPIO high 2.60 V (VOH min 0.8 x 3.25 V); duty 2/8/20/50 %
 *   at 2 kHz; worst-case MOSFET model (Vth 1.45 V).
