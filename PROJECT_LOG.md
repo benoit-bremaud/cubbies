@@ -7,7 +7,7 @@ human context: what was done, why, and by which PR.
 
 ## 2026-10-16
 
-### Hardware validation — calculation log and ngspice benches (ADR-0015)
+### Hardware validation — calculation log and ngspice benches — **PR #28 merged** (`4b72e59`, ADR-0015)
 
 - V-SEA method applied: append-only `docs/hardware/calculations/log.md` (C-0001..C-0011, tiered),
   ngspice 42 benches with worst-case corners under `hardware/electronics/sim/` (`sh run.sh`),
@@ -18,6 +18,8 @@ human context: what was done, why, and by which PR.
   board pull-up so GPIO2 boots high with no I2C module fitted (485/500).
 - Benches are self-validating (`sh run.sh` fails on any `FAIL C-NNNN`, negative controls print
   `EXPECTED-FAIL`); review-local: Must 3 · Should 8 · Nice 4, all Must/Should fixed.
+- No external review: Codex hit its usage limit, Copilot cannot be requested (not a collaborator).
+  CI green (native tests, both board builds, CodeQL, secret scan, dependency review).
 - Open before the CDR: LTspice second engine on Tier 1 entries, LDO θJA/dropout from the
   datasheet, bench boot/download check, I2C rise-time measurement.
 
