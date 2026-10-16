@@ -18,6 +18,10 @@ human context: what was done, why, and by which PR.
 - review-local: Must 5 · Should 9 · Nice 4, all Must/Should fixed; SonarQube PASSED after 1 issue
   and 1 regex hotspot fixed; Python coverage 96 %; gitleaks clean; ERC 0; benches PASS; CI green.
 - Still open for the bench (#33): LDO temperature, Schottky Vf from its datasheet.
+- Follow-up **PR #40 merged** (`0e68452`): root README (status, XC6210, J1, layout) and
+  architecture risks (R6 on GPIO8, provisional J1 budget). Its full local gate ran after the
+  merge (all green); owner rule since then: the full local suite runs before every push, docs
+  included.
 
 ### Expansion port design (issue #18) — ADR-0016, C-0012 — **PR #36 merged** (`fc3b183`)
 
