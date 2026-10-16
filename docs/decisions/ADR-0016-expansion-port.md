@@ -24,8 +24,8 @@ option.
 - **D1 — Module power budget: ≤ 50 mA continuous, ≤ 75 mA peak (< 1 s)** from the XIAO 3V3
   ([C-0012](../hardware/calculations/log.md)).
   - The owner validated 50 / 80 mA; the calculation trims the peak to 75 mA so the cube stays
-    within 500 mA (C-0001's peak is 420.3 mA). The 75 mA value is confirmed by the owner in the
-    PR.
+    within 500 mA (C-0001's peak is 420.3 mA). The owner confirmed 75 mA on 2026-10-16
+    before the PR.
   - Matrix: 50 / 80 mA kept the 2× margin on the module share and the USB peak; 100 / 80 mA
     was rejected on the thermal margin.
   - Rejected: 100 mA continuous, which drops the LDO thermal margin under 2×.

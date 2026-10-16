@@ -12,7 +12,7 @@ human context: what was done, why, and by which PR.
 - REQ-F-20, REQ-NF-12, UC12 "Add a capability by plugging a module", views under
   `diagrams/expansion-port/` (boot probe sequence, component), traceability and verification
   rows.
-- C-0012: a J1 module may draw ≤ 50 mA continuous, ≤ 75 mA peak (owner validated 50/80; the
+- C-0012: a J1 module may draw ≤ 50 mA continuous, ≤ 75 mA peak (owner validated 50/80, confirmed 75 before the PR; the
   calculation trims the peak because C-0001's peak is 420.3 mA). `calc.py` asserts both.
 - Owner MCDA: internal module bay behind a clipped rear cover (415/500 vs outside slot 365,
   fixed internal 335); bay 22 × 22 × 6 mm in the mechanical spec (FreeCAD script not written yet).
