@@ -22,7 +22,7 @@ def test_si_value() -> None:
     for bad in ("1 uF", "abc", "10kk"):
         try:
             si_value(bad)
-        except SystemExit:
+        except ValueError:
             continue
         raise AssertionError(f"accepted {bad!r}")
 
