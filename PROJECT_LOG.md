@@ -7,7 +7,7 @@ human context: what was done, why, and by which PR.
 
 ## 2026-10-16
 
-### Expansion port design (issue #18) — ADR-0016, C-0012 — **PR pending**
+### Expansion port design (issue #18) — ADR-0016, C-0012 — **PR #36 merged** (`fc3b183`)
 
 - REQ-F-20, REQ-NF-12, UC12 "Add a capability by plugging a module", views under
   `diagrams/expansion-port/` (boot probe sequence, component), traceability and verification
@@ -20,6 +20,7 @@ human context: what was done, why, and by which PR.
   timeout, reserved sensor addresses, one firmware; code at the first module's PDR.
 - review-local: Must 2 · Should 6 · Nice 4, all fixed; SonarQube PASSED (coverage 94 %), gitleaks
   clean, 220/220 native, benches PASS.
+- Owner PDR validation recorded in the PR. No Copilot/Codex review (owner: local gates only for now); CI green.
 
 ### KiCad schematic `cubbies-v1.kicad_sch` — benches fed from the schematic — **PR #34 merged** (`afb4ede`)
 
