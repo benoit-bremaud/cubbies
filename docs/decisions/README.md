@@ -21,3 +21,4 @@ choice, so the reasoning can be re-examined when the context changes.
 | [0013](ADR-0013-cube-core-pdr-decisions.md) | cube-core PDR: lib-owned PRNG, invitation window and ritual volume step, sleep timings, deferrals (amends 0008) | Accepted |
 | [0014](ADR-0014-firmware-graphics-library-and-test-discipline.md) | Firmware: LovyanGFX for the display adapter, TDD on lib + golden images, brick plan F1–F5 | Accepted |
 | [0015](ADR-0015-hardware-validation-fixes.md) | Hardware validation fixes before the CDR: buzzer/SDA swap off strapping GPIO2, display reset RC 1 µF + diode, buzzer 82 Ω | Accepted |
+| [0016](ADR-0016-expansion-port.md) | Expansion port J1: module power budget 50/75 mA, internal bay behind a clipped rear cover, plug-and-play by allowlisted I2C probe | Accepted |

@@ -22,6 +22,8 @@ of the first UML study (`diagrams/cube-core/03-component.md`, merged in PR #5).
 | REQ-F-13 rare gag | B2 | **deferred**: `social-group` PDR (mood-engine extension) | mood engine + awake-time accumulator + rate limiter | native rate-limit tests |
 | REQ-F-14 choir | UC10 | tier B | — | bench |
 | REQ-F-15 motion reactions | B3 | tier B (S9) | motion classifier ← `IMotion` (port created at the S9 PDR) | native tests, bench |
+| REQ-F-20 expansion module | UC12 | [02-sequence-boot-scan](diagrams/expansion-port/02-sequence-boot-scan.md), [03-component](diagrams/expansion-port/03-component.md) | module registry (lib, at the module PDR) ← `II2cBus` probe; J1 on the I2C bus; rear module bay | native registry tests (module PDR), bench boot with an unknown module, ERC |
+| REQ-NF-12 module power | UC12 | — | 3V3 rail through J1 | C-0012 (`calc.py`), bench LDO temperature with 50 mA on J1 |
 | REQ-NF-01..11 | — | — | see [verification-plan.md](verification-plan.md) | per method |
 
 PDR `cube-core` passed on 2026-10-14 (ADR-0013). Deferred to the `social-group` PDR: REQ-F-11,

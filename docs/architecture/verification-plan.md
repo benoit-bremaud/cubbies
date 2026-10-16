@@ -29,6 +29,8 @@
 | I2C bus at 400 kHz | C-0007 | `i2c-bus.cir` (18 corners); bench: scope rise time | CDR |
 | Interfaces: INMP441, TTP223, SSD1331 SPI | C-0009, C-0010, C-0011 | calculation (tier 3); bench | CDR |
 | Current budget V1 (REQ-NF-04), LDO thermal, autonomy V2 | C-0001, C-0002 | bench current and LDO temperature | CDR, then V2 |
+| Expansion port J1 module budget (REQ-NF-12, ADR-0016) | C-0012 | calculation (tier 1); bench: LDO temperature with a 50 mA dummy load on J1 | CDR |
+| Expansion modules ignored unless known (REQ-F-20) | ADR-0016 D3 | native tests of the module registry at the module PDR; bench: boot with an unknown Qwiic board fitted | module PDR, CDR (bench) |
 | GPIO allocation (C3, ADR-0007) | review against ADR-0007 | `kicad-cli sch erc` | CDR (signed contract) |
 | Eyes and expressions (REQ-F-01, 02, NF-08) | native PNG render | golden images in CI | PDR (owner review of the images) |
 | Moods, sleep, identity, protocol (REQ-F-05..13) | Unity tests | replayed scenarios with injected clock | PDR |

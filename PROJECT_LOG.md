@@ -7,6 +7,20 @@ human context: what was done, why, and by which PR.
 
 ## 2026-10-16
 
+### Expansion port design (issue #18) — ADR-0016, C-0012 — **PR pending**
+
+- REQ-F-20, REQ-NF-12, UC12 "Add a capability by plugging a module", views under
+  `diagrams/expansion-port/` (boot probe sequence, component), traceability and verification
+  rows.
+- C-0012: a J1 module may draw ≤ 50 mA continuous, ≤ 75 mA peak (owner validated 50/80, confirmed 75 before the PR; the
+  calculation trims the peak because C-0001's peak is 420.3 mA). `calc.py` asserts both.
+- Owner MCDA: internal module bay behind a clipped rear cover (415/500 vs outside slot 365,
+  fixed internal 335); bay 22 × 22 × 6 mm in the mechanical spec (FreeCAD script not written yet).
+- Plug-and-play principle (ADR-0016 D3): allowlisted I2C probe at boot with identity check,
+  timeout, reserved sensor addresses, one firmware; code at the first module's PDR.
+- review-local: Must 2 · Should 6 · Nice 4, all fixed; SonarQube PASSED (coverage 94 %), gitleaks
+  clean, 220/220 native, benches PASS.
+
 ### KiCad schematic `cubbies-v1.kicad_sch` — benches fed from the schematic — **PR #34 merged** (`afb4ede`)
 
 - Native KiCad 9 schematic + PDF from the GPIO contract (ADR-0015), BOM and assembly guide:

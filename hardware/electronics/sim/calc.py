@@ -1,4 +1,4 @@
-"""Tier-3 calculation lines for cubbies V1 (calculation log C-0001, C-0002, C-0005, C-0009..C-0011).
+"""Tier-3 calculation lines for cubbies V1 (calculation log C-0001, C-0002, C-0005, C-0009..C-0012).
 
 Plain arithmetic over worst-case corners; every input carries its source or ASSUMED.
 Run: python3 calc.py   (prints every figure the log quotes)
@@ -48,3 +48,17 @@ print(f"C-0010 TTP223 VDD 2.0-5.5 V ok at 3.25-3.35 V; VIH {0.75 * 3.35:.2f} V; 
 # C-0011 SPI 6 MHz to the SSD1331: t_cycle >= 150 ns
 assert 1e9 / 6e6 >= 150 and 96 * 64 * 16 / 6e6 <= 0.040, "C-0011"
 print(f"C-0011 SPI period at 6 MHz {1e9 / 6e6:.0f} ns >= 150 ns; frame 96x64x16 = {96 * 64 * 16 / 6e6 * 1e3:.1f} ms")
+
+# C-0012 expansion port J1 (issue #18): current a Qwiic module may draw from the XIAO 3V3
+# Sustained: LDO junction rise (VBUS max - 3.3) x I x theta_JA must keep Tj <= 125 C at a 35 C desk
+# (ambient ASSUMED; Tj max TLV757P recommended operating, to read), with the tier-1 2x margin on the
+# module's share. Peak: C-0001 peak + module peak <= 500 mA (REQ-NF-04).
+TA, TJ_MAX, THETA = 35, 125, 200
+k = (VBUS[1] - 3.3) * THETA / 1000  # C per mA
+i_sust_max = (TJ_MAX - TA) / k
+mod_cont, mod_peak = 50, 75  # 80 overshoots by 0.3 mA (peak 420.3 mA)
+assert typ + 2 * mod_cont <= i_sust_max, "C-0012 module continuous budget over the thermal limit"
+assert pk + mod_peak <= 500, "C-0012 module peak over 500 mA"
+print(f"C-0012 J1 module: LDO {k:.2f} C/mA, sustained total max {i_sust_max:.0f} mA, cube {typ:.0f} mA;"
+      f" module <= {mod_cont} mA continuous (Tj {TA + k * (typ + mod_cont):.0f} C), <= {mod_peak} mA peak"
+      f" (total {pk + mod_peak:.0f} mA)")

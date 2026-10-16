@@ -65,6 +65,7 @@ are not makers: the cube works from the moment it is plugged in.
 | REQ-F-13 | Rare gag behaviour: a discreet "toot" with embarrassed eyes, neighbours react; rate-limited on awake time (≈ once per 16 h awake), never while asleep or in the dark. | C8, C10 | FW |
 | REQ-F-14 | Synchronised choir across cubes (tier B). | FS8 | FW |
 | REQ-F-15 | Eyes follow the cube's tilt; shaking annoys it; upside down it sleeps (tier B, S9). The motion sensor is fitted in V1 so the series needs no rework. | FS1, FS2 | FW, EL |
+| REQ-F-20 | A delivered cube accepts one extra I2C module through an internal expansion port: the module works without a per-cube firmware, an unknown or absent module changes nothing, and the cube still boots (ADR-0016, issue #18). | FS9, C3, C4 | FW, EL, ME |
 
 ## 5. Non-functional requirements
 
@@ -81,6 +82,7 @@ are not makers: the cube works from the moment it is plugged in.
 | REQ-NF-09 | Build reproducibility | one `pio run` per board env, pinned platform and libraries | FW |
 | REQ-NF-10 | Assembly | ≤ 45 min per cube, no soldering on the XIAO pads beyond headers if possible | ME, EL |
 | REQ-NF-11 | Enclosure | snap-fit, no screws needed, prints without supports | ME |
+| REQ-NF-12 | Expansion module power | one module on J1 draws ≤ 50 mA continuous and ≤ 75 mA peak (< 1 s) from 3V3 (C-0012) | EL, FW |
 
 ## 6. Reserved for later versions
 

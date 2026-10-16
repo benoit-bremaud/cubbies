@@ -46,7 +46,8 @@ Source of truth in code: `firmware/include/pins.h`. Both must match; ERC and a r
 | Rail | Source | Consumers | Budget |
 |------|--------|-----------|--------|
 | 5 V | USB-C | XIAO input | ≤ 500 mA peak (REQ-NF-04) |
-| 3V3 | XIAO LDO TI TLV75733 (700 mA class; the thermal budget, not the rating, is the limit) | ESP32-C3, OLED, mic, IMU, touch, buzzer stage | typical ≤ 300 mA (thermal), see [calculations/log.md](calculations/log.md) C-0001, C-0002 |
+| 3V3 | XIAO LDO TI TLV75733 (700 mA class; the thermal budget, not the rating, is the limit) | ESP32-C3, OLED, mic, IMU, touch, buzzer stage | sustained ≤ 231 mA in total, module included (thermal, C-0012), see [calculations/log.md](calculations/log.md) C-0001, C-0002 |
+| 3V3 on J1 | XIAO LDO, through the Qwiic connector | one expansion module (ADR-0016) | ≤ 50 mA continuous, ≤ 75 mA peak (C-0012, REQ-NF-12) |
 
 Current budget detail and buzzer stage sizing: [calculations/log.md](calculations/log.md).
 

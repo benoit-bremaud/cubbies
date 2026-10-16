@@ -7,3 +7,4 @@ C-0005 gate drive VOH min 2.60 V vs Vth max 1.45 V; Rds(on) spec at 2.5 V <= 52 
 C-0009 INMP441 SCK 1.024 MHz (window 0.5-3.3 MHz), WS 16 kHz (7.8-50 kHz); VDD max 3.349 V vs 3.63 V
 C-0010 TTP223 VDD 2.0-5.5 V ok at 3.25-3.35 V; VIH 2.51 V; push-pull output, VOH ~VDD - 0.2 V
 C-0011 SPI period at 6 MHz 167 ns >= 150 ns; frame 96x64x16 = 16.4 ms
+C-0012 J1 module: LDO 0.39 C/mA, sustained total max 231 mA, cube 106 mA; module <= 50 mA continuous (Tj 96 C), <= 75 mA peak (total 495 mA)

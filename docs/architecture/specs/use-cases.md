@@ -106,3 +106,30 @@
 - Primary actor: Maker. Requirements: REQ-NF-09, REQ-NF-10.
 - Main success scenario: follow `docs/hardware/assembly.md`; flash the single image; the cube
   boots, shows the invitation, and the end-of-line check adopts it once (UC1) to prove the pad.
+
+### UC12 — Add a capability by plugging a module
+- Primary actor: Owner (or Maker on their behalf). Requirements: REQ-F-20, REQ-NF-12.
+  Decisions: ADR-0016. Views: [diagrams/expansion-port/](../diagrams/expansion-port/).
+- Preconditions: the cube is unplugged from USB; the owner has a Qwiic/STEMMA QT module whose
+  behaviour the cube's firmware already knows (shipped with it or received by update, V1.5).
+- Minimal guarantee: the cube boots and behaves as before, whatever is plugged in.
+- Success guarantee: after the next boot the cube uses the module (e.g. it vibrates when
+  petted).
+- Main success scenario:
+  1. The owner unclips the rear cover; the module bay and J1 are in view.
+  2. The owner plugs the module's Qwiic cable into J1, lays the module in the bay and clips the
+     cover back.
+  3. The owner plugs the cube in; at boot the cube scans the I2C bus, recognises the module's
+     address and identity, and enables the matching behaviour.
+  4. The cube greets its new capability once (a short reaction), then lives as usual.
+- Extensions:
+  - 3a. The module is unknown to this firmware: the cube ignores it and boots as usual; the
+    behaviour arrives with a later update (V1.5 OTA), no reflash by the owner.
+  - 3b. The module answers on the address of a fitted sensor (IMU 0x68/0x69, light 0x23/0x5C):
+    the conflict breaks a built-in sensor; the cube keeps running with what still answers, and
+    the owner removes the module (address list: ADR-0016; behaviour verified on the bench at
+    the module PDR).
+  - 3c. The module draws more than the budget (REQ-NF-12): out of specification; the module
+    list in the docs only names modules within the budget.
+  - 2a. The cube was not unplugged: hot-plugging is not supported; the module is only seen at
+    the next boot.
