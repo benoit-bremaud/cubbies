@@ -7,7 +7,7 @@ human context: what was done, why, and by which PR.
 
 ## 2026-10-16
 
-### KiCad schematic `cubbies-v1.kicad_sch` — benches fed from the schematic — PR #34
+### KiCad schematic `cubbies-v1.kicad_sch` — benches fed from the schematic — **PR #34 merged** (`afb4ede`)
 
 - Native KiCad 9 schematic + PDF from the GPIO contract (ADR-0015), BOM and assembly guide:
   XIAO (U1, 2×7), SSD1331, INMP441, TTP223, GY-521, GY-302, buzzer stage, RES# RC, 47 kΩ SDA
@@ -21,6 +21,8 @@ human context: what was done, why, and by which PR.
   computed exactly. Calculation log inputs unchanged. Sensitivity checked: R1 set to 68 Ω on the
   sheet makes `run.sh` fail on C-0003.
 - review-local: Must 1 · Should 9 · Nice 7, all Must/Should fixed; SonarQube: 1 issue fixed, new coverage 93.4 %, regex hotspot reviewed Safe, quality gate PASSED.
+- No external review: Codex hit its usage limit. CI green (native tests, both board builds,
+  CodeQL, secret scan, dependency review).
 
 ### Hardware validation — calculation log and ngspice benches — **PR #28 merged** (`4b72e59`, ADR-0015)
 
