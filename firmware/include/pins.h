@@ -10,8 +10,8 @@ namespace cubbies::pins {
 #if defined(CUBBIES_BOARD_XIAO_C3)
 // Seeed XIAO ESP32-C3. GPIO9 is a strapping pin held high by the BOOT button pull-up; it is
 // only ever driven by the MCU (display DC), never by an external device at reset. GPIO2 is a
-// strapping pin that must read 1 at reset: it carries I2C SDA, held high by the module pull-ups;
-// the buzzer stage's gate pull-down sits on GPIO6 (ADR-0015, C-0008).
+// strapping pin that must read 1 at reset: it carries I2C SDA, held high by a 47 kohm board
+// pull-up even with no I2C module fitted; the buzzer's gate pull-down sits on GPIO6 (ADR-0015).
 constexpr uint8_t kDisplaySck = 8;   // D8
 constexpr uint8_t kDisplayMosi = 10; // D10
 constexpr uint8_t kDisplayCs = 3;    // D1
@@ -25,8 +25,9 @@ constexpr uint8_t kI2cSda = 2;       // D0
 constexpr uint8_t kI2cScl = 7;       // D5
 
 #elif defined(CUBBIES_BOARD_C3_SUPERMINI)
-// ESP32-C3 Super Mini (prototypes). GPIO8 (strapping, 1 for download boot) carries I2C SDA,
-// held high by the module pull-ups and the onboard LED; the buzzer sits on GPIO0 (ADR-0015).
+// ESP32-C3 Super Mini (prototypes). GPIO8 (strapping, 1 for download boot) carries I2C SDA; the
+// onboard LED on it adds sink current and flickers with bus traffic. GPIO2 (strapping) carries
+// mic BCLK with a 47 kohm pull-up. The buzzer sits on GPIO0 (ADR-0015).
 // GPIO9 (BOOT) is left unused; GPIO20 (UART RX) stays free; GPIO21 (UART TX) carries I2C SCL.
 constexpr uint8_t kDisplaySck = 4;
 constexpr uint8_t kDisplayMosi = 6;

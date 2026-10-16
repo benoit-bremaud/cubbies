@@ -14,7 +14,10 @@ human context: what was done, why, and by which PR.
   tier-3 lines in `calc.py`.
 - Three drafted choices failed and were fixed (owner, scored options, ADR-0015): buzzer and SDA
   swapped so the strapping pin GPIO2 reads 1 at reset (430/500); display RES# RC 10 kΩ / 1 µF +
-  1N4148 (470/500); buzzer series resistor 82 Ω (440/500).
+  1N4148 (470/500); buzzer series resistor 82 Ω (440/500); after the pre-push review, a 47 kΩ
+  board pull-up so GPIO2 boots high with no I2C module fitted (485/500).
+- Benches are self-validating (`sh run.sh` fails on any `FAIL C-NNNN`, negative controls print
+  `EXPECTED-FAIL`); review-local: Must 3 · Should 8 · Nice 4, all Must/Should fixed.
 - Open before the CDR: LTspice second engine on Tier 1 entries, LDO θJA/dropout from the
   datasheet, bench boot/download check, I2C rise-time measurement.
 

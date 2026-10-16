@@ -42,6 +42,8 @@ How to read it:
   - The TLV757P datasheet must be read for both of these last two values.
 - **Result**:
   - At 106 mA typical: 206 mW, +41 °C over ambient, which is acceptable.
+  - At the 420 mA peak: +164 °C if sustained, but it is a burst (ESP-NOW TX under 1 ms), so
+    the junction does not follow it.
   - At a sustained 300 mA: +117 °C. A sustained 300 mA is thermally unacceptable, so the
     REQ-NF-04 "typical" ceiling is a thermal limit, as already stated.
   - LDO input at least 4.65 V, which leaves 0.92 V over 3.3 V plus dropout.
@@ -63,18 +65,19 @@ How to read it:
   - worst-case AO3400.
 - **Inputs**:
   - Coil 16 ± 4 Ω, rated 40 mA (bom.md).
-  - Gate high level 2.64 V (ESP32-C3 VOH min, 0.8 × VDD).
+  - Gate high level 2.60 V (ESP32-C3 VOH min, 0.8 × 3.25 V).
 - **Result**:
   - With the drafted 68 Ω: peak **43.7 mA, which fails**.
-  - With **82 Ω**: peak 37.2 mA, mean coil power at most 11 mW.
+  - With **82 Ω**: peak 37.2 mA, mean coil power at most 11.4 mW (coil current sensed in series
+    with the inductance, so the off-time recirculation through D1 is counted).
   - The owner chose 82 Ω (MCDA 440/500, against 380 for keeping 68 Ω on a coil-power criterion
     and 340 for 75 Ω; ADR-0015).
   - Expected cost: about −1.7 dB, which is consistent with the "never loud" constraint.
   - Plot: `results/buzzer-driver.svg`.
   - **OPEN**: second engine.
 - **Used in**: ADR-0015 D3; bom.md (82 Ω); electronics-spec.
-- **Reproduce**: `ngspice -b buzzer-driver.cir` (or `sh run.sh`; table in
-  `results/buzzer-driver.txt`)
+- **Reproduce**: `sh run.sh` (fails on any `FAIL C-0003`; table in `results/buzzer-driver.txt`).
+  Sensitivity checked: the 68 Ω corners print 10 `FAIL C-0003` lines.
 - **Based on**: main at `dc773b1`
 
 ## C-0004 — 2026-10-16 — Flyback clamp and AO3400 stress
@@ -86,7 +89,8 @@ How to read it:
 - **Inputs**: 1N4148 across the coil, using the public model in `models.lib`.
 - **Result**:
   - With the diode: drain at most 4.12 V.
-  - **Without the diode: 30.7 V**, the MOSFET in avalanche. The diode is therefore required.
+  - **Without the diode: 30.7 V**, the MOSFET in avalanche (printed `EXPECTED-FAIL`). The diode is
+    therefore required.
   - Mean MOSFET power at most 0.04 mW, against 350 mW for a SOT-23.
 - **Used in**: bom.md (1N4148, AO3400).
 - **Reproduce**: `ngspice -b buzzer-driver.cir` (line `vdmax_nodiode`)
@@ -137,6 +141,8 @@ How to read it:
     - second engine;
     - bench check of 10 cold boots;
     - check whether the chosen module already has a pull-up on RES#.
+  - Assumption: power-off is an ideal source falling to 0 V, which sinks current, so the replug
+    figure is optimistic; the cold-boot bench check covers a real rail.
 - **Used in**: ADR-0015 D2; electronics-spec; bom.md.
 - **Reproduce**: `ngspice -b oled-reset-rc.cir`
 - **Based on**: main at `dc773b1`
@@ -147,16 +153,19 @@ How to read it:
 - **Purpose**: Tier 1 (1.34× margin at 100 pF). Requirements from UM10204 Fast-mode: tr (30 to
   70 %) ≤ 300 ns, and sink current ≤ 3 mA at VOL 0.4 V.
 - **Method**: Bench `i2c-bus.cir`.
-  - Pull-up networks, each at −5 % and +5 %:
+  - Pull-up networks, each at −5 % and +5 %, all with the 47 kΩ board pull-up (C-0008):
+    - 47 k alone (no module, P0/P1: the bus is unused);
     - 4.7 k ∥ 4.7 k (GY-521 and GY-302);
     - 2.2 k ∥ 4.7 k (GY-521 clones);
-    - the same plus a 4.7 k expansion module (issue #18).
-  - Bus capacitance 50, 100 and 200 pF (ASSUMED).
-  - Pulled up to 3.2 V by the module LDOs (ASSUMED).
-- **Result**:
-  - At 100 pF: rise time 96–224 ns, which passes.
-  - At 200 pF: 191–449 ns. The 4.7 k ∥ 4.7 k network fails at 200 pF.
-  - Sink current 1.2–2.8 mA, which passes in every case, including three modules.
+    - 2.2 k ∥ 4.7 k ∥ 4.7 k (plus an expansion module, issue #18).
+  - Bus capacitance 50, 100 and 200 pF (ASSUMED); thresholds at 30 % and 70 % of the rail.
+  - Rail 3.2 and 3.3 V (module LDOs, ASSUMED).
+- **Result** (the bench prints `FAIL C-0007` on a broken limit up to 100 pF):
+  - At 100 pF: rise time 87–200 ns, which passes (1.5× margin).
+  - At 200 pF, for information: 174–399 ns; 4.7 k ∥ 4.7 k would fail.
+  - Sink current 1.23–2.82 mA, which passes in every case, including three modules.
+  - The Super Mini onboard LED on GPIO8 adds sink current on SDA; it is not counted: prototypes
+    only.
   - Rule: keep the bus wiring ≤ 20 cm. If a bench measurement finds tr > 300 ns, fall back to
     100 kHz.
   - **OPEN**: second engine; bench measurement of the rise time.
@@ -173,18 +182,22 @@ How to read it:
   (ASSUMED).
 - **Inputs**:
   - Option A (draft): buzzer gate pull-down of 100 kΩ on GPIO2.
-  - Option B: SDA on GPIO2, with the module pull-ups at their weakest, 2.47 kΩ to 3.2 V.
+  - Option B0: SDA on GPIO2 with no module fitted, only the 47 kΩ (+5 %) board pull-up to 3.25 V.
+  - Option B: SDA on GPIO2 with the modules, 2.36 kΩ (+5 %) to 3.2 V.
 - **Result**:
   - Option A gives **0.005 V, which fails.**
-  - Option B gives 3.20 V, which passes.
+  - Option B0 gives 3.25 V and option B 3.20 V, which both pass. The Super Mini's GPIO2 (mic
+    BCLK) has the same 47 kΩ pull-up: case B0.
+  - The 47 kΩ board pull-up came from the pre-push review (M2): without it a P0/P1 cube leaves
+    GPIO2 floating. Owner: 485/500, against 10 kΩ (410) and making the IMU mandatory (285).
   - The owner chose to swap the buzzer and SDA (MCDA 430/500, against 410 for a pull-up on
     GPIO2, which turns the MOSFET on at reset and clicks the buzzer, and 340 for keeping the
     draft and testing on the bench; ADR-0015):
     - XIAO: buzzer GPIO6 (D4), SDA GPIO2 (D0);
     - Super Mini: buzzer GPIO0, SDA GPIO8, where download boot needs 1 and the onboard LED also
       pulls up.
-  - **OPEN**: second engine; bench boot and download mode with every module fitted (bench-f5
-    #14).
+  - **OPEN**: second engine; bench boot and download mode with no module and with every module
+    fitted (bench-f5 #14); confirm the XIAO's own pull-up on GPIO8 for download boot.
 - **Used in**: ADR-0015 D1; `firmware/include/pins.h`; electronics-spec GPIO contract.
 - **Reproduce**: `ngspice -b strapping-gpio2.cir`
 - **Based on**: main at `dc773b1`

@@ -6,6 +6,9 @@
 * Circuit: 3V3 ramp (linear, tr 0.1 / 0.6 / 2 ms: TLV75733 soft-start + USB plug-in ASSUMED range)
 *   - R - RES node - C to GND; option B adds a 1N4148 from RES (anode) to 3V3 (cathode) to discharge C
 *   when 3V3 collapses. R, C +/-10 % (C X7R incl. DC bias, ASSUMED).
+* Power-off is an ideal source falling to 0 V in 50 us (it sinks current): optimistic for the replug
+*   check, where a real lightly loaded rail decays slower (ASSUMED; bench cold-boot check covers it).
+* Option 0 = draft (rejected, expected to fail), option 1 = adopted (ADR-0015 D2).
 * Measured: V(RES) at the instant VDD is stable, and how long RES stays below 0.2 x 3.3 V after it.
 * PASS: V(RES) < 0.66 V when VDD reaches 3.3 V, and stays below for >= 3 us.
 * Run: ngspice -b oled-reset-rc.cir
@@ -41,10 +44,17 @@ D1  res vdd D1N4148 area={dfit}
           meas tran vst find v(res) at=$t
           meas tran tlow when v(res)=0.66 cross=1
           let lowafter = (tlow - $t)*1000
-          meas tran vrep find v(res) at=60m
           let tst = 60m + $t
           meas tran vrep2 find v(res) at=$&tst
           echo "$opt $t $rr $&cc | $&vst | $&lowafter | $&vrep2"
+          let bad = (vst gt 0.66) + (lowafter lt 0.003) + (vrep2 gt 0.66)
+          if bad gt 0
+            if $opt = 0
+              echo "EXPECTED-FAIL draft RC at $t $rr $&cc"
+            else
+              echo "FAIL C-0006 at $t $rr $&cc"
+            end
+          end
           destroy all
         end
       end

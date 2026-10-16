@@ -5,7 +5,7 @@
 *   the 1N4148 flyback (and without it: negative control), AO3400 dissipation, gate current.
 * Circuit: 3V3 - Rs 82 ohm (+/-5 %, ADR-0015; 68 ohm gave 43.7 mA, C-0003) - coil (Rcoil 12/16/20 ohm, L ASSUMED 1 mH or 4 mH: not published)
 *   - drain; D1 1N4148 across the coil; gate through 100 ohm from the GPIO, 100 kohm to GND.
-* Corners: 3V3 3.25/3.35 V (TLV75733 +/-1.5 % ASSUMED), GPIO high 2.64 V (VOH min); duty 2/8/20/50 %
+* Corners: 3V3 3.25/3.35 V (TLV75733 +/-1.5 % ASSUMED), GPIO high 2.60 V (VOH min 0.8 x 3.25 V); duty 2/8/20/50 %
 *   at 2 kHz; worst-case MOSFET model (Vth 1.45 V).
 * PASS: peak coil current <= 40 mA (buzzer rating) at every corner;
 *   drain <= 10 V with the diode; MOSFET mean power << 350 mW (SOT-23 rating).
@@ -16,10 +16,11 @@
 Vdd  vdd 0 DC {vdd}
 Vs   vdd vs 0
 Rs   vs a {rs}
-Lc   a  m {lc}
+Vl   a  al 0
+Lc   al m {lc}
 Rc   m  d {rc}
 D1   d  a D1N4148 area={dfit}
-Vg   g0 0 PULSE(0 2.64 0 50n 50n {duty*500u-50n} 500u)
+Vg   g0 0 PULSE(0 2.60 0 50n 50n {duty*500u-50n} 500u)
 Rg   g0 g 100
 Rpd  g  0 100k
 M1   d  g 0 0 AO3400W
@@ -40,19 +41,28 @@ M1   d  g 0 0 AO3400W
             reset
             run
             let pf = v(d)*i(vs)
-            let pcl = i(vs)*i(vs)*$c
+            let pcl = i(vl)*i(vl)*$c
             meas tran ipk max i(vs)
             meas tran vdmax max v(d)
             meas tran pfet avg pf
             meas tran pcoil avg pcl
             echo "$v $r $c $l $dt | $&ipk $&vdmax $&pfet $&pcoil"
+            if ipk gt 0.040
+              echo "FAIL C-0003 coil peak $&ipk A > 40 mA at $v $r $c $l $dt"
+            end
+            if vdmax gt 10
+              echo "FAIL C-0004 drain $&vdmax V > 10 V at $v $r $c $l $dt"
+            end
+            if pfet gt 0.035
+              echo "FAIL C-0004 MOSFET $&pfet W > 35 mW (10 % of SOT-23)"
+            end
             destroy all
           end
         end
       end
     end
   end
-  * negative control: no flyback diode (area 1e-9), worst coil 20 ohm 4 mH, 50 %
+  * negative control: no flyback diode (area 1e-9), coil 12 ohm (most current) 4 mH, 50 %
   alterparam dfit=1e-9
   alterparam vdd=3.35
   alterparam rs=77.9
@@ -62,6 +72,11 @@ M1   d  g 0 0 AO3400W
   reset
   run
   meas tran vdmax_nodiode max v(d)
+  if vdmax_nodiode gt 10
+    echo "EXPECTED-FAIL negative control: drain $&vdmax_nodiode V without the diode"
+  else
+    echo "FAIL C-0004 negative control did not exceed 10 V: bench not sensitive"
+  end
   * plot one nominal waveform with the diode
   alterparam dfit=1
   alterparam rc=16
@@ -71,7 +86,6 @@ M1   d  g 0 0 AO3400W
   reset
   run
   set hcopydevtype=svg
-  set color0=white
   hardcopy results/buzzer-driver.svg v(d) v(g) i(vs)*50 title 'buzzer stage 2 kHz 50 % (V; I x50)'
 .endc
 .end

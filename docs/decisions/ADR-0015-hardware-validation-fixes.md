@@ -26,6 +26,10 @@ Each option below was scored with an MCDA matrix (0–5 scores, weights out of 1
   - XIAO ESP32-C3: buzzer on GPIO6 (D4), SDA on GPIO2 (D0), held high by the module pull-ups.
   - C3 Super Mini: buzzer on GPIO0, SDA on GPIO8.
   - This changes the GPIO allocation, not the 11-GPIO budget of ADR-0007.
+  - The boot level is owned by the cube, not by optional modules: a 47 kΩ pull-up from SDA (GPIO2)
+    to 3V3, and the same on the Super Mini's GPIO2 (mic BCLK), so a P0/P1 cube with no I2C module
+    still boots (pre-push review M2; owner, 485/500 against a 10 kΩ pull-up 410, which eats the
+    I2C sink margin, and making the IMU mandatory 285, which breaks ADR-0007's tier independence).
 - **D2 — display RES# RC: 10 kΩ / 1 µF X7R plus a 1N4148 discharge diode** (470/500).
   - Rejected: 100 kΩ / 100 nF (395), which a module's own pull-up defeats; keeping the draft
     (270).
@@ -43,5 +47,5 @@ Each option below was scored with an MCDA matrix (0–5 scores, weights out of 1
 - The display leaves reset about 16 ms after power-up.
 - Open before the CDR:
   - a second engine (LTspice) on the Tier 1 entries;
-  - a bench boot and download check with every module fitted;
+  - a bench boot and download check with no module and with every module fitted;
   - a measurement of the I2C rise time.

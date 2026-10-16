@@ -35,7 +35,7 @@ Source of truth in code: `firmware/include/pins.h`. Both must match; ERC and a r
 | Microphone | SD | GPIO5 | D3 | GPIO10 | L/R pin to GND (left) |
 | Buzzer | PWM | GPIO6 | D4 | GPIO0 | AO3400 low-side stage, 82 Ω series (C-0003, C-0004); moved off GPIO2 by ADR-0015 |
 | Touch | OUT | GPIO4 | D2 | GPIO1 | TTP223 active high, momentary mode |
-| I2C | SDA | GPIO2 | D0 | GPIO8 | pull-ups on the modules hold the strapping pin high at reset (C-0008, ADR-0015) |
+| I2C | SDA | GPIO2 | D0 | GPIO8 | 47 kΩ board pull-up (R5) holds the strapping pin high at reset with or without modules; module pull-ups set the bus speed (C-0007, C-0008, ADR-0015) |
 | I2C | SCL | GPIO7 | D5 | GPIO21 | |
 | **Used** | | **11 / 11** | | **11** | no free GPIO: extras on I2C only |
 
@@ -44,7 +44,7 @@ Source of truth in code: `firmware/include/pins.h`. Both must match; ERC and a r
 | Rail | Source | Consumers | Budget |
 |------|--------|-----------|--------|
 | 5 V | USB-C | XIAO input | ≤ 500 mA peak (REQ-NF-04) |
-| 3V3 | XIAO LDO TI TLV75733 (700 mA class; the thermal budget, not the rating, is the limit) | ESP32-C3, OLED, mic, IMU, touch, buzzer stage | typical ≤ 300 mA (thermal), see calculations §1 |
+| 3V3 | XIAO LDO TI TLV75733 (700 mA class; the thermal budget, not the rating, is the limit) | ESP32-C3, OLED, mic, IMU, touch, buzzer stage | typical ≤ 300 mA (thermal), see [calculations/log.md](calculations/log.md) C-0001, C-0002 |
 
 Current budget detail and buzzer stage sizing: [calculations/log.md](calculations/log.md).
 
@@ -63,9 +63,11 @@ Current budget detail and buzzer stage sizing: [calculations/log.md](calculation
   because no GPIO is free (ADR-0007).
 - Buzzer: direct drive from a GPIO is out (≥ 30 mA); N-MOSFET low-side stage, values in
   [calculations/log.md](calculations/log.md) C-0003 to C-0005.
-- Strapping pins (C-0008, ADR-0015): GPIO2 must read 1 at reset; it carries SDA, held at 3.2 V by
-  the module pull-ups. The buzzer's 100 kΩ gate pull-down sits on GPIO6, not a strapping pin. On
-  the Super Mini, GPIO8 (1 for download boot) carries SDA and the buzzer sits on GPIO0. CDR
-  bench check: boot and download mode with every module fitted.
+- Strapping pins (C-0008, ADR-0015): GPIO2 must read 1 at reset; it carries SDA, held at
+  ≥ 3.2 V by a 47 kΩ board pull-up (R5) even when no I2C module is fitted (tiers P0/P1). The
+  buzzer's 100 kΩ gate pull-down sits on GPIO6, not a strapping pin. On the Super Mini, GPIO8
+  (1 for download boot) carries SDA and its onboard LED (extra sink current on SDA, prototypes
+  only); its GPIO2 carries mic BCLK and gets the same 47 kΩ pull-up; the buzzer sits on GPIO0.
+  CDR bench check: boot and download mode with no module and with every module fitted.
 - GPIO8 on the XIAO carries SPI SCK: the display's SCK input does not load it at reset.
 - TTP223 mode pads (A/B) set for momentary, active high.
