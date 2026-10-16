@@ -7,6 +7,18 @@ human context: what was done, why, and by which PR.
 
 ## 2026-10-16
 
+### CDR paper items (issues #30, #31, #32) — C-0013, C-0014, C-0015 — **PR #38 merged** (`1580cd5`)
+
+- Source reading: the XIAO ESP32-C3 LDO is a **Torex XC6210B332MR** behind a 500 mA PTC and a
+  Schottky (Seeed schematic), not a TLV75733. C-0013 supersedes C-0002: θJA derived 132–400 °C/W
+  (167 nominal); rail window 3.234–3.366 V carried to every bench (buzzer peak 37.4 mA).
+- Owner MCDA: J1 budget 50/75 mA kept provisional, bench LDO temperature at 50 mA on J1 is a CDR
+  exit criterion (415/500); 10 kΩ pull-up R6 on GPIO8 (no pull-up on the XIAO, 435/500);
+  closed-form second method `crosscheck.py` instead of a second SPICE engine (410/500).
+- review-local: Must 5 · Should 9 · Nice 4, all Must/Should fixed; SonarQube PASSED after 1 issue
+  and 1 regex hotspot fixed; Python coverage 96 %; gitleaks clean; ERC 0; benches PASS; CI green.
+- Still open for the bench (#33): LDO temperature, Schottky Vf from its datasheet.
+
 ### Expansion port design (issue #18) — ADR-0016, C-0012 — **PR #36 merged** (`fc3b183`)
 
 - REQ-F-20, REQ-NF-12, UC12 "Add a capability by plugging a module", views under
