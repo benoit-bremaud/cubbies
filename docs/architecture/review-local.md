@@ -8,6 +8,8 @@
   - docs: doc-auditor;
   - correctness and security: a general-purpose review that reran the benches.
 - Verdict: fix the Must Have items first. Must 3 · Should 8 · Nice 4.
+- Resolution (commit 16151fb): all Must and Should fixed. N1, N2 and N4 fixed; N3 stays open in
+  C-0008 (it needs the XIAO schematic). M2 owner decision: a 47 kΩ board pull-up (485/500).
 
 ## 🔴 Must Have
 
