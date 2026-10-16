@@ -9,8 +9,8 @@
 
 | Method | Tool | Lives in | Used for |
 |--------|------|----------|----------|
-| Calculation | spreadsheet-free Markdown tables with formulas and values | `docs/hardware/calculations.md` | current budget, buzzer drive, RC values, battery (V2) |
-| Analog simulation | KiCad 9 simulator / ngspice 42, batch via `kicad-cli sch export netlist --format spice` then `ngspice -b` | `hardware/electronics/sim/*.cir` + exported plots | only where a real question exists: buzzer driver (flyback spike, MOSFET dissipation), battery divider (V2) |
+| Calculation | append-only log of C-NNNN entries with criticality tiers (V-SEA method) | `docs/hardware/calculations/log.md`, `hardware/electronics/sim/calc.py` | current budget, LDO, gate drive, interface windows, battery (V2) |
+| Analog simulation | ngspice 42 benches with worst-case corners and negative controls (`sh run.sh`); values from the KiCad export once the schematic exists | `hardware/electronics/sim/*.cir`, `results/` tables and SVG plots | buzzer stage (C-0003/4), display reset RC (C-0006), I2C rise time (C-0007), strapping level (C-0008), battery divider (V2) |
 | Native unit tests | PlatformIO `env:native`, Unity | `firmware/test/` | moods, sleep, identity, gestures, protocol, rate limits |
 | Golden images | native display adapter rendering the 96×64 framebuffer to PNG, compared to references | `firmware/test/golden/` | every expression and transition (REQ-F-01, REQ-F-02, REQ-NF-08) |
 | Fuzzing | native test feeding random and malformed frames to the parser | `firmware/test/` | REQ-NF-06 |
@@ -23,9 +23,12 @@
 
 | Decision / requirement | Control (desk) | Validation (evidence) | Approval |
 |------------------------|----------------|-----------------------|----------|
-| Buzzer driver, max volume, Sound gate (REQ-F-04, REQ-F-05, REQ-NF-03) | calculation | ngspice transient + phone dB meter; native tests of the gate | CDR |
-| Display RESET filter | calculation (≈ 500× margin on the reset time) | bench: the display starts on 10 cold boots | CDR |
-| Current budget V1 (REQ-NF-04), autonomy V2 | calculation table | bench current | CDR, then V2 |
+| Buzzer driver, max volume, Sound gate (REQ-F-04, REQ-F-05, REQ-NF-03) | C-0003, C-0004, C-0005 | `buzzer-driver.cir` (64 corners, simulated) + phone dB meter; native tests of the gate | CDR |
+| Display RESET filter | C-0006 (draft RC failed; ADR-0015 D2) | `oled-reset-rc.cir` (24 corners, simulated); bench: the display starts on 10 cold boots | CDR |
+| Strapping pins (GPIO2, GPIO8, GPIO9) | C-0008 (ADR-0015 D1) | `strapping-gpio2.cir`; bench: boot + download mode with every module fitted | CDR |
+| I2C bus at 400 kHz | C-0007 | `i2c-bus.cir` (18 corners); bench: scope rise time | CDR |
+| Interfaces: INMP441, TTP223, SSD1331 SPI | C-0009, C-0010, C-0011 | calculation (tier 3); bench | CDR |
+| Current budget V1 (REQ-NF-04), LDO thermal, autonomy V2 | C-0001, C-0002 | bench current and LDO temperature | CDR, then V2 |
 | GPIO allocation (C3, ADR-0007) | review against ADR-0007 | `kicad-cli sch erc` | CDR (signed contract) |
 | Eyes and expressions (REQ-F-01, 02, NF-08) | native PNG render | golden images in CI | PDR (owner review of the images) |
 | Moods, sleep, identity, protocol (REQ-F-05..13) | Unity tests | replayed scenarios with injected clock | PDR |

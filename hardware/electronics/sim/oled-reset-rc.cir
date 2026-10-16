@@ -1,0 +1,67 @@
+* ============================================================================
+* oled-reset-rc.cir -- SSD1331 RES# held by an RC from 3V3 (no GPIO free, ADR-0007), transient corners
+* ----------------------------------------------------------------------------
+* Validates (C-0006): SSD1331 power-up rule "RES# low >= 3 us after VDD is stable" (SSD1331 datasheet
+*   rev 1.2 §8.9 power ON sequence), VIL = 0.2 x VDD, VIH = 0.8 x VDD.
+* Circuit: 3V3 ramp (linear, tr 0.1 / 0.6 / 2 ms: TLV75733 soft-start + USB plug-in ASSUMED range)
+*   - R - RES node - C to GND; option B adds a 1N4148 from RES (anode) to 3V3 (cathode) to discharge C
+*   when 3V3 collapses. R, C +/-10 % (C X7R incl. DC bias, ASSUMED).
+* Measured: V(RES) at the instant VDD is stable, and how long RES stays below 0.2 x 3.3 V after it.
+* PASS: V(RES) < 0.66 V when VDD reaches 3.3 V, and stays below for >= 3 us.
+* Run: ngspice -b oled-reset-rc.cir
+* ============================================================================
+.include models.lib
+.param tr=0.6m r=10k c=100n
+Vdd vdd 0 PWL(0 0 {tr} 3.3 40m 3.3 40.05m 0 60m 0 {60m+tr} 3.3 100m 3.3)
+R1  vdd res {r}
+C1  res 0 {c}
+D1  res vdd D1N4148 area={dfit}
+.param dfit=1e-9
+.tran 1u 100m
+.control
+  set noaskquit
+  echo "option tr R C | V(RES)@VDD stable [V] | low-after-stable [ms] | V(RES)@replug [V]"
+  foreach opt 0 1
+    if $opt = 0
+      alterparam dfit=1e-9
+      let cn = 100n
+    else
+      alterparam dfit=1
+      let cn = 1u
+    end
+    foreach t 0.1m 0.6m 2m
+      foreach rr 9k 11k
+        foreach cf 0.9 1.1
+          let cc = cn*$cf
+          alterparam tr=$t
+          alterparam r=$rr
+          alterparam c=$&cc
+          reset
+          run
+          meas tran vst find v(res) at=$t
+          meas tran tlow when v(res)=0.66 cross=1
+          let lowafter = (tlow - $t)*1000
+          meas tran vrep find v(res) at=60m
+          let tst = 60m + $t
+          meas tran vrep2 find v(res) at=$&tst
+          echo "$opt $t $rr $&cc | $&vst | $&lowafter | $&vrep2"
+          destroy all
+        end
+      end
+    end
+  end
+  alterparam dfit=1e-9
+  alterparam tr=0.6m
+  alterparam r=10k
+  alterparam c=100n
+  reset
+  run
+  set hcopydevtype=svg
+  hardcopy results/oled-reset-rc-a.svg v(vdd) v(res) 0.66 xlimit 0 5m title 'A: 10k/100nF, tr 0.6 ms'
+  alterparam dfit=1
+  alterparam c=1u
+  reset
+  run
+  hardcopy results/oled-reset-rc-b.svg v(vdd) v(res) 0.66 xlimit 0 30m title 'B: 10k/1uF + 1N4148, tr 0.6 ms'
+.endc
+.end

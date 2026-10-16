@@ -5,6 +5,19 @@ human context: what was done, why, and by which PR.
 
 ---
 
+## 2026-10-16
+
+### Hardware validation — calculation log and ngspice benches (ADR-0015)
+
+- V-SEA method applied: append-only `docs/hardware/calculations/log.md` (C-0001..C-0011, tiered),
+  ngspice 42 benches with worst-case corners under `hardware/electronics/sim/` (`sh run.sh`),
+  tier-3 lines in `calc.py`.
+- Three drafted choices failed and were fixed (owner, scored options, ADR-0015): buzzer and SDA
+  swapped so the strapping pin GPIO2 reads 1 at reset (430/500); display RES# RC 10 kΩ / 1 µF +
+  1N4148 (470/500); buzzer series resistor 82 Ω (440/500).
+- Open before the CDR: LTspice second engine on Tier 1 entries, LDO θJA/dropout from the
+  datasheet, bench boot/download check, I2C rise-time measurement.
+
 ## 2026-10-15
 
 ### Brick F5 — adapters and `main.cpp` — **PR #26 merged** (`ff7b509`, ADR-0014)

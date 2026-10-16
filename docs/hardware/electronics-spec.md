@@ -29,13 +29,13 @@ Source of truth in code: `firmware/include/pins.h`. Both must match; ERC and a r
 | Display | MOSI | GPIO10 | D10 | GPIO6 | |
 | Display | CS | GPIO3 | D1 | GPIO7 | |
 | Display | DC | GPIO9 | D9 | GPIO5 | GPIO9 is a strapping pin (10 kΩ pull-up + BOOT button on the XIAO): its only load is the SSD1331 D/C# input, never pulled low externally; pressing BOOT while running only glitches DC |
-| Display | RESET | 3V3 via RC | — | 3V3 via RC | 10 kΩ / 100 nF, see calculations §3 |
+| Display | RESET | 3V3 via RC | — | 3V3 via RC | 10 kΩ / 1 µF X7R + 1N4148 discharge diode (C-0006, ADR-0015) |
 | Microphone | BCLK | GPIO20 | D7 | GPIO2 | |
 | Microphone | WS | GPIO21 | D6 | GPIO3 | |
 | Microphone | SD | GPIO5 | D3 | GPIO10 | L/R pin to GND (left) |
-| Buzzer | PWM | GPIO2 | D0 | GPIO8 | through a transistor stage, see calculations |
+| Buzzer | PWM | GPIO6 | D4 | GPIO0 | AO3400 low-side stage, 82 Ω series (C-0003, C-0004); moved off GPIO2 by ADR-0015 |
 | Touch | OUT | GPIO4 | D2 | GPIO1 | TTP223 active high, momentary mode |
-| I2C | SDA | GPIO6 | D4 | GPIO0 | 4.7 kΩ pull-ups on the modules |
+| I2C | SDA | GPIO2 | D0 | GPIO8 | pull-ups on the modules hold the strapping pin high at reset (C-0008, ADR-0015) |
 | I2C | SCL | GPIO7 | D5 | GPIO21 | |
 | **Used** | | **11 / 11** | | **11** | no free GPIO: extras on I2C only |
 
@@ -46,7 +46,7 @@ Source of truth in code: `firmware/include/pins.h`. Both must match; ERC and a r
 | 5 V | USB-C | XIAO input | ≤ 500 mA peak (REQ-NF-04) |
 | 3V3 | XIAO LDO TI TLV75733 (700 mA class; the thermal budget, not the rating, is the limit) | ESP32-C3, OLED, mic, IMU, touch, buzzer stage | typical ≤ 300 mA (thermal), see calculations §1 |
 
-Current budget detail and buzzer stage sizing: [calculations.md](calculations.md).
+Current budget detail and buzzer stage sizing: [calculations/log.md](calculations/log.md).
 
 ## Interfaces and settings
 
@@ -62,12 +62,10 @@ Current budget detail and buzzer stage sizing: [calculations.md](calculations.md
 - SSD1331 module variant (7-pin with RESET exposed is the common one): RESET is held by an RC
   because no GPIO is free (ADR-0007).
 - Buzzer: direct drive from a GPIO is out (≥ 30 mA); N-MOSFET low-side stage, values in
-  calculations §2.
-- Strapping pins: GPIO2 (XIAO buzzer) and GPIO8 (Super Mini buzzer) are strapping pins; the
-  100 kΩ gate pull-down holds them low at reset. The ESP32-C3 datasheet lists GPIO2 = 1 in both
-  boot modes and recommends a pull-up against glitches, while noting GPIO2 does not select the
-  mode; GPIO8 must be 1 for download boot. CDR check (gate checklist): verify boot and download
-  mode with the stage fitted; if either fails, swap the buzzer with an I2C line (pulled up) or
-  with the touch input on GPIO4.
+  [calculations/log.md](calculations/log.md) C-0003 to C-0005.
+- Strapping pins (C-0008, ADR-0015): GPIO2 must read 1 at reset; it carries SDA, held at 3.2 V by
+  the module pull-ups. The buzzer's 100 kΩ gate pull-down sits on GPIO6, not a strapping pin. On
+  the Super Mini, GPIO8 (1 for download boot) carries SDA and the buzzer sits on GPIO0. CDR
+  bench check: boot and download mode with every module fitted.
 - GPIO8 on the XIAO carries SPI SCK: the display's SCK input does not load it at reset.
 - TTP223 mode pads (A/B) set for momentary, active high.

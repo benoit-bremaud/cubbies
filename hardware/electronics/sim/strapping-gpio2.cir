@@ -1,0 +1,27 @@
+* ============================================================================
+* strapping-gpio2.cir -- level the buzzer pin's circuit forces at reset, DC corners
+* ----------------------------------------------------------------------------
+* Validates (C-0008): ESP32-C3 datasheet boot-mode table: GPIO2 = 1 in SPI boot and in download boot
+*   (no internal pull at reset, "N/A"); VIH = 0.75 x VDD. ESP32-C3 GPIO input leakage 50 nA ASSUMED.
+* Option A (today): buzzer on GPIO2, gate pull-down 100 kohm (+/-5 %) through Rg 100 ohm.
+* Option B: buzzer moved to GPIO6, I2C SDA moved to GPIO2: SDA pull-up 1.05-2.47 kohm to 3.2-3.3 V,
+*   no device drives SDA at reset (modules are I2C slaves, idle released).
+* PASS: V(GPIO2) >= 0.75 x 3.35 = 2.51 V at every corner.
+* Run: ngspice -b strapping-gpio2.cir
+* ============================================================================
+* A
+Ilk  0 ga 50n
+Rg   ga g 100
+Rpd  g 0 95k
+* B
+Vp   vp 0 DC 3.2
+Rpu  vp gb 2468
+Ilkb gb 0 50n
+.op
+.control
+  set noaskquit
+  run
+  echo "A: V(GPIO2) = $&v(ga) V (needs >= 2.51 V)"
+  echo "B: V(GPIO2) = $&v(gb) V (needs >= 2.51 V)"
+.endc
+.end

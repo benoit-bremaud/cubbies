@@ -21,4 +21,4 @@ Record results in `docs/hardware/measurements.md` (create it on first use) with 
 | 11 | main.cpp | Tick budget | Loop period 40 ms with no overrun under radio traffic |
 | 12 | Issue #16 | `Released` after a wake touch | Wake/Yawn animation not cut |
 | 13 | Issue #16 | Own buzzer heard by the mic | No spurious LookUp; if seen, open a lib issue |
-| 14 | Strapping pins | Reset with buzzer stage on GPIO2 / GPIO8 | Board boots every time (CDR check, gates.md) |
+| 14 | Strapping pins | Reset and download mode with every module fitted (SDA on GPIO2 / GPIO8, ADR-0015) | Board boots every time (CDR check, gates.md) |

@@ -1,0 +1,2 @@
+A: V(GPIO2) = 0.004755 V (needs >= 2.51 V)
+B: V(GPIO2) = 3.19988 V (needs >= 2.51 V)

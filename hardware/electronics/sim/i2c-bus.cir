@@ -1,0 +1,39 @@
+* ============================================================================
+* i2c-bus.cir -- I2C pull-ups (on the modules) at 400 kHz, transient corners
+* ----------------------------------------------------------------------------
+* Validates (C-0007): I2C-bus spec UM10204 rev 7 Fast-mode: tr (30 %->70 %) <= 300 ns, VOL <= 0.4 V at
+*   3 mA sink. Pull-up network: GY-521 (MPU6050) 4.7 kohm (2.2 kohm on some clones) || GY-302 (BH1750)
+*   4.7 kohm; +/-5 %; pulled to the module LDO output 3.2-3.3 V (XC6206 fed from 3V3, ASSUMED).
+*   Future expansion port (issue #18) adds one more 4.7 kohm module: case "3 modules".
+* Bus C: 50 / 100 / 200 pF (pins ~10 pF each, 20 cm of wire ~15 pF; 200 pF = 2x margin, ASSUMED).
+* Run: ngspice -b i2c-bus.cir
+* ============================================================================
+.param rp=2.35k cb=100p vp=3.2
+Vp  vp 0 DC {vp}
+Rp  vp sda {rp}
+Cb  sda 0 {cb}
+* open-drain released at t=1 us (switch from GND)
+S1  sda 0 ctl 0 SW1
+Vc  ctl 0 PWL(0 1 1u 1 1.001u 0)
+.model SW1 SW(Vt=0.5 Ron=1 Roff=1e12)
+.tran 1n 4u
+.control
+  set noaskquit
+  echo "Rpull Cbus | tr30-70 [ns] | Isink@VOL0.4 [mA]"
+  * 4.7k||4.7k, 2.2k||4.7k, 3 modules (2.2k||4.7k||4.7k), with -5 % (min R) and +5 % (max R)
+  foreach r 2233 2468 1424 1576 1050 1161
+    foreach c 50p 100p 200p
+      alterparam rp=$r
+      alterparam cb=$c
+      reset
+      run
+      meas tran t30 when v(sda)=0.99 rise=1
+      meas tran t70 when v(sda)=2.31 rise=1
+      let trise = (t70-t30)*1e9
+      let isink = (3.3-0.4)/$r*1000
+      echo "$r $c | $&trise | $&isink"
+      destroy all
+    end
+  end
+.endc
+.end

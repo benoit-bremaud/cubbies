@@ -107,7 +107,7 @@ enclosure printed without supports. Verification method per item in
 
 | Risk | Mitigation | Owner of the check |
 |------|------------|--------------------|
-| Buzzer stage on strapping pins (GPIO2 XIAO, GPIO8 Super Mini) | boot and download mode verified with the stage fitted; swap plan ready | CDR |
+| Strapping pins (GPIO2 XIAO, GPIO8 Super Mini) | SDA moved onto them, held high by the I2C pull-ups (ADR-0015, C-0008); boot and download mode checked on the bench | CDR |
 | XIAO LDO thermal budget at sustained 300 mA | measured on the prototype; typical current kept ≈ 100 mA | CDR |
 | OLED burn-in on static eyes | drift and dimming rules (REQ-NF-08) | PDR cube-core |
 | Unauthenticated ESP-NOW broadcast | bounded blast radius, rate limits, fleet key in V2 | ADR-0012 |
