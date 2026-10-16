@@ -27,6 +27,9 @@ hand-wired cube with no PCB.
   - Where a protection is claimed, the bench adds a negative control (the circuit without it).
   - `sh run.sh` reruns every bench and writes the result tables and SVG plots to `results/`.
 - **Arithmetic: `calc.py`** holds the tier-3 lines and needs no dependencies.
+- **Second method: `crosscheck.py`** recomputes every Tier 1 bench corner from closed-form or
+  piecewise-exact equations and fails on a disagreement (C-0015; owner MCDA 410/500 against a
+  second SPICE engine). `run.sh` runs it after the benches.
 - **Models: `models.lib`** holds generic models fitted to datasheet worst-case limits. No vendor
   model is redistributed.
 
@@ -51,10 +54,10 @@ Each entry states its tier in its Purpose.
 
 | Block | Entries | Status |
 |-------|---------|--------|
-| Current budget, 3V3 LDO | C-0001, C-0002 | draft: LDO θJA and dropout to read from the TLV757P datasheet; bench temperature |
-| Buzzer stage | C-0003, C-0004, C-0005 | simulated |
-| Display RESET RC | C-0006 | simulated (second engine open) |
-| I2C bus | C-0007 | simulated (bench rise-time measurement open) |
-| Strapping pins | C-0008 | simulated (bench boot check open) |
+| Current budget, 3V3 LDO | C-0001, C-0013 (supersedes C-0002), C-0012 | calculated from the XC6210 datasheet; θJA bounded 132–400 °C/W, bench temperature at 50 mA on J1 open (CDR) |
+| Buzzer stage | C-0003, C-0004, C-0005, C-0015 | simulated, second method agrees on C-0003 |
+| Display RESET RC | C-0006, C-0015 | simulated, second method agrees (cold-boot bench open) |
+| I2C bus | C-0007, C-0015 | simulated, second method agrees (bench rise-time measurement open) |
+| Strapping pins | C-0008, C-0014, C-0015 | simulated, second method agrees (bench boot check open) |
 | INMP441, TTP223, SSD1331 interfaces | C-0009, C-0010, C-0011 | calculated |
 | V2 battery | — | not started (ADR-0002) |

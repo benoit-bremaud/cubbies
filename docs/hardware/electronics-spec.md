@@ -46,8 +46,8 @@ Source of truth in code: `firmware/include/pins.h`. Both must match; ERC and a r
 | Rail | Source | Consumers | Budget |
 |------|--------|-----------|--------|
 | 5 V | USB-C | XIAO input | ≤ 500 mA peak (REQ-NF-04) |
-| 3V3 | XIAO LDO TI TLV75733 (700 mA class; the thermal budget, not the rating, is the limit) | ESP32-C3, OLED, mic, IMU, touch, buzzer stage | sustained ≤ 231 mA in total, module included (thermal, C-0012), see [calculations/log.md](calculations/log.md) C-0001, C-0002 |
-| 3V3 on J1 | XIAO LDO, through the Qwiic connector | one expansion module (ADR-0016) | ≤ 50 mA continuous, ≤ 75 mA peak (C-0012, REQ-NF-12) |
+| 3V3 | XIAO LDO Torex XC6210B332MR, SOT-25, fed through a 500 mA PTC and a Schottky (Seeed schematic; 700 mA class: the thermal budget, not the rating, is the limit) | ESP32-C3, OLED, mic, IMU, touch, buzzer stage | sustained ≤ 315 mA in total, module included, at the nominal θJA; provisional until the bench measures the LDO temperature (C-0012, C-0013), see [calculations/log.md](calculations/log.md) C-0001, C-0013 |
+| 3V3 on J1 | XIAO LDO, through the Qwiic connector | one expansion module (ADR-0016) | ≤ 50 mA continuous, ≤ 75 mA peak (C-0012, C-0013, REQ-NF-12; provisional until the CDR bench) |
 
 Current budget detail and buzzer stage sizing: [calculations/log.md](calculations/log.md).
 
@@ -72,7 +72,9 @@ Current budget detail and buzzer stage sizing: [calculations/log.md](calculation
   (1 for download boot) carries SDA and its onboard LED (extra sink current on SDA, prototypes
   only); its GPIO2 carries mic BCLK and gets the same 47 kΩ pull-up; the buzzer sits on GPIO0.
   CDR bench check: boot and download mode with no module and with every module fitted.
-- GPIO8 on the XIAO carries SPI SCK: the display's SCK input does not load it at reset.
+- GPIO8 on the XIAO carries SPI SCK and must read 1 in download boot. The XIAO has no pull-up
+  on GPIO8 (Seeed schematic) and the display's SCK input does not drive it, so a 10 kΩ board
+  pull-up (R6) holds it high (C-0014, owner MCDA 435/500).
 - TTP223 mode pads (A/B) set for momentary, active high.
 - I2C expansion port J1 (issue #18, owner MCDA 2026-10-16: JST-SH 4-pin Qwiic/STEMMA QT,
   450/500 against a 2.54 mm header 410 and a 5-pin with interrupt 310): pins GND, 3V3, SDA, SCL;

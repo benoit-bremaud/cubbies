@@ -1,4 +1,4 @@
-"""Tier-3 calculation lines for cubbies V1 (calculation log C-0001, C-0002, C-0005, C-0009..C-0012).
+"""Tier-3 calculation lines for cubbies V1 (calculation log C-0001, C-0005, C-0009..C-0013).
 
 Plain arithmetic over worst-case corners; every input carries its source or ASSUMED.
 Run: python3 calc.py   (prints every figure the log quotes)
@@ -19,15 +19,28 @@ pk = sum(v[1] for v in BUDGET.values())
 assert pk <= 500, "C-0001 peak over 500 mA"
 print(f"C-0001 budget: typical {typ:.1f} mA, peak {pk:.1f} mA (limit 500 mA, REQ-NF-04)")
 
-# C-0002 LDO TLV75733 dissipation (the 420 mA peak is a burst: ESP-NOW TX < 1 ms, not sustained) and junction rise; theta_JA ASSUMED 200 C/W (SOT-23-5, to read)
+# C-0013 (supersedes C-0002) XIAO 3V3 LDO = Torex XC6210B332MR, SOT-25 (Seeed XIAO ESP32C3 schematic),
+# fed from VBUS through a 500 mA PTC fuse and a MSK4005 Schottky. XC6210 ETR0317_007: VOUT 3.234-3.366 V,
+# dropout 75 mV max at 100 mA, Pd SOT-25 250 / 600 / 760 mW at 25 C (no board / 40x40 mm / JESD51-7).
+# theta_JA derived as (125 - 25) / Pd, Pd derated to zero at 125 C (Torex convention, ESTIMATE): the
+# 40x40 mm figure is nominal, the range bounds it until the bench measures Tj (owner decision C, 415/500).
 VBUS = (4.75, 5.25)  # USB 2.0 VBUS at the source
-for i in (typ, 300, pk):
-    p = (VBUS[1] - 3.3) * i / 1000
-    print(f"C-0002 LDO at {i:.0f} mA: {p * 1000:.0f} mW, +{p * 200:.0f} C over ambient")
-# headroom: 1 m cable, 2 x 0.115 ohm (AWG28 ASSUMED), dropout 0.43 V max at 500 mA (ASSUMED, to read)
-vin_min = VBUS[0] - 0.23 * pk / 1000
-assert vin_min - 3.73 > 0, "C-0002 no LDO headroom"
-print(f"C-0002 LDO input min {vin_min:.2f} V, headroom over 3.3 + 0.43 V: {vin_min - 3.73:.2f} V")
+VOUT = (3.234, 3.366)  # XC6210B332 output window
+VF = (0.30, 0.55)  # MSK4005 forward drop, 100-500 mA (ASSUMED, datasheet not read)
+R_PTC = 0.5  # PTC fuse resistance, ohm (ASSUMED)
+TJ_MAX = 125
+THETA = {"JESD51-7": (TJ_MAX - 25) / 0.760, "40x40 mm (nominal)": (TJ_MAX - 25) / 0.600, "no board": (TJ_MAX - 25) / 0.250}
+dv_ldo = VBUS[1] - VF[0] - VOUT[0]  # worst-case drop across the LDO (the PTC drop is ignored: conservative)
+for name, theta in THETA.items():
+    print(f"C-0013 LDO theta_JA {theta:.0f} C/W ({name}): {dv_ldo * typ:.0f} mW at {typ:.0f} mA,"
+          f" +{dv_ldo * typ * theta / 1000:.0f} C over ambient")
+# headroom at the peak: cable 2 x 0.115 ohm (AWG28 ASSUMED) + PTC + Schottky; dropout scaled linearly
+# from 75 mV at 100 mA (ESTIMATE)
+vin_min = VBUS[0] - (0.23 + R_PTC) * pk / 1000 - VF[1]
+vdo = 0.075 * pk / 100
+assert vin_min - VOUT[1] - vdo > 0, "C-0013 no LDO headroom"
+print(f"C-0013 LDO input min {vin_min:.2f} V at {pk:.0f} mA, headroom over {VOUT[1]} + {vdo:.2f} V dropout:"
+      f" {vin_min - VOUT[1] - vdo:.2f} V")
 
 # C-0005 AO3400 gate drive
 voh_min = 0.8 * 3.25
@@ -49,16 +62,20 @@ print(f"C-0010 TTP223 VDD 2.0-5.5 V ok at 3.25-3.35 V; VIH {0.75 * 3.35:.2f} V; 
 assert 1e9 / 6e6 >= 150 and 96 * 64 * 16 / 6e6 <= 0.040, "C-0011"
 print(f"C-0011 SPI period at 6 MHz {1e9 / 6e6:.0f} ns >= 150 ns; frame 96x64x16 = {96 * 64 * 16 / 6e6 * 1e3:.1f} ms")
 
-# C-0012 expansion port J1 (issue #18): current a Qwiic module may draw from the XIAO 3V3
-# Sustained: LDO junction rise (VBUS max - 3.3) x I x theta_JA must keep Tj <= 125 C at a 35 C desk
-# (ambient ASSUMED; Tj max TLV757P recommended operating, to read), with the tier-1 2x margin on the
-# module's share. Peak: C-0001 peak + module peak <= 500 mA (REQ-NF-04).
-TA, TJ_MAX, THETA = 35, 125, 200
-k = (VBUS[1] - 3.3) * THETA / 1000  # C per mA
-i_sust_max = (TJ_MAX - TA) / k
+# C-0012 expansion port J1 (issue #18), thermal inputs from C-0013: current a Qwiic module may draw
+# from the XIAO 3V3. Sustained: Tj = TA + dv_ldo x I x theta_JA <= 125 C at a 35 C desk (ASSUMED),
+# with the tier-1 2x margin on the module's share. Peak: C-0001 peak + module peak <= 500 mA (REQ-NF-04).
+# The budget asserts on the nominal theta; the no-board bound is printed and closed by the bench (CDR).
+TA = 35
 mod_cont, mod_peak = 50, 75  # 80 overshoots by 0.3 mA (peak 420.3 mA)
-assert typ + 2 * mod_cont <= i_sust_max, "C-0012 module continuous budget over the thermal limit"
 assert pk + mod_peak <= 500, "C-0012 module peak over 500 mA"
-print(f"C-0012 J1 module: LDO {k:.2f} C/mA, sustained total max {i_sust_max:.0f} mA, cube {typ:.0f} mA;"
-      f" module <= {mod_cont} mA continuous (Tj {TA + k * (typ + mod_cont):.0f} C), <= {mod_peak} mA peak"
-      f" (total {pk + mod_peak:.0f} mA)")
+for name, theta in THETA.items():
+    k = dv_ldo * theta / 1000  # C per mA
+    i_sust_max = (TJ_MAX - TA) / k
+    ok = typ + 2 * mod_cont <= i_sust_max
+    if name.endswith("(nominal)"):
+        assert ok, "C-0012 module continuous budget over the thermal limit"
+    print(f"C-0012 J1 module, theta {theta:.0f} C/W ({name}): LDO {k:.2f} C/mA, sustained total max"
+          f" {i_sust_max:.0f} mA; module {mod_cont} mA continuous gives Tj {TA + k * (typ + mod_cont):.0f} C,"
+          f" 2x margin {'PASS' if ok else 'NOT MET (bench to close)'}")
+print(f"C-0012 J1 module peak {mod_peak} mA: total {pk + mod_peak:.0f} mA")

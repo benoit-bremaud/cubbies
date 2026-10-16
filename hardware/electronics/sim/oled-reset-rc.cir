@@ -3,7 +3,7 @@
 * ----------------------------------------------------------------------------
 * Validates (C-0006): SSD1331 power-up rule "RES# low >= 3 us after VDD is stable" (SSD1331 datasheet
 *   rev 1.2 §8.9 power ON sequence), VIL = 0.2 x VDD, VIH = 0.8 x VDD.
-* Circuit: 3V3 ramp (linear, tr 0.1 / 0.6 / 2 ms: TLV75733 soft-start + USB plug-in ASSUMED range)
+* Circuit: 3V3 ramp (linear, tr 0.1 / 0.6 / 2 ms: XC6210B332 soft-start + USB plug-in ASSUMED range)
 *   - R - RES node - C to GND; option B adds a 1N4148 from RES (anode) to 3V3 (cathode) to discharge C
 *   when 3V3 collapses. Adopted R = R4, C = C1 from the schematic (schematic.lib); the draft keeps
 *   its 100 nF literal (negative control). R, C +/-10 % (C X7R incl. DC bias, ASSUMED).
