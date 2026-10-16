@@ -12,10 +12,10 @@
 |---|---|
 | 1 Tests | ✅ 220/220 native (`pio test -e native`, firmware unchanged) · ✅ `sh hardware/electronics/sim/run.sh`: all benches PASS + parser self-test · ✅ ERC 0 violations |
 | 2 Coverage | Python new code 93.4 % (Sonar), `schematic_values.py` 90 %; firmware unchanged; docs 2/2 functions |
-| 3 SonarQube | project `cubbies` (localhost:9000): new coverage 93.4 % (Python, coverage.py), 0 new issues, 0 % duplication; ❌ 1 hotspot to review (regex in `schematic_values.py`, owner marks Safe in the UI: the MCP token lacks the right) |
+| 3 SonarQube | project `cubbies` (localhost:9000): new coverage 93.4 % (Python, coverage.py), 0 new issues, 0 % duplication; 1 regex hotspot reviewed Safe (input = sheet values); ✅ QUALITY GATE PASSED |
 | 4 Secrets | ✅ gitleaks clean (main..HEAD) · no tracked .env · diff read: nothing sensitive, no absolute paths in the schematic |
 | 5 QA pass | ✅ no UI: real artefacts exercised — kicad-cli ERC, PDF export inspected, netlist export, benches; sensitivity: R1 = 68 Ω on the sheet makes `run.sh` fail on C-0003 |
-- Gate: **GREEN once the owner reviews the one SonarQube hotspot**
+- Gate: **GREEN — merge authorised on owner approval**
 
 ## 🔴 Must Have
 - `docs/hardware/calculations/README.md:33` `[docs]` · said "no KiCad schematic yet" · **fixed**: values now from `schematic.lib`, corners stay in benches.
