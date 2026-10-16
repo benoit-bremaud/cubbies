@@ -20,7 +20,7 @@ human context: what was done, why, and by which PR.
   module pull-ups stay in the benches; `i2c-bus.txt` changed only because the networks are now
   computed exactly. Calculation log inputs unchanged. Sensitivity checked: R1 set to 68 Ω on the
   sheet makes `run.sh` fail on C-0003.
-- review-local: Must 1 · Should 9 · Nice 7, all Must/Should fixed; SonarQube not run (no project).
+- review-local: Must 1 · Should 9 · Nice 7, all Must/Should fixed; SonarQube: 1 issue fixed, new coverage 93.4 %, one regex hotspot left to the owner's review.
 
 ### Hardware validation — calculation log and ngspice benches (ADR-0015)
 
