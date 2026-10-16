@@ -107,8 +107,8 @@ enclosure printed without supports. Verification method per item in
 
 | Risk | Mitigation | Owner of the check |
 |------|------------|--------------------|
-| Strapping pins (GPIO2 XIAO, GPIO8 Super Mini) | SDA moved onto them, held high by the I2C pull-ups (ADR-0015, C-0008); boot and download mode checked on the bench | CDR |
-| XIAO LDO thermal budget at sustained 300 mA | measured on the prototype; typical current kept ≈ 100 mA | CDR |
+| Strapping pins (GPIO2 and GPIO8 XIAO, GPIO8 Super Mini) | SDA moved onto GPIO2, held high by R5 47 kΩ (ADR-0015, C-0008); the XIAO has no pull-up on GPIO8 (OLED SCK), so R6 10 kΩ holds it (C-0014); boot and download mode checked on the bench | CDR |
+| XIAO LDO (Torex XC6210, no θJA published) thermal budget | typical current ≈ 106 mA; J1 module budget 50 mA provisional until the bench measures the LDO temperature at 50 mA (C-0013) | CDR |
 | OLED burn-in on static eyes | drift and dimming rules (REQ-NF-08) | PDR cube-core |
 | Unauthenticated ESP-NOW broadcast | bounded blast radius, rate limits, fleet key in V2 | ADR-0012 |
 | pioarduino platform maintained by a small team | pinned release archive; fallback documented | ADR-0004 |
