@@ -1,0 +1,59 @@
+# Calculations and simulations — cubbies V1
+
+Every figure that chooses or checks a component is recorded here, so that it can be found again
+and recomputed. The method is the one proven on V-SEA (owner decision 2026-10-15), scaled to a
+hand-wired cube with no PCB.
+
+- [`log.md`](log.md) is the chronological log. **It is append only.** A corrected or superseded
+  result goes in a new entry that cites the one it replaces. A merged entry is never edited.
+- Each entry `C-NNNN` records:
+  - **Purpose**, with its criticality tier;
+  - **Method**;
+  - **Inputs**, each with its source or marked ASSUMED;
+  - **Result**;
+  - **Used in**;
+  - **Reproduce**, the command that recomputes it;
+  - **Based on**, the `main` commit it was computed from.
+- A figure used without an entry is not finished. The PR that uses the figure adds the entry.
+
+## Tools
+
+- **Simulation: ngspice 42 benches** in
+  [`hardware/electronics/sim/`](../../../hardware/electronics/sim/), one `.cir` per block.
+  - Each bench opens with a header stating what it validates, its assumptions, the PASS
+    criterion and its run command.
+  - Corners are swept with `foreach` / `alterparam`. They are worst-case corners (source ×
+    tolerance × load), not Monte Carlo.
+  - Where a protection is claimed, the bench adds a negative control (the circuit without it).
+  - `sh run.sh` reruns every bench and writes the result tables and SVG plots to `results/`.
+- **Arithmetic: `calc.py`** holds the tier-3 lines and needs no dependencies.
+- **Models: `models.lib`** holds generic models fitted to datasheet worst-case limits. No vendor
+  model is redistributed.
+
+There is no KiCad schematic yet (hand-wired V1). The benches therefore carry their component
+values themselves. Once `hardware/electronics/cubbies-v1.kicad_sch` exists, the values move to a
+`.lib` exported from it, as V-SEA does with `spice_block.py`.
+
+## Criticality tiers
+
+Each entry states its tier in its Purpose.
+
+| Tier | Applies to | Depth of verification |
+|------|------------|-----------------------|
+| 1, critical | Boot or reset correctness, or a datasheet requirement met with less than 2× margin | Theory, then a SPICE bench with full corners, then a second engine. LTspice under Wine is not installed yet, so the second-engine run is **open** on every Tier 1 entry. |
+| 2, important | A datasheet requirement met with at least 2× margin | Theory plus one SPICE point, or only the corners a decision needs |
+| 3, routine | A wide margin | The calculation line alone |
+
+## Status per block
+
+`draft` → `simulated` → `measured` → `approved` (approval at the CDR, `gates.md`).
+
+| Block | Entries | Status |
+|-------|---------|--------|
+| Current budget, 3V3 LDO | C-0001, C-0002 | draft: LDO θJA and dropout to read from the TLV757P datasheet; bench temperature |
+| Buzzer stage | C-0003, C-0004, C-0005 | simulated |
+| Display RESET RC | C-0006 | simulated (second engine open) |
+| I2C bus | C-0007 | simulated (bench rise-time measurement open) |
+| Strapping pins | C-0008 | simulated (bench boot check open) |
+| INMP441, TTP223, SSD1331 interfaces | C-0009, C-0010, C-0011 | calculated |
+| V2 battery | — | not started (ADR-0002) |

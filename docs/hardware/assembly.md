@@ -15,8 +15,9 @@
 | U3 | BH1750 module (tier P3, optional) | 1 |
 | SW1 | TTP223 module + copper tape pad 15 × 15 mm | 1 |
 | BZ1 | passive buzzer 12 mm | 1 |
-| Q1, D1, R1–R3 | buzzer stage: AO3400 N-MOSFET, 1N4148, 68 Ω, 100 Ω, 100 kΩ | 1 set |
-| R4, C1 | display RESET RC: 10 kΩ, 100 nF | 1 set |
+| Q1, D1, R1–R3 | buzzer stage: AO3400 N-MOSFET, 1N4148, 82 Ω, 100 Ω, 100 kΩ (C-0003, ADR-0015) | 1 set |
+| R4, C1, D2 | display RESET RC: 10 kΩ, 1 µF X7R, 1N4148 from RES# (anode) to 3V3 (cathode) (C-0006, ADR-0015) | 1 set |
+| R5 | SDA (GPIO2) boot pull-up to 3V3: 47 kΩ (C-0008, ADR-0015) | 1 |
 | — | silicone wire 28 AWG, heat-shrink, foam pads, 4 feet | — |
 | — | printed shells: front, rear | 1 each |
 

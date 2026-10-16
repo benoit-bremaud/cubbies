@@ -1,0 +1,42 @@
+* ============================================================================
+* strapping-gpio2.cir -- level the circuits force on the strapping pin GPIO2 at reset, DC operating point
+* ----------------------------------------------------------------------------
+* Validates (C-0008): ESP32-C3 datasheet boot-mode table: GPIO2 = 1 in SPI boot and download boot
+*   (no internal pull at reset, "N/A"); VIH = 0.75 x VDD max = 2.51 V. Pin leakage 50 nA ASSUMED,
+*   taken in the direction that pulls the node away from its pull.
+* A  (rejected draft): buzzer gate pull-down 100 kohm -5 % on GPIO2 through Rg 100 ohm: negative control.
+* B0 (adopted, ADR-0015 D1, no I2C module fitted): SDA on GPIO2, board pull-up 47 kohm +5 % to 3.25 V.
+* B  (adopted, modules fitted): 47 kohm || 4.7 kohm || 4.7 kohm, all +5 %, to 3.2 V.
+* Super Mini: GPIO2 carries mic BCLK (high-impedance input) with the same 47 kohm pull-up: case B0.
+* PASS: V(GPIO2) >= 2.51 V for B0 and B.
+* Run: ngspice -b strapping-gpio2.cir
+* ============================================================================
+Ilk  0 ga 50n
+Rg   ga g 100
+Rpd  g 0 95k
+Vp0  vp0 0 DC 3.25
+Rpu0 vp0 gb0 49350
+Ilk0 gb0 0 50n
+Vp   vp 0 DC 3.2
+Rpu  vp gb 2357
+Ilkb gb 0 50n
+.op
+.control
+  set noaskquit
+  run
+  echo "A:  V(GPIO2) = $&v(ga) V"
+  echo "B0: V(GPIO2) = $&v(gb0) V"
+  echo "B:  V(GPIO2) = $&v(gb) V"
+  if v(ga) lt 2.51
+    echo "EXPECTED-FAIL draft: gate pull-down holds GPIO2 low"
+  else
+    echo "FAIL C-0008 negative control did not fail: bench not sensitive"
+  end
+  if v(gb0) lt 2.51
+    echo "FAIL C-0008 B0 (no module) below VIH"
+  end
+  if v(gb) lt 2.51
+    echo "FAIL C-0008 B (modules) below VIH"
+  end
+.endc
+.end

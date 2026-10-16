@@ -1,0 +1,53 @@
+* ============================================================================
+* i2c-bus.cir -- I2C pull-ups at 400 kHz, transient corners
+* ----------------------------------------------------------------------------
+* Validates (C-0007): I2C-bus spec UM10204 rev 7 Fast-mode: tr (30 %->70 % of the pull-up rail)
+*   <= 300 ns, VOL <= 0.4 V at <= 3 mA sink.
+* Pull-up networks (each at -5 % and +5 %), all with the 47 kohm board pull-up on SDA (ADR-0015 D1):
+*   47k alone (no I2C module fitted: tiers P0/P1), 4.7k || 4.7k (GY-521 + GY-302),
+*   2.2k || 4.7k (GY-521 clone), 2.2k || 4.7k || 4.7k (plus an expansion module, issue #18).
+* Rail 3.2 / 3.3 V (module LDOs fed from 3V3, ASSUMED). Bus C 50 / 100 pF (pins ~10 pF each,
+*   20 cm of wire ~15 pF, ASSUMED); 200 pF is reported for information only (wiring rule: <= 20 cm).
+* The Super Mini onboard LED on GPIO8 adds sink current on SDA: prototype-only, not counted here.
+* Run: ngspice -b i2c-bus.cir
+* ============================================================================
+.param rp=2.35k cb=100p vp=3.2
+Vp  vp 0 DC {vp}
+Rp  vp sda {rp}
+Cb  sda 0 {cb}
+* open-drain released at t = 1 us
+S1  sda 0 ctl 0 SW1
+Vc  ctl 0 PWL(0 1 1u 1 1.001u 0)
+.model SW1 SW(Vt=0.5 Ron=1 Roff=1e12)
+.tran 1n 40u
+.control
+  set noaskquit
+  echo "Rpull Vrail Cbus | tr30-70 [ns] | Isink@VOL0.4 [mA]"
+  * 47k; 4.7k||4.7k||47k; 2.2k||4.7k||47k; 2.2k||4.7k||4.7k||47k; each at -5 % and +5 %
+  foreach r 44650 49350 2132 2357 1393 1540 1028 1136
+    foreach v 3.2 3.3
+      foreach c 50p 100p 200p
+        alterparam rp=$r
+        alterparam cb=$c
+        alterparam vp=$v
+        reset
+        run
+        let lo = 0.3*$v
+        let hi = 0.7*$v
+        meas tran t30 when v(sda)=lo rise=1
+        meas tran t70 when v(sda)=hi rise=1
+        let trise = (t70-t30)*1e9
+        let isink = ($v - 0.4) / $r * 1000
+        echo "$r $v $c | $&trise | $&isink"
+        if isink gt 3
+          echo "FAIL C-0007 sink $&isink mA > 3 mA at $r"
+        end
+        if ($r lt 40000) & (trise gt 300) & ($c lt 150e-12)
+          echo "FAIL C-0007 rise $&trise ns > 300 ns at $r $c"
+        end
+        destroy all
+      end
+    end
+  end
+.endc
+.end

@@ -9,7 +9,7 @@ namespace {
 constexpr uint8_t kResolutionBits = 10;
 constexpr uint32_t kIdleHz = 2000;  // any value in the 1–5 kHz range of the spec; output is 0 %
 
-// Duty per volume level, 10-bit: 2 %, 8 %, 20 %, 50 % (docs/hardware/calculations.md; the
+// Duty per volume level, 10-bit: 2 %, 8 %, 20 %, 50 % (docs/hardware/calculations/log.md C-0003; the
 // spec caps the duty at 50 %, the loudest a square wave gets).
 constexpr uint32_t kDuty[kMaxVolume + 1] = {20, 82, 205, 512};
 

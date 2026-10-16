@@ -1,0 +1,91 @@
+* ============================================================================
+* buzzer-driver.cir -- passive buzzer low-side stage on the buzzer GPIO, transient corners
+* ----------------------------------------------------------------------------
+* Validates (calculations C-0003, C-0004): coil peak current vs the 40 mA rating, drain spike with
+*   the 1N4148 flyback (and without it: negative control), AO3400 dissipation, gate current.
+* Circuit: 3V3 - Rs 82 ohm (+/-5 %, ADR-0015; 68 ohm gave 43.7 mA, C-0003) - coil (Rcoil 12/16/20 ohm, L ASSUMED 1 mH or 4 mH: not published)
+*   - drain; D1 1N4148 across the coil; gate through 100 ohm from the GPIO, 100 kohm to GND.
+* Corners: 3V3 3.25/3.35 V (TLV75733 +/-1.5 % ASSUMED), GPIO high 2.60 V (VOH min 0.8 x 3.25 V); duty 2/8/20/50 %
+*   at 2 kHz; worst-case MOSFET model (Vth 1.45 V).
+* PASS: peak coil current <= 40 mA (buzzer rating) at every corner;
+*   drain <= 10 V with the diode; MOSFET mean power << 350 mW (SOT-23 rating).
+* Run: ngspice -b buzzer-driver.cir   (from this folder)
+* ============================================================================
+.include models.lib
+.param vdd=3.35 rs=77.9 rc=12 lc=1m duty=0.5 dfit=1
+Vdd  vdd 0 DC {vdd}
+Vs   vdd vs 0
+Rs   vs a {rs}
+Vl   a  al 0
+Lc   al m {lc}
+Rc   m  d {rc}
+D1   d  a D1N4148 area={dfit}
+Vg   g0 0 PULSE(0 2.60 0 50n 50n {duty*500u-50n} 500u)
+Rg   g0 g 100
+Rpd  g  0 100k
+M1   d  g 0 0 AO3400W
+.tran 50n 5m 3m
+.control
+  set noaskquit
+  echo "corner vdd rs rcoil L duty | Ipk[A] Vdrain_max[V] Pfet[W] Pcoil[W]"
+  foreach v 3.25 3.35
+    foreach r 77.9 86.1
+      foreach c 12 20
+        foreach l 1m 4m
+          foreach dt 0.02 0.08 0.2 0.5
+            alterparam vdd=$v
+            alterparam rs=$r
+            alterparam rc=$c
+            alterparam lc=$l
+            alterparam duty=$dt
+            reset
+            run
+            let pf = v(d)*i(vs)
+            let pcl = i(vl)*i(vl)*$c
+            meas tran ipk max i(vs)
+            meas tran vdmax max v(d)
+            meas tran pfet avg pf
+            meas tran pcoil avg pcl
+            echo "$v $r $c $l $dt | $&ipk $&vdmax $&pfet $&pcoil"
+            if ipk gt 0.040
+              echo "FAIL C-0003 coil peak $&ipk A > 40 mA at $v $r $c $l $dt"
+            end
+            if vdmax gt 10
+              echo "FAIL C-0004 drain $&vdmax V > 10 V at $v $r $c $l $dt"
+            end
+            if pfet gt 0.035
+              echo "FAIL C-0004 MOSFET $&pfet W > 35 mW (10 % of SOT-23)"
+            end
+            destroy all
+          end
+        end
+      end
+    end
+  end
+  * negative control: no flyback diode (area 1e-9), coil 12 ohm (most current) 4 mH, 50 %
+  alterparam dfit=1e-9
+  alterparam vdd=3.35
+  alterparam rs=77.9
+  alterparam rc=12
+  alterparam lc=4m
+  alterparam duty=0.5
+  reset
+  run
+  meas tran vdmax_nodiode max v(d)
+  if vdmax_nodiode gt 10
+    echo "EXPECTED-FAIL negative control: drain $&vdmax_nodiode V without the diode"
+  else
+    echo "FAIL C-0004 negative control did not exceed 10 V: bench not sensitive"
+  end
+  * plot one nominal waveform with the diode
+  alterparam dfit=1
+  alterparam rc=16
+  alterparam lc=1m
+  alterparam rs=82
+  alterparam vdd=3.3
+  reset
+  run
+  set hcopydevtype=svg
+  hardcopy results/buzzer-driver.svg v(d) v(g) i(vs)*50 title 'buzzer stage 2 kHz 50 % (V; I x50)'
+.endc
+.end

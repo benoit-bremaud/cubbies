@@ -1,35 +1,93 @@
-# Local review — cubbies (brick F5, adapters and main.cpp)
+# Local review — cubbies (feat/hardware-validation)
 
-- Date: 2026-10-15
-- Commit: c17fb5e (findings applied in the follow-up commit)
-- Scope: branch diff main...feat/f5-adapters
-- Checks run: design · docs · tests · security · correctness
-- Verdict: ship after the Must Have fixes (applied)  ·  Must 3 · Should 4 · Nice 7
+- Date: 2026-10-16
+- Commit: ff13210
+- Scope: branch diff main...HEAD
+- Checks run:
+  - design and tests: architecture-guardian (bench self-validation reviewed as test quality);
+  - docs: doc-auditor;
+  - correctness and security: a general-purpose review that reran the benches.
+- Verdict: fix the Must Have items first. Must 3 · Should 8 · Nice 4.
+- Resolution (commit 16151fb): all Must and Should fixed. N1, N2 and N4 fixed; N3 stays open in
+  C-0008 (it needs the XIAO schematic). M2 owner decision: a 47 kΩ board pull-up (485/500).
 
 ## 🔴 Must Have
-- `firmware/src/I2sMic.cpp:31` `[correctness]` · `I2SClass::readBytes` loops until the buffer is full and returns 0 on timeout, so with timeout 0 every tick lost the partial chunk and logged an error · read with `i2s_channel_read(rxChan(), …, 0)` — **applied**
-- `firmware/src/EspNowRadio.cpp:43` `[design|docs|correctness]` · a failed `begin()` left `receive()` calling `xQueueReceive(nullptr)` (assert, reboot loop) while the log said "social layer off" · `ready_` guard on `receive`/`broadcast`, log reworded — **applied**
-- `firmware/src/BuzzerAudio.cpp:28` `[design|correctness]` · a failed `begin()` left `play()`/`stop()` on a null mutex or timer · `ready_` guard — **applied**
+
+- **M1** `hardware/electronics/sim/run.sh:7-10`, every `*.cir`, `calc.py` `[tests|design|correctness]`
+  - **Problem**: the benches never check their own PASS rules.
+    - A regression, for example Rs back to 68 Ω, would print a number and the run would stay
+      green.
+    - `sh` has no pipefail, and `grep` matches only `Error` in that exact case.
+  - **Fix**:
+    - Each bench prints `FAIL <C-id>` when it breaks its limit; a negative control prints
+      `EXPECTED-FAIL`.
+    - `calc.py` asserts its limits.
+    - `run.sh` keeps the full output, fails on `FAIL`, `error` or `fatal` and on an empty
+      result, and checks the exit status of ngspice.
+- **M2** `strapping-gpio2.cir:7-8`, `firmware/include/pins.h:13-14`, ADR-0015 D1 `[design|correctness]`
+  - **Problem**: GPIO2 is held high only by the pull-ups on the I2C modules. ADR-0007 lets the
+    P2 and P3 tiers be absent, so a cube built only to P0 or P1 leaves GPIO2 floating at reset.
+    The Super Mini has the same gap on its GPIO2 (mic BCLK).
+  - **Fix**: a pull-up on the cube itself, or making the IMU mandatory. **Owner decision.**
+- **M3** `docs/hardware/assembly.md:18-19` `[docs]`
+  - **Problem**: the parts list still gives 68 Ω for the buzzer and 10 kΩ / 100 nF for the reset
+    RC with no diode, so a build from it reproduces the rejected circuit.
+  - **Fix**: list 82 Ω, and 10 kΩ / 1 µF X7R with a 1N4148 (D2).
 
 ## 🟡 Should Have
-- `firmware/src/EspNowRadio.cpp:22` `[correctness]` · STA modem power save makes ESP-NOW miss broadcasts · `esp_wifi_set_ps(WIFI_PS_NONE)` — **applied**
-- `firmware/src/main.cpp` `runBoot` `[correctness]` · frames queued during the boot screens carry a stale `nowMs` · `radio.discardPending()` after boot — **applied**
-- `firmware/src/Ssd1331Display.cpp:51` `[correctness]` · a failed init still drove the SPI bus every tick · `ready_` guard — **applied**
-- `docs/hardware/bench-f5.md` `[docs]` · rows 2, 10, 11 relied on serial output the firmware does not print · stated as temporary bench instrumentation — **applied**
+
+- **S1** `buzzer-driver.cir:44` `[correctness]`
+  - **Problem**: `pcoil` uses `i(vs)`, so it misses the current that recirculates through the
+    diode, and the "≤ 11 mW" in C-0003 is understated.
+  - **Fix**: sense the current in series with Lc and correct the figure in a new log entry.
+- **S2** `buzzer-driver.cir:55` `[correctness|design]`
+  - **Problem**: the comment says the negative control uses a 20 Ω coil, but the code sets 12 Ω.
+  - **Fix**: correct the comment to 12 Ω.
+- **S3** `buzzer-driver.cir:21` `[correctness]`
+  - **Problem**: the bench drives the gate at 2.64 V, while `calc.py` uses 2.60 V.
+  - **Fix**: use the worst case, 2.60 V, in both.
+- **S4** `i2c-bus.cir:30-33` `[correctness|design]`
+  - **Problem**: the 30 % and 70 % thresholds and `isink` are fixed at 3.3 V.
+  - **Fix**: take them from `vp`, sweep `vp` at 3.2 and 3.3 V, and add a sink-current limit of
+    3 mA.
+- **S5** Super Mini GPIO8 SDA and its LED `[correctness]`
+  - **Problem**: the onboard LED adds sink current on SDA.
+  - **Fix**: write it up in C-0007 as a limit that applies to the prototype only.
+- **S6** `oled-reset-rc.cir:44-45` `[correctness]`
+  - **Problem**: pass or fail has to be read off by eye.
+  - **Fix**: print an explicit PASS/FAIL (covered by M1).
+- **S7** `docs/hardware/electronics-spec.md:47` `[docs]`
+  - **Problem**: it still says "see calculations §1", a document that no longer exists.
+  - **Fix**: point to C-0001 and C-0002.
+- **S8** `strapping-gpio2.cir:6` `[docs]`
+  - **Problem**: option A is still labelled "today".
+  - **Fix**: label A as the rejected draft and B as adopted.
 
 ## 🔵 Nice to Have
-- `firmware/src/I2sMic.cpp:40` `[correctness]` · left shift of a negative `int32_t` (UB before C++20) · `s * 256` — **applied**
-- `firmware/src/Ssd1331Display.cpp:15` `[design]` · brightness table unchecked against the enum · `static_assert` — **applied**
-- `firmware/src/main.cpp` `setup` `[correctness]` · `esp_read_mac` result ignored · logged — **applied**
-- `firmware/src/BuzzerAudio.cpp:44` `[correctness]` · timer stop under the lock deserves a comment · **applied**
-- `firmware/src/BuzzerAudio.cpp` `[correctness]` · zero-length notes arm a 0 µs timer · issue #25
-- `firmware/src/main.cpp` newcomer path `[design]` · relies on `routeNewcomer` never setting `toSleep` · issue #25
-- `firmware/src/EspNowRadio.h:34` `[design]` · drop counters only read by bench instrumentation · issue #25
+
+- **N1** `oled-reset-rc.cir:16` `[correctness]`: the ideal source pulls RES# down when the
+  supply is off. State that assumption in C-0006.
+- **N2** `oled-reset-rc.cir` `[design]`: the `vrep` measure is never used. Remove it.
+- **N3** `electronics-spec.md:70` `[correctness]`: download boot on the XIAO relies on the board's
+  own pull-up on GPIO8. Cite that in C-0008 once the XIAO schematic is checked.
+- **N4** C-0002 `[correctness]`: the LDO result assumes the 420 mA peak is a short burst. State
+  that duty-cycle assumption in a new entry.
 
 ## ⚪ Disagree / Intentional
-- `firmware/src/main.cpp` loop `[design]` · "mood ticks only while Awake" and "gate learns the sleep state before the effect Route" live in main · the validated F2 wiring contract (StimulusRouter returns Routes that main applies, 03-component); no new rule
-- `firmware/src/EspNowRadio.cpp:15` `[design]` · single static instance · ESP-NOW takes a plain C callback, one radio per cube
-- `firmware/src/main.cpp` `Seeded` built with `new` `[design]` · Prngs seeded after Wi-Fi (ADR-0013), framebuffer off the loop stack
+
+- `models.lib` uses generic VDMOS models, not vendor models. They are fitted to the datasheet
+  limits and marked ASSUMED. The second engine is listed as open (ADR-0015).
+- `calc.py` and `run.sh` are kept minimal, with no framework, as the proportionality rule asks.
+- ADR-0015 does not silently reopen ADR-0007: it changes which pin does what, not the 11-pin
+  budget.
+- The history references to 68 Ω and 100 nF in ADR-0015 and in the log are intentional.
 
 ## Per-dimension summary
-- Design: thin adapters, ports respected; init-failure robustness fixed · Docs: comments match the code; bench rows clarified · Tests: no lib change; adapters validated by builds and bench (ADR-0014), 220 native tests green · Security: radio length check in the callback, no MAC or sample logged, no secrets · Correctness: I2S read bug fixed; boot and tick order match the contract
+
+- **Design**: proportionate, and the ADR process is respected. Gaps: the benches do not check
+  their own PASS rules (M1), and the boot level depends on the modules fitted (M2).
+- **Docs**: complete. Freshness gaps in `assembly.md` and `electronics-spec.md`.
+- **Tests**: the benches are reproducible but not self-validating (M1). The native tests are
+  unaffected: 220/220 pass and both board envs build.
+- **Security**: no findings. No secrets, and the shell script runs only fixed bench names.
+- **Correctness**: the log figures match the results tables. Minor modelling errors: S1, S3, S4.

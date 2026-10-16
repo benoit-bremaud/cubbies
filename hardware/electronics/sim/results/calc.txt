@@ -1,0 +1,9 @@
+C-0001 budget: typical 105.8 mA, peak 420.3 mA (limit 500 mA, REQ-NF-04)
+C-0002 LDO at 106 mA: 206 mW, +41 C over ambient
+C-0002 LDO at 300 mA: 585 mW, +117 C over ambient
+C-0002 LDO at 420 mA: 820 mW, +164 C over ambient
+C-0002 LDO input min 4.65 V, headroom over 3.3 + 0.43 V: 0.92 V
+C-0005 gate drive VOH min 2.60 V vs Vth max 1.45 V; Rds(on) spec at 2.5 V <= 52 mohm; gate tau 100 ohm x 750 pF = 75 ns vs 10 us (2 % of 2 kHz)
+C-0009 INMP441 SCK 1.024 MHz (window 0.5-3.3 MHz), WS 16 kHz (7.8-50 kHz); VDD max 3.349 V vs 3.63 V
+C-0010 TTP223 VDD 2.0-5.5 V ok at 3.25-3.35 V; VIH 2.51 V; push-pull output, VOH ~VDD - 0.2 V
+C-0011 SPI period at 6 MHz 167 ns >= 150 ns; frame 96x64x16 = 16.4 ms
