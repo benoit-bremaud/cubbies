@@ -1,28 +1,38 @@
 * ============================================================================
-* strapping-gpio2.cir -- level the circuits force on the strapping pin GPIO2 at reset, DC operating point
+* strapping-gpio2.cir -- level the circuits force on the strapping pins GPIO2 and GPIO8 at reset, DC operating point
 * ----------------------------------------------------------------------------
-* Validates (C-0008): ESP32-C3 datasheet boot-mode table: GPIO2 = 1 in SPI boot and download boot
-*   (no internal pull at reset, "N/A"); VIH = 0.75 x VDD max = 2.51 V. Pin leakage 50 nA ASSUMED,
+* Validates (C-0008, C-0014): ESP32-C3 datasheet boot-mode table: GPIO2 = 1 in SPI boot and download
+*   boot, GPIO8 = 1 in download boot (no internal pull at reset on either); VIH = 0.75 x VDD max
+*   (XC6210B332 3.366 V) = 2.525 V. The rail is taken at the XC6210B332 minimum, 3.234 V. Pin leakage 50 nA ASSUMED,
 *   taken in the direction that pulls the node away from its pull.
 * A  (rejected draft): buzzer gate pull-down 100 kohm -5 % on GPIO2 through Rg 100 ohm: negative control.
-* B0 (adopted, ADR-0015 D1, no I2C module fitted): SDA on GPIO2, board pull-up 47 kohm +5 % to 3.25 V.
+* B0 (adopted, ADR-0015 D1, no I2C module fitted): SDA on GPIO2, board pull-up 47 kohm +5 % to 3.234 V.
 * B  (adopted, modules fitted): 47 kohm || 4.7 kohm || 4.7 kohm, all +5 %, to 3.2 V.
 * Super Mini: GPIO2 carries mic BCLK (high-impedance input) with the same 47 kohm pull-up: case B0.
-* PASS: V(GPIO2) >= 2.51 V for B0 and B.
+* G8 (adopted, C-0014): OLED SCK on GPIO8, R6 10 kohm +5 % to 3.234 V; the XIAO has no pull-up on
+*   GPIO8 (Seeed schematic) and the SSD1331 SCK input leaks up to 1 uA (ASSUMED) on top of the pin.
+* G8 negative control: the same node without R6. A floating input has no defined level; it is
+*   modelled as mid-rail (1 Gohm to each rail, no leakage), which the boot ROM may read as 0 or 1.
+* PASS: V(GPIO2) >= 2.525 V for B0 and B, V(GPIO8) >= 2.525 V for G8.
 * Run: ngspice -b strapping-gpio2.cir
 * ============================================================================
-* values: R2, R3, R5 from the schematic (schematic.lib)
+* values: R2, R3, R5, R6 from the schematic (schematic.lib)
 .include schematic.lib
 Ilk  0 ga 50n
 Rg   ga g {r2}
 Rpd  g 0 {r3*0.95}
-Vp0  vp0 0 DC 3.25
+Vp0  vp0 0 DC 3.234
 Rpu0 vp0 gb0 {r5*1.05}
 Ilk0 gb0 0 50n
 Vp   vp 0 DC 3.2
 * R5 || 4.7k || 4.7k, +5 %
 Rpu  vp gb {1.05/(1/r5 + 2/4.7k)}
 Ilkb gb 0 50n
+Vp8  vp8 0 DC 3.234
+Rpu8 vp8 g8 {r6*1.05}
+Ilk8 g8 0 1.05u
+Rfh  vp8 g8n 1g
+Rfl  g8n 0 1g
 .op
 .control
   set noaskquit
@@ -30,15 +40,24 @@ Ilkb gb 0 50n
   echo "A:  V(GPIO2) = $&v(ga) V"
   echo "B0: V(GPIO2) = $&v(gb0) V"
   echo "B:  V(GPIO2) = $&v(gb) V"
-  if v(ga) lt 2.51
+  echo "G8: V(GPIO8) = $&v(g8) V"
+  if v(g8n) lt 2.525
+    echo "EXPECTED-FAIL G8 without R6: GPIO8 floats mid-rail"
+  else
+    echo "FAIL C-0014 negative control did not fail: bench not sensitive"
+  end
+  if v(g8) lt 2.525
+    echo "FAIL C-0014 G8 (R6) below VIH"
+  end
+  if v(ga) lt 2.525
     echo "EXPECTED-FAIL draft: gate pull-down holds GPIO2 low"
   else
     echo "FAIL C-0008 negative control did not fail: bench not sensitive"
   end
-  if v(gb0) lt 2.51
+  if v(gb0) lt 2.525
     echo "FAIL C-0008 B0 (no module) below VIH"
   end
-  if v(gb) lt 2.51
+  if v(gb) lt 2.525
     echo "FAIL C-0008 B (modules) below VIH"
   end
 .endc

@@ -27,3 +27,4 @@ CLAUDE.local.md
 
 # SonarQube scanner work dir
 .scannerwork/
+hardware/electronics/sim/coverage.xml

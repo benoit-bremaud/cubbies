@@ -3,6 +3,8 @@
 .csparam r4=10000
 .param c1=1e-06
 .csparam c1=1e-06
+.param r6=10000
+.csparam r6=10000
 .param r5=47000
 .csparam r5=47000
 .param r1=82

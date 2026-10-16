@@ -1,10 +1,13 @@
-C-0001 budget: typical 105.8 mA, peak 420.3 mA (limit 500 mA, REQ-NF-04)
-C-0002 LDO at 106 mA: 206 mW, +41 C over ambient
-C-0002 LDO at 300 mA: 585 mW, +117 C over ambient
-C-0002 LDO at 420 mA: 820 mW, +164 C over ambient
-C-0002 LDO input min 4.65 V, headroom over 3.3 + 0.43 V: 0.92 V
-C-0005 gate drive VOH min 2.60 V vs Vth max 1.45 V; Rds(on) spec at 2.5 V <= 52 mohm; gate tau 100 ohm x 750 pF = 75 ns vs 10 us (2 % of 2 kHz)
-C-0009 INMP441 SCK 1.024 MHz (window 0.5-3.3 MHz), WS 16 kHz (7.8-50 kHz); VDD max 3.349 V vs 3.63 V
-C-0010 TTP223 VDD 2.0-5.5 V ok at 3.25-3.35 V; VIH 2.51 V; push-pull output, VOH ~VDD - 0.2 V
+C-0001 budget: typical 105.8 mA, peak 420.5 mA (limit 500 mA, REQ-NF-04)
+C-0013 LDO theta_JA 132 C/W (JESD51-7): 182 mW at 106 mA, +24 C over ambient
+C-0013 LDO theta_JA 167 C/W (40x40 mm (nominal)): 182 mW at 106 mA, +30 C over ambient
+C-0013 LDO theta_JA 400 C/W (no board): 182 mW at 106 mA, +73 C over ambient
+C-0013 LDO input min 3.89 V at 420 mA, headroom over 3.366 + 0.32 V dropout: 0.21 V
+C-0005 gate drive VOH min 2.59 V vs Vth max 1.45 V; Rds(on) spec at 2.5 V <= 52 mohm; gate tau 100 ohm x 750 pF = 75 ns vs 10 us (2 % of 2 kHz)
+C-0009 INMP441 SCK 1.024 MHz (window 0.5-3.3 MHz), WS 16 kHz (7.8-50 kHz); VDD max 3.366 V vs 3.63 V
+C-0010 TTP223 VDD 2.0-5.5 V ok at 3.234-3.366 V; VIH 2.525 V; push-pull output, VOH ~VDD - 0.2 V
 C-0011 SPI period at 6 MHz 167 ns >= 150 ns; frame 96x64x16 = 16.4 ms
-C-0012 J1 module: LDO 0.39 C/mA, sustained total max 231 mA, cube 106 mA; module <= 50 mA continuous (Tj 96 C), <= 75 mA peak (total 495 mA)
+C-0012 J1 module, theta 132 C/W (JESD51-7): LDO 0.23 C/mA, sustained total max 399 mA; module 50 mA continuous gives Tj 70 C, 2x margin PASS
+C-0012 J1 module, theta 167 C/W (40x40 mm (nominal)): LDO 0.29 C/mA, sustained total max 315 mA; module 50 mA continuous gives Tj 80 C, 2x margin PASS
+C-0012 J1 module, theta 400 C/W (no board): LDO 0.69 C/mA, sustained total max 131 mA; module 50 mA continuous gives Tj 142 C, 2x margin NOT MET (bench to close)
+C-0012 J1 module peak 75 mA: total 496 mA

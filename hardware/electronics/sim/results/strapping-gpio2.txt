@@ -1,4 +1,6 @@
 A:  V(GPIO2) = 0.004755 V
-B0: V(GPIO2) = 3.24753 V
+B0: V(GPIO2) = 3.23153 V
 B:  V(GPIO2) = 3.19988 V
+G8: V(GPIO8) = 3.22297 V
+EXPECTED-FAIL G8 without R6: GPIO8 floats mid-rail
 EXPECTED-FAIL draft: gate pull-down holds GPIO2 low

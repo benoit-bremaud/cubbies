@@ -1,0 +1,5 @@
+C-0015 C-0007 I2C: 48 corners checked
+C-0015 C-0006 reset RC: 24 corners checked
+C-0015 C-0003 buzzer: 64 corners checked
+C-0015 C-0008/C-0014 strapping: 3 cases checked
+C-0015 second method: all agree

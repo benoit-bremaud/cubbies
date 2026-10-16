@@ -25,11 +25,11 @@
 |------------------------|----------------|-----------------------|----------|
 | Buzzer driver, max volume, Sound gate (REQ-F-04, REQ-F-05, REQ-NF-03) | C-0003, C-0004, C-0005 | `buzzer-driver.cir` (64 corners, simulated) + phone dB meter; native tests of the gate | CDR |
 | Display RESET filter | C-0006 (draft RC failed; ADR-0015 D2) | `oled-reset-rc.cir` (24 corners, simulated); bench: the display starts on 10 cold boots | CDR |
-| Strapping pins (GPIO2, GPIO8, GPIO9) | C-0008 (ADR-0015 D1) | `strapping-gpio2.cir`; bench: boot + download mode with every module fitted | CDR |
-| I2C bus at 400 kHz | C-0007 | `i2c-bus.cir` (18 corners); bench: scope rise time | CDR |
+| Strapping pins (GPIO2, GPIO8, GPIO9) | C-0008 (ADR-0015 D1), C-0014 (R6 on GPIO8) | `strapping-gpio2.cir` + `crosscheck.py` (C-0015); bench: boot + download mode with every module fitted | CDR |
+| I2C bus at 400 kHz | C-0007 | `i2c-bus.cir` (48 corners) + `crosscheck.py` (C-0015); bench: scope rise time | CDR |
 | Interfaces: INMP441, TTP223, SSD1331 SPI | C-0009, C-0010, C-0011 | calculation (tier 3); bench | CDR |
-| Current budget V1 (REQ-NF-04), LDO thermal, autonomy V2 | C-0001, C-0002 | bench current and LDO temperature | CDR, then V2 |
-| Expansion port J1 module budget (REQ-NF-12, ADR-0016) | C-0012 | calculation (tier 1); bench: LDO temperature with a 50 mA dummy load on J1 | CDR |
+| Current budget V1 (REQ-NF-04), LDO thermal, autonomy V2 | C-0001, C-0013 (XC6210, supersedes C-0002) | bench current and LDO temperature | CDR, then V2 |
+| Expansion port J1 module budget (REQ-NF-12, ADR-0016) | C-0012, C-0013 | calculation (tier 1, provisional: passes at the nominal θJA, not at the 400 °C/W bound); bench: LDO temperature with a 50 mA dummy load on J1 is a CDR exit criterion | CDR |
 | Expansion modules ignored unless known (REQ-F-20) | ADR-0016 D3 | native tests of the module registry at the module PDR; bench: boot with an unknown Qwiic board fitted | module PDR, CDR (bench) |
 | GPIO allocation (C3, ADR-0007) | review against ADR-0007 | `kicad-cli sch erc` | CDR (signed contract) |
 | Eyes and expressions (REQ-F-01, 02, NF-08) | native PNG render | golden images in CI | PDR (owner review of the images) |
