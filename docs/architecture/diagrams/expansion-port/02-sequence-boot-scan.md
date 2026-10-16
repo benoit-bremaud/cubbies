@@ -9,7 +9,8 @@
 ## Context
 
 This diagram answers "how does one firmware use a module that only some cubes have?". It is the
-design principle of ADR-0016 D3; the code comes with the first module's PDR.
+design principle of ADR-0016 D3; the code comes with the first module's PDR. The use-case view
+is UC12 in [cube-core/01-use-case.md](../cube-core/01-use-case.md).
 
 ## Diagram
 
@@ -22,10 +23,11 @@ sequenceDiagram
 
   Note over M: built-in sensors are set up first; their addresses are reserved
   M->>R: probe(bus)
+  Note over R: the allowlist excludes the reserved sensor addresses (native test)
   loop each entry of the allowlist (address, identity check)
-    R->>B: read(address, idRegister)
-    alt no ACK
-      B-->>R: absent
+    R->>B: readByte(address, idRegister, timeout)
+    alt no ACK, timeout or stuck bus
+      B-->>R: absent (bus recovered, boot goes on)
     else ACK
       B-->>R: id value
       alt id matches the entry
@@ -38,7 +40,7 @@ sequenceDiagram
   R-->>M: list of present known modules
   opt a known module is present
     M->>D: enable(bus)
-    D-->>M: behaviour subscribed to the mood engine
+    Note over D: reads mood engine output each tick
   end
   Note over M,D: nothing else happens on the bus; no hot-plug in V1
 ```
@@ -51,4 +53,5 @@ sequenceDiagram
 | Known address, identity OK | behaviour enabled |
 | Known address, identity wrong | ignored |
 | Unknown address | never probed, so ignored |
+| Bus stuck or timeout | that probe counts as absent; bus recovered; boot never blocks |
 | Address of a fitted sensor | reserved, out of specification (UC12 3b) |

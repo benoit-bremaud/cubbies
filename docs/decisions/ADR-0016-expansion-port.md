@@ -24,7 +24,10 @@ option.
 - **D1 — Module power budget: ≤ 50 mA continuous, ≤ 75 mA peak (< 1 s)** from the XIAO 3V3
   ([C-0012](../hardware/calculations/log.md)).
   - The owner validated 50 / 80 mA; the calculation trims the peak to 75 mA so the cube stays
-    within 500 mA (C-0001's peak is 420.3 mA).
+    within 500 mA (C-0001's peak is 420.3 mA). The 75 mA value is confirmed by the owner in the
+    PR.
+  - Matrix: 50 / 80 mA kept the 2× margin on the module share and the USB peak; 100 / 80 mA
+    was rejected on the thermal margin.
   - Rejected: 100 mA continuous, which drops the LDO thermal margin under 2×.
   - Modules above the budget need their own supply and are out of V1. A vibration motor runs in
     bursts only.
@@ -32,13 +35,17 @@ option.
   - Rejected: a slot with the module outside the cube (365), which hurts the shape (C6) and
     exposes the connector; a module fitted by the maker with no later access (335), which
     breaks the "add a capability" goal for a non-maker (C1).
-  - Bay 20 × 20 × 6 mm, J1 reachable inside, cover held by two snap hooks, no screws
-    (REQ-NF-11). Dimensions: `docs/hardware/mechanical-spec.md`.
+  - Bay 22 × 22 × 6 mm, J1 reachable inside, cover held by two snap hooks, no screws
+    (REQ-NF-11). Modules up to 20 × 20 mm. Dimensions: `docs/hardware/mechanical-spec.md`.
 - **D3 — Plug-and-play principle in firmware** (design rule, implemented at the first module's
   PDR):
   - At boot, after the built-in sensors, the firmware probes a fixed allowlist of I2C addresses
     of known modules. A device is accepted only when its identity check passes (for example a
     chip-ID register), never on an address alone.
+  - Each probe is a single-byte register read with a bus timeout; a timeout, a NACK or a stuck
+    bus counts as "absent" and the boot never blocks (bus recovery: nine SCL clocks, then
+    carry on with what answers).
+  - The allowlist never contains a reserved address (below); a native test enforces it.
   - Anything not on the allowlist, or failing its identity check, is ignored. No scan result is
     trusted as input beyond "present / absent" (security policy INPUT rules).
   - The addresses of the fitted sensors (MPU6050 0x68/0x69, BH1750 0x23/0x5C) are reserved; a

@@ -127,7 +127,8 @@
     behaviour arrives with a later update (V1.5 OTA), no reflash by the owner.
   - 3b. The module answers on the address of a fitted sensor (IMU 0x68/0x69, light 0x23/0x5C):
     the conflict breaks a built-in sensor; the cube keeps running with what still answers, and
-    the owner removes the module (address list: ADR-0016).
+    the owner removes the module (address list: ADR-0016; behaviour verified on the bench at
+    the module PDR).
   - 3c. The module draws more than the budget (REQ-NF-12): out of specification; the module
     list in the docs only names modules within the budget.
   - 2a. The cube was not unplugged: hot-plugging is not supported; the module is only seen at

@@ -249,7 +249,8 @@ How to read it:
 
 ## C-0012 — 2026-10-16 — Expansion port J1: current budget for one module (issue #18)
 
-- **Purpose**: Tier 1 (2× thermal margin on the module's share). Give the maximum current a
+- **Purpose**: Tier 1 (2× margin on the module's share: cube + 2 × module ≤ the thermal
+  limit; 231 / 156 = 1.48× on the total). Give the maximum current a
   Qwiic/STEMMA QT module plugged into J1 may draw from the XIAO 3V3 (TLV75733).
 - **Method**:
   - Sustained: LDO junction rise ΔT = (VBUS max − 3.3) × I × θJA (C-0002) must keep
