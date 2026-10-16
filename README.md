@@ -8,8 +8,8 @@ one colour per cube, handed out on an "adoption day".
 
 **Status:** conception, heading for the hardware CDR. Hardware, stack and scope are decided
 ([docs/decisions/](docs/decisions/README.md)); the UML study is done
-([docs/architecture/](docs/architecture/README.md)); the firmware logic and its adapters are
-tested natively; the KiCad schematic and its simulation benches pass. The CDR paper checks are
+([docs/architecture/](docs/architecture/README.md)); the firmware logic is tested natively
+and its adapters build for both boards; the KiCad schematic and its simulation benches pass. The CDR paper checks are
 closed; the bench measurements remain ([PROJECT_LOG.md](PROJECT_LOG.md)).
 
 ## What a cube is (V1)
