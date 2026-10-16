@@ -2,8 +2,10 @@
 
 Each Tier 1 ngspice result is recomputed here without SPICE, from the circuit equations, and the
 two engines must agree on every corner row of results/*.txt. A disagreement prints
-`FAIL C-0015` (run.sh fails on it). The models are idealised on purpose, so each check states its
-tolerance and the effect it ignores.
+`FAIL C-0015` (run.sh fails on it). Checked columns: C-0007 rise time and sink current; C-0006
+RES# level at VDD stable and low time (the replug column is not checked); C-0003 peak coil
+current; C-0008 / C-0014 strapping levels. Tolerances are set at about 5x the deviation observed
+on the adopted corners, so a modelling error of a few percent fails; each states what it ignores.
 
     python3 crosscheck.py   (from this folder, after the benches; run.sh calls it)
 """
@@ -16,107 +18,141 @@ import re
 
 RESULTS = pathlib.Path(__file__).resolve().parent / "results"
 SI = {"n": 1e-9, "p": 1e-12, "u": 1e-6, "m": 1e-3, "k": 1e3}
-failures = 0
 
 
 def num(text: str) -> float:
     """'0.6m' -> 0.0006, '100p' -> 1e-10, '9E-08' -> 9e-08 (ngspice table cells)."""
-    m = re.fullmatch(r"([-+\d.eE]+)([npumk]?)", text)
+    m = re.fullmatch(r"([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)([npumk]?)", text)
     if not m:
         raise ValueError(f"unreadable cell: {text!r}")
     return float(m.group(1)) * SI.get(m.group(2), 1.0)
 
 
-def rows(name: str, width: int) -> list[list[float]]:
-    """Numeric rows of a bench table: the cells of '<inputs> | <out> | <out>' lines, header skipped."""
+def rows(text: str, width: int, expect: int) -> list[list[float]]:
+    """Numeric rows of a bench table ('<inputs> | <out> | <out>' lines, header skipped).
+
+    Exits when the count differs from `expect`, so a row lost by the run.sh filter cannot pass.
+    """
     out = []
-    for line in (RESULTS / name).read_text().splitlines():
+    for line in text.splitlines():
         cells = line.replace("|", " ").split()
-        if "|" in line and len(cells) == width and re.match(r"[\d.]", cells[0]):
+        if "|" in line and len(cells) == width and re.match(r"[-\d.]", cells[0]):
             out.append([num(c) for c in cells])
-    if not out:
-        raise SystemExit(f"no rows in {name}: run the benches first")
+    if len(out) != expect:
+        raise SystemExit(f"expected {expect} rows, found {len(out)}: rerun the benches")
     return out
 
 
-def agree(label: str, spice: float, ref: float, rel: float, abs_: float = 0.0) -> None:
-    global failures
-    if abs(spice - ref) > max(rel * abs(ref), abs_):
-        failures += 1
-        print(f"FAIL C-0015 {label}: ngspice {spice:.4g} vs closed form {ref:.4g}")
+class Checker:
+    """Collects the disagreements between ngspice and the closed form."""
+
+    def __init__(self) -> None:
+        self.failures = 0
+
+    def agree(
+        self, label: str, spice: float, ref: float, rel: float, abs_: float = 0.0
+    ) -> None:
+        """FAIL when |spice - ref| > max(rel x |ref|, abs_); abs_ is the floor for refs near 0."""
+        if abs(spice - ref) > max(rel * abs(ref), abs_):
+            self.failures += 1
+            print(f"FAIL C-0015 {label}: ngspice {spice:.4g} vs closed form {ref:.4g}")
 
 
-# C-0007 I2C: single-pole RC rise, t(30->70 %) = Rp Cb ln(7/3); sink at VOL 0.4 V = (Vp - 0.4) / Rp.
-# Ignores the driver's off time (1 ns) and the timestep: 2 % tolerance.
-i2c = rows("i2c-bus.txt", 5)
-for rp, vp, cb, tr, isink in i2c:
-    agree(f"C-0007 tr {rp:.0f} {cb:g}", tr * 1e-9, rp * cb * math.log(7 / 3), 0.02)
-    agree(f"C-0007 Isink {rp:.0f} {vp}", isink * 1e-3, (vp - 0.4) / rp, 0.02)
-print(f"C-0015 C-0007 I2C: {len(i2c)} corners agree")
+def check_i2c(c: Checker, table: str, expect: int = 48) -> int:
+    """C-0007: single-pole RC rise t(30->70 %) = Rp Cb ln(7/3); sink (Vp - 0.4) / Rp.
 
-# C-0006 RES# RC under a linear 3V3 ramp to 3.3 V in tr. While the rail ramps, RES# lags it and the
-# diode stays off, so both options follow v(t) = S (t - tau (1 - e^(-t/tau))), S = 3.3 / tr.
-# After tr: exponential towards 3.3 V; low time = until v reaches 0.2 x 3.3 V (negative when it
-# never was low). Ignores the diode leakage: 2 % on the level, 5 us on the time.
-rc = rows("oled-reset-rc.txt", 7)
-for _opt, tr, r, c, v_st, low_ms, _v_rep in rc:
-    tau = r * c
-    v_t = 3.3 / tr * (tr - tau * (1 - math.exp(-tr / tau)))
-    agree(f"C-0006 V(RES) tr {tr:g} R {r:g} C {c:g}", v_st, v_t, 0.02, 2e-3)
-    t_low = -tau * math.log((3.3 - 0.66) / (3.3 - v_t)) if v_t < 0.66 else None
-    if t_low is not None:
-        agree(
-            f"C-0006 low time tr {tr:g} R {r:g} C {c:g}",
-            low_ms * 1e-3,
-            t_low,
-            0.02,
-            5e-6,
+    Ignores the driver's 1 ns off time and the timestep: 0.1 % (observed 0.004 %).
+    """
+    data = rows(table, 5, expect)
+    for rp, vp, cb, tr, isink in data:
+        c.agree(
+            f"C-0007 tr {rp:.0f} {cb:g}", tr * 1e-9, rp * cb * math.log(7 / 3), 1e-3
         )
-print(f"C-0015 C-0006 reset RC: {len(rc)} corners agree")
+        c.agree(f"C-0007 Isink {rp:.0f} {vp}", isink * 1e-3, (vp - 0.4) / rp, 1e-3)
+    return len(data)
 
-# C-0003 buzzer coil peak current: piecewise-exact periodic steady state of the RL loop.
-# On: VDD across Rs + Rcoil + Rds(on); off: the coil recirculates through Rcoil and the 1N4148
-# (constant 0.65 V drop). Ignores the diode's exponential knee and the gate edges: 6 %.
-RDS, VD, F = 0.05, 0.65, 2000.0
-bz = rows("buzzer-driver.txt", 9)
-for vdd, rs, rcoil, lc, duty, ipk, *_ in bz:
-    r_on, t_on, t_off = rs + rcoil + RDS, duty / F, (1 - duty) / F
-    i_inf, a_on, a_off = (
-        vdd / r_on,
-        math.exp(-r_on * t_on / lc),
-        math.exp(-rcoil * t_off / lc),
-    )
-    i0 = 0.0
-    for _ in range(2000):  # iterate cycles to the periodic steady state
-        i1 = i_inf + (i0 - i_inf) * a_on
-        # off: di/dt = -(Rcoil i + VD) / L until the current reaches zero
-        i0 = max(0.0, (i1 + VD / rcoil) * a_off - VD / rcoil)
-    agree(
-        f"C-0003 Ipk {vdd} {rs:.1f} {rcoil:g} {lc:g} {duty}",
-        ipk,
-        i_inf + (i0 - i_inf) * a_on,
-        0.06,
-    )
-print(f"C-0015 C-0003 buzzer: {len(bz)} corners agree")
 
-# C-0008 / C-0014 strapping: DC divider, V = Vrail - R x I(leak). Exact: 0.1 %.
-strap = {
-    m.group(1): float(m.group(2))
-    for m in re.finditer(
-        r"^(\w+):\s+V\(GPIO\d\) = ([\d.eE+-]+)",
-        (RESULTS / "strapping-gpio2.txt").read_text(),
-        re.M,
-    )
-}
-r5, r6 = 47e3, 10e3
-agree("C-0008 B0", strap["B0"], 3.234 - r5 * 1.05 * 50e-9, 1e-3)
-agree("C-0008 B", strap["B"], 3.2 - 1.05 / (1 / r5 + 2 / 4.7e3) * 50e-9, 1e-3)
-agree("C-0014 G8", strap["G8"], 3.234 - r6 * 1.05 * 1.05e-6, 1e-3)
-print("C-0015 C-0008/C-0014 strapping: 3 cases agree")
+def check_reset_rc(c: Checker, table: str) -> int:
+    """C-0006: RES# RC under a linear 3V3 ramp to 3.3 V in tr.
 
-print(
-    "C-0015 second method: all agree"
-    if failures == 0
-    else f"C-0015 second method: {failures} FAIL"
-)
-raise SystemExit(1 if failures else 0)
+    While the rail ramps RES# lags it and the diode stays off, so both options follow
+    v(t) = S (t - tau (1 - e^(-t/tau))), S = 3.3 / tr; after tr, an exponential towards 3.3 V.
+    Low time = until v reaches 0.2 x 3.3 V, and ngspice reports it negative when RES# was never
+    low. Ignores the diode leakage: 0.5 % on the level (observed 0.06 %), 0.5 % or 2 us on the time.
+    """
+    data = rows(table, 7, 24)
+    for _opt, tr, r, cap, v_st, low_ms, _v_rep in data:
+        tau = r * cap
+        v_t = 3.3 / tr * (tr - tau * (1 - math.exp(-tr / tau)))
+        label = f"tr {tr:g} R {r:g} C {cap:g}"
+        c.agree(f"C-0006 V(RES) {label}", v_st, v_t, 5e-3, 1e-3)
+        if v_t < 0.66:
+            t_low = -tau * math.log((3.3 - 0.66) / (3.3 - v_t))
+            c.agree(f"C-0006 low time {label}", low_ms * 1e-3, t_low, 5e-3, 2e-6)
+        elif low_ms > 0:
+            c.agree(f"C-0006 never low {label}", low_ms, 0.0, 0.0)
+    return len(data)
+
+
+def check_buzzer(c: Checker, table: str) -> int:
+    """C-0003 peak coil current: piecewise-exact periodic steady state of the RL loop.
+
+    On: VDD across Rs + Rcoil + Rds(on) 50 mohm; off: the coil recirculates through Rcoil and the
+    1N4148 at a constant 0.65 V. Ignores the diode's knee and the gate edges: 1 % (observed 0.18 %).
+    """
+    rds, vd, freq = 0.05, 0.65, 2000.0
+    data = rows(table, 9, 64)
+    for vdd, rs, rcoil, lc, duty, ipk, *_ in data:
+        r_on, t_on, t_off = rs + rcoil + rds, duty / freq, (1 - duty) / freq
+        i_inf = vdd / r_on
+        a_on, a_off = math.exp(-r_on * t_on / lc), math.exp(-rcoil * t_off / lc)
+        i0 = 0.0
+        for _ in range(2000):  # iterate cycles to the periodic steady state
+            i1 = i_inf + (i0 - i_inf) * a_on
+            # off: di/dt = -(Rcoil i + VD) / L until the current reaches zero
+            i0 = max(0.0, (i1 + vd / rcoil) * a_off - vd / rcoil)
+        ref = i_inf + (i0 - i_inf) * a_on
+        c.agree(f"C-0003 Ipk {vdd} {rs:.1f} {rcoil:g} {lc:g} {duty}", ipk, ref, 0.01)
+    return len(data)
+
+
+def check_strapping(c: Checker, table: str) -> int:
+    """C-0008 / C-0014: DC divider V = Vrail - R x I(leak), 0.1 %.
+
+    Same equation as the bench, so it guards the netlist wiring, not the model. The constants
+    mirror strapping-gpio2.cir and schematic.lib (R5 47 k, R6 10 k): update both together.
+    """
+    level = {
+        m.group(1): float(m.group(2))
+        for m in re.finditer(r"^(\w+):\s+V\(GPIO\d\) = ([\d.eE+-]+)", table, re.M)
+    }
+    r5, r6 = 47e3, 10e3
+    c.agree("C-0008 B0", level["B0"], 3.234 - r5 * 1.05 * 50e-9, 1e-3)
+    c.agree("C-0008 B", level["B"], 3.2 - 1.05 / (1 / r5 + 2 / 4.7e3) * 50e-9, 1e-3)
+    c.agree("C-0014 G8", level["G8"], 3.234 - r6 * 1.05 * 1.05e-6, 1e-3)
+    return 3
+
+
+def main() -> int:
+    c = Checker()
+    read = lambda name: (RESULTS / name).read_text()  # noqa: E731
+    print(f"C-0015 C-0007 I2C: {check_i2c(c, read('i2c-bus.txt'))} corners checked")
+    print(
+        f"C-0015 C-0006 reset RC: {check_reset_rc(c, read('oled-reset-rc.txt'))} corners checked"
+    )
+    print(
+        f"C-0015 C-0003 buzzer: {check_buzzer(c, read('buzzer-driver.txt'))} corners checked"
+    )
+    print(
+        f"C-0015 C-0008/C-0014 strapping: {check_strapping(c, read('strapping-gpio2.txt'))} cases checked"
+    )
+    print(
+        "C-0015 second method: all agree"
+        if c.failures == 0
+        else f"C-0015 second method: {c.failures} FAIL"
+    )
+    return 1 if c.failures else 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

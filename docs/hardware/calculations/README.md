@@ -44,7 +44,7 @@ Each entry states its tier in its Purpose.
 
 | Tier | Applies to | Depth of verification |
 |------|------------|-----------------------|
-| 1, critical | Boot or reset correctness, or a datasheet requirement met with less than 2× margin | Theory, then a SPICE bench with full corners, then a second engine. LTspice under Wine is not installed yet, so the second-engine run is **open** on every Tier 1 entry. |
+| 1, critical | Boot or reset correctness, or a datasheet requirement met with less than 2× margin | Theory, then a SPICE bench with full corners, then a second method: closed-form recomputation of every corner (`crosscheck.py`, C-0015; owner MCDA 410/500 over a second SPICE engine). |
 | 2, important | A datasheet requirement met with at least 2× margin | Theory plus one SPICE point, or only the corners a decision needs |
 | 3, routine | A wide margin | The calculation line alone |
 

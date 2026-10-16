@@ -6,7 +6,7 @@
 * Values: Rs = R1, gate resistor = R2, pull-down = R3, nominal from the schematic (schematic.lib).
 * Circuit: 3V3 - Rs R1 +/-5 % (82 ohm, ADR-0015; 68 ohm gave 43.7 mA, C-0003) - coil (Rcoil 12/16/20 ohm, L ASSUMED 1 mH or 4 mH: not published)
 *   - drain; D1 1N4148 across the coil; gate through 100 ohm from the GPIO, 100 kohm to GND.
-* Corners: 3V3 3.25/3.35 V (TLV75733 +/-1.5 % ASSUMED), GPIO high 2.60 V (VOH min 0.8 x 3.25 V); duty 2/8/20/50 %
+* Corners: 3V3 3.234/3.366 V (XC6210B332 window, C-0013), GPIO high 2.59 V (VOH min 0.8 x 3.234 V); duty 2/8/20/50 %
 *   at 2 kHz; worst-case MOSFET model (Vth 1.45 V).
 * PASS: peak coil current <= 40 mA (buzzer rating) at every corner;
 *   drain <= 10 V with the diode; MOSFET mean power << 350 mW (SOT-23 rating).
@@ -14,7 +14,7 @@
 * ============================================================================
 .include models.lib
 .include schematic.lib
-.param vdd=3.35 rs={r1*0.95} rc=12 lc=1m duty=0.5 dfit=1
+.param vdd=3.366 rs={r1*0.95} rc=12 lc=1m duty=0.5 dfit=1
 Vdd  vdd 0 DC {vdd}
 Vs   vdd vs 0
 Rs   vs a {rs}
@@ -22,7 +22,7 @@ Vl   a  al 0
 Lc   al m {lc}
 Rc   m  d {rc}
 D1   d  a D1N4148 area={dfit}
-Vg   g0 0 PULSE(0 2.60 0 50n 50n {duty*500u-50n} 500u)
+Vg   g0 0 PULSE(0 2.587 0 50n 50n {duty*500u-50n} 500u)
 Rg   g0 g {r2}
 Rpd  g  0 {r3}
 M1   d  g 0 0 AO3400W
@@ -30,7 +30,7 @@ M1   d  g 0 0 AO3400W
 .control
   set noaskquit
   echo "corner vdd rs rcoil L duty | Ipk[A] Vdrain_max[V] Pfet[W] Pcoil[W]"
-  foreach v 3.25 3.35
+  foreach v 3.234 3.366
     foreach k 0.95 1.05
       let rsv = r1*$k
       foreach c 12 20
@@ -67,7 +67,7 @@ M1   d  g 0 0 AO3400W
   end
   * negative control: no flyback diode (area 1e-9), coil 12 ohm (most current) 4 mH, 50 %
   alterparam dfit=1e-9
-  alterparam vdd=3.35
+  alterparam vdd=3.366
   let rsmin = r1*0.95
   alterparam rs=$&rsmin
   alterparam rc=12

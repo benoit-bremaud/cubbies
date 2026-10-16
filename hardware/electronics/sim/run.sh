@@ -15,6 +15,7 @@ else
   echo "kicad-cli not found: using the committed schematic.lib"
 fi
 python3 test_schematic_values.py || status=1
+python3 test_crosscheck.py || status=1
 for bench in buzzer-driver oled-reset-rc i2c-bus strapping-gpio2; do
   out="results/$bench.txt"
   if ! ngspice -b "$bench.cir" > "$out.raw" 2>&1; then

@@ -297,7 +297,13 @@ How to read it:
     (JEDEC, DBV) and dropout ≤ 475 mV at 1 A. They do not apply to this board.
 - **Result**:
   - LDO drop 1.72 V worst case; at 106 mA typical: 182 mW, +24 / +30 / +73 °C over ambient.
-  - Headroom at the 420 mA peak: LDO input ≥ 3.89 V, 0.21 V over 3.366 V plus dropout. Passes.
+  - Headroom at the 420 mA peak: LDO input ≥ 3.89 V, 0.21 V over 3.366 V plus dropout. Passes;
+    the dropout is a 25 °C figure and rises when hot, which the 0.21 V absorbs up to about +60 %.
+  - The wider rail window 3.234–3.366 V (was 3.25–3.35 V) is carried to the benches and lines
+    that used it: buzzer peak 37.4 mA at 3.366 V (C-0003, still under 40 mA; the C-0001 peak becomes 420.5 mA and
+    the C-0012 total 495.5 mA, both within 500 mA); gate drive
+    0.8 × 3.234 = 2.59 V, still above the 2.5 V RDS(on) point (C-0005); INMP441 VDD 3.366 V under
+    3.63 V (C-0009); TTP223 VIH 2.525 V (C-0010).
   - C-0012 recomputed: the cube may draw 315 mA sustained in total at the nominal θJA (399 at
     132 °C/W, 131 at 400 °C/W). A 50 mA module gives Tj 80 °C nominal, so the 50 / 75 mA budget
     and its 2× margin **hold at the nominal θJA but not at the 400 °C/W bound** (Tj 142 °C).
@@ -328,12 +334,13 @@ How to read it:
 - **Inputs**:
   - R6 10 kΩ +5 % to 3.234 V (XC6210 minimum, C-0013).
   - Leakage: pin 50 nA plus the SSD1331 SCK input 1 µA (ASSUMED), 1.05 µA in total.
-  - VIH = 0.75 × 3.366 V = 2.52 V (the B0 and B cases of C-0008 are rerun at the same rail and
-    threshold).
+  - VIH = 0.75 × 3.366 V = 2.525 V (case B0 of C-0008 is rerun at 3.234 V and both at this
+    threshold; case B keeps its 3.2 V module rail).
 - **Result**:
-  - G8 with R6: 3.22 V, which passes. Without R6 the bench prints `EXPECTED-FAIL`.
+  - G8 with R6: 3.22 V, which passes. Without R6 the input floats; the bench models that as
+    mid-rail (1 GΩ to each rail) and prints `EXPECTED-FAIL`.
   - B0 3.23 V and B 3.20 V still pass at the new rail.
-  - Load while SCK is driven low: 0.33 mA, negligible against the GPIO drive; SPI edges are
+  - Load while SCK is driven low: 3.366 V / 9.5 kΩ = 0.35 mA, negligible against the GPIO drive; SPI edges are
     push-pull, so the pull-up does not slow them.
   - The owner chose the pull-up (MCDA 435/500, against 380 for relying on the USB-Serial-JTAG
     forced download and 360 for leaving it to the bench).
@@ -349,17 +356,21 @@ How to read it:
   weighed: LTspice is not installed and Xyce or Qucs-S are not packaged here.
 - **Method**: `crosscheck.py` recomputes every corner row of the ngspice result tables from the
   circuit equations, with no SPICE:
-  - C-0007 I2C: t(30→70 %) = Rp × Cb × ln(7/3); sink current (Vp − 0.4) / Rp. Tolerance 2 %.
+  - C-0007 I2C: t(30→70 %) = Rp × Cb × ln(7/3); sink current (Vp − 0.4) / Rp. Tolerance 0.1 %.
   - C-0006 reset RC: RC response to a linear ramp, then the exponential to 3.3 V; RES# at VDD
-    stable and the time it stays under 0.2 × VDD. Tolerance 2 % (5 µs on the time).
+    stable and the time it stays under 0.2 × VDD (or that it never was low). Tolerance 0.5 %
+    (2 µs floor on the time). The replug column is not checked.
   - C-0003 buzzer: piecewise-exact periodic steady state of the RL loop (on through Rs + Rcoil +
-    Rds(on) 50 mΩ, off through Rcoil and a constant 0.65 V diode). Tolerance 6 %.
-  - C-0008 / C-0014 strapping: DC divider. Tolerance 0.1 %.
+    Rds(on) 50 mΩ, off through Rcoil and a constant 0.65 V diode). Tolerance 1 %.
+  - C-0008 / C-0014 strapping: DC divider. Tolerance 0.1 %. It is the bench's own equation, so it
+    guards the netlist wiring only.
+  - Tolerances sit at about 5× the deviation observed (0.004 % I2C, 0.06 % RC, 0.18 % buzzer).
+  - Each table must hold its expected row count (48, 24, 64), so a lost row fails.
 - **Inputs**: the bench tables in `results/`; the same nominal values and corners.
 - **Result**:
   - **All 139 rows agree**: 48 I2C, 24 reset RC, 64 buzzer corners and 3 strapping cases.
-  - Sensitivity checked: a wrong diode drop (0 V) and a wrong rise-time constant (ln 2.5) print
-    60 `FAIL C-0015` lines.
+  - Sensitivity: `test_crosscheck.py` (run by `run.sh`) proves a 2 % rise-time error fails and
+    tests the table parser.
   - The owner chose this route (MCDA 410/500, against 360 for Xyce from a vendor binary, 360 for
     waiving the second engine and 310 for LTspice under Wine).
   - C-0004 (flyback clamp) stays Tier 2 and is not cross-checked.
