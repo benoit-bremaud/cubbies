@@ -11,14 +11,17 @@
 * PASS: V(GPIO2) >= 2.51 V for B0 and B.
 * Run: ngspice -b strapping-gpio2.cir
 * ============================================================================
+* values: R2, R3, R5 from the schematic (schematic.lib)
+.include schematic.lib
 Ilk  0 ga 50n
-Rg   ga g 100
-Rpd  g 0 95k
+Rg   ga g {r2}
+Rpd  g 0 {r3*0.95}
 Vp0  vp0 0 DC 3.25
-Rpu0 vp0 gb0 49350
+Rpu0 vp0 gb0 {r5*1.05}
 Ilk0 gb0 0 50n
 Vp   vp 0 DC 3.2
-Rpu  vp gb 2357
+* R5 || 4.7k || 4.7k, +5 %
+Rpu  vp gb {1.05/(1/r5 + 2/4.7k)}
 Ilkb gb 0 50n
 .op
 .control

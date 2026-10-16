@@ -5,7 +5,8 @@
 *   rev 1.2 §8.9 power ON sequence), VIL = 0.2 x VDD, VIH = 0.8 x VDD.
 * Circuit: 3V3 ramp (linear, tr 0.1 / 0.6 / 2 ms: TLV75733 soft-start + USB plug-in ASSUMED range)
 *   - R - RES node - C to GND; option B adds a 1N4148 from RES (anode) to 3V3 (cathode) to discharge C
-*   when 3V3 collapses. R, C +/-10 % (C X7R incl. DC bias, ASSUMED).
+*   when 3V3 collapses. Adopted R = R4, C = C1 from the schematic (schematic.lib); the draft keeps
+*   its 100 nF literal (negative control). R, C +/-10 % (C X7R incl. DC bias, ASSUMED).
 * Power-off is an ideal source falling to 0 V in 50 us (it sinks current): optimistic for the replug
 *   check, where a real lightly loaded rail decays slower (ASSUMED; bench cold-boot check covers it).
 * Option 0 = draft (rejected, expected to fail), option 1 = adopted (ADR-0015 D2).
@@ -14,7 +15,8 @@
 * Run: ngspice -b oled-reset-rc.cir
 * ============================================================================
 .include models.lib
-.param tr=0.6m r=10k c=100n
+.include schematic.lib
+.param tr=0.6m r={r4} c=100n
 Vdd vdd 0 PWL(0 0 {tr} 3.3 40m 3.3 40.05m 0 60m 0 {60m+tr} 3.3 100m 3.3)
 R1  vdd res {r}
 C1  res 0 {c}
@@ -30,14 +32,15 @@ D1  res vdd D1N4148 area={dfit}
       let cn = 100n
     else
       alterparam dfit=1
-      let cn = 1u
+      let cn = c1
     end
     foreach t 0.1m 0.6m 2m
-      foreach rr 9k 11k
+      foreach kr 0.9 1.1
+        let rr = r4*$kr
         foreach cf 0.9 1.1
           let cc = cn*$cf
           alterparam tr=$t
-          alterparam r=$rr
+          alterparam r=$&rr
           alterparam c=$&cc
           reset
           run
@@ -46,13 +49,13 @@ D1  res vdd D1N4148 area={dfit}
           let lowafter = (tlow - $t)*1000
           let tst = 60m + $t
           meas tran vrep2 find v(res) at=$&tst
-          echo "$opt $t $rr $&cc | $&vst | $&lowafter | $&vrep2"
+          echo "$opt $t $&rr $&cc | $&vst | $&lowafter | $&vrep2"
           let bad = (vst gt 0.66) + (lowafter lt 0.003) + (vrep2 gt 0.66)
           if bad gt 0
             if $opt = 0
-              echo "EXPECTED-FAIL draft RC at $t $rr $&cc"
+              echo "EXPECTED-FAIL draft RC at $t $&rr $&cc"
             else
-              echo "FAIL C-0006 at $t $rr $&cc"
+              echo "FAIL C-0006 at $t $&rr $&cc"
             end
           end
           destroy all
@@ -62,14 +65,14 @@ D1  res vdd D1N4148 area={dfit}
   end
   alterparam dfit=1e-9
   alterparam tr=0.6m
-  alterparam r=10k
+  alterparam r=$&r4
   alterparam c=100n
   reset
   run
   set hcopydevtype=svg
   hardcopy results/oled-reset-rc-a.svg v(vdd) v(res) 0.66 xlimit 0 5m title 'A: 10k/100nF, tr 0.6 ms'
   alterparam dfit=1
-  alterparam c=1u
+  alterparam c=$&c1
   reset
   run
   hardcopy results/oled-reset-rc-b.svg v(vdd) v(res) 0.66 xlimit 0 30m title 'B: 10k/1uF + 1N4148, tr 0.6 ms'

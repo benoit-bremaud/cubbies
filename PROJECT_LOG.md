@@ -7,6 +7,21 @@ human context: what was done, why, and by which PR.
 
 ## 2026-10-16
 
+### KiCad schematic `cubbies-v1.kicad_sch` — benches fed from the schematic — PR #34
+
+- Native KiCad 9 schematic + PDF from the GPIO contract (ADR-0015), BOM and assembly guide:
+  XIAO (U1, 2×7), SSD1331, INMP441, TTP223, GY-521, GY-302, buzzer stage, RES# RC, 47 kΩ SDA
+  pull-up. Every symbol has a Justification field citing C-NNNN / ADR. ERC: 0 violations.
+- I2C expansion port J1 (issue #18): JST-SH 4-pin Qwiic/STEMMA QT, owner MCDA 450/500 (2.54 mm
+  header 410, 5-pin with interrupt 310).
+- `sim/schematic_values.py` exports the SPICE netlist with kicad-cli and writes `schematic.lib`
+  (`.param` + `.csparam` per R/C); the four benches read R1–R5 and C1 from it, `run.sh` refreshes
+  it (committed copy used, with a message, when kicad-cli is absent). Tolerances, corners and
+  module pull-ups stay in the benches; `i2c-bus.txt` changed only because the networks are now
+  computed exactly. Calculation log inputs unchanged. Sensitivity checked: R1 set to 68 Ω on the
+  sheet makes `run.sh` fail on C-0003.
+- review-local: Must 1 · Should 9 · Nice 7, all Must/Should fixed; SonarQube: 1 issue fixed, new coverage 93.4 %, regex hotspot reviewed Safe, quality gate PASSED.
+
 ### Hardware validation — calculation log and ngspice benches — **PR #28 merged** (`4b72e59`, ADR-0015)
 
 - V-SEA method applied: append-only `docs/hardware/calculations/log.md` (C-0001..C-0011, tiered),
