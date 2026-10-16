@@ -3,8 +3,10 @@
 > **Status**: draft. The GPIO allocation becomes a **signed contract** at the CDR
 > ([gates.md](../architecture/gates.md)); changing a pin afterwards reopens a decision with the owner.
 > Decisions: ADR-0002 (power), ADR-0003 (board), ADR-0006 (display), ADR-0007 (pin budget).
-> Native KiCad schematic: `hardware/electronics/cubbies-v1.kicad_sch` (to create), PDF export next
-> to it.
+> Native KiCad 9 schematic: [`hardware/electronics/cubbies-v1.kicad_sch`](../../hardware/electronics/cubbies-v1.kicad_sch),
+> PDF export next to it; every symbol carries a Justification field (C-NNNN / ADR). ERC:
+> `kicad-cli sch erc --severity-all hardware/electronics/cubbies-v1.kicad_sch` (0 violations). Its R and C
+> values feed the ngspice benches through `hardware/electronics/sim/schematic.lib`.
 
 ## Block diagram
 
@@ -71,3 +73,7 @@ Current budget detail and buzzer stage sizing: [calculations/log.md](calculation
   CDR bench check: boot and download mode with no module and with every module fitted.
 - GPIO8 on the XIAO carries SPI SCK: the display's SCK input does not load it at reset.
 - TTP223 mode pads (A/B) set for momentary, active high.
+- I2C expansion port J1 (issue #18, owner MCDA 2026-10-16: JST-SH 4-pin Qwiic/STEMMA QT,
+  450/500 against a 2.54 mm header 410 and a 5-pin with interrupt 310): pins GND, 3V3, SDA, SCL;
+  no interrupt line (no free GPIO, ADR-0007); one more module's pull-ups are within C-0007.
+  Per-module power budget and enclosure access stay open in issue #18.

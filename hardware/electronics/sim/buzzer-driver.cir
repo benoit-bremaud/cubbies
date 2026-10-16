@@ -12,7 +12,8 @@
 * Run: ngspice -b buzzer-driver.cir   (from this folder)
 * ============================================================================
 .include models.lib
-.param vdd=3.35 rs=77.9 rc=12 lc=1m duty=0.5 dfit=1
+.include schematic.lib
+.param vdd=3.35 rs={r1*0.95} rc=12 lc=1m duty=0.5 dfit=1
 Vdd  vdd 0 DC {vdd}
 Vs   vdd vs 0
 Rs   vs a {rs}
@@ -21,20 +22,21 @@ Lc   al m {lc}
 Rc   m  d {rc}
 D1   d  a D1N4148 area={dfit}
 Vg   g0 0 PULSE(0 2.60 0 50n 50n {duty*500u-50n} 500u)
-Rg   g0 g 100
-Rpd  g  0 100k
+Rg   g0 g {r2}
+Rpd  g  0 {r3}
 M1   d  g 0 0 AO3400W
 .tran 50n 5m 3m
 .control
   set noaskquit
   echo "corner vdd rs rcoil L duty | Ipk[A] Vdrain_max[V] Pfet[W] Pcoil[W]"
   foreach v 3.25 3.35
-    foreach r 77.9 86.1
+    foreach k 0.95 1.05
+      let rsv = r1*$k
       foreach c 12 20
         foreach l 1m 4m
           foreach dt 0.02 0.08 0.2 0.5
             alterparam vdd=$v
-            alterparam rs=$r
+            alterparam rs=$&rsv
             alterparam rc=$c
             alterparam lc=$l
             alterparam duty=$dt
@@ -46,12 +48,12 @@ M1   d  g 0 0 AO3400W
             meas tran vdmax max v(d)
             meas tran pfet avg pf
             meas tran pcoil avg pcl
-            echo "$v $r $c $l $dt | $&ipk $&vdmax $&pfet $&pcoil"
+            echo "$v $&rsv $c $l $dt | $&ipk $&vdmax $&pfet $&pcoil"
             if ipk gt 0.040
-              echo "FAIL C-0003 coil peak $&ipk A > 40 mA at $v $r $c $l $dt"
+              echo "FAIL C-0003 coil peak $&ipk A > 40 mA at $v $&rsv $c $l $dt"
             end
             if vdmax gt 10
-              echo "FAIL C-0004 drain $&vdmax V > 10 V at $v $r $c $l $dt"
+              echo "FAIL C-0004 drain $&vdmax V > 10 V at $v $&rsv $c $l $dt"
             end
             if pfet gt 0.035
               echo "FAIL C-0004 MOSFET $&pfet W > 35 mW (10 % of SOT-23)"
@@ -65,7 +67,8 @@ M1   d  g 0 0 AO3400W
   * negative control: no flyback diode (area 1e-9), coil 12 ohm (most current) 4 mH, 50 %
   alterparam dfit=1e-9
   alterparam vdd=3.35
-  alterparam rs=77.9
+  let rsmin = r1*0.95
+  alterparam rs=$&rsmin
   alterparam rc=12
   alterparam lc=4m
   alterparam duty=0.5
@@ -81,7 +84,7 @@ M1   d  g 0 0 AO3400W
   alterparam dfit=1
   alterparam rc=16
   alterparam lc=1m
-  alterparam rs=82
+  alterparam rs=$&r1
   alterparam vdd=3.3
   reset
   run

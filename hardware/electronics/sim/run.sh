@@ -2,10 +2,15 @@
 # Rerun every cubbies bench and the tier-3 calculation lines; full outputs land in results/.
 # Fails when a bench prints FAIL (a limit broken; negative controls print EXPECTED-FAIL instead),
 # when ngspice reports an error or exits non-zero, or when an output is empty.
-# Usage: sh run.sh   (from anywhere; needs ngspice 42 and python3)
+# Component values come from the schematic: schematic.lib is regenerated from ../cubbies-v1.kicad_sch
+# when kicad-cli is installed (the committed copy is used otherwise).
+# Usage: sh run.sh   (from anywhere; needs ngspice 42 and python3; kicad-cli 9 to refresh the values)
 set -u
 cd "$(dirname "$0")"
 status=0
+if command -v kicad-cli > /dev/null 2>&1; then
+  python3 schematic_values.py || { echo "schematic value extraction failed"; status=1; }
+fi
 for bench in buzzer-driver oled-reset-rc i2c-bus strapping-gpio2; do
   out="results/$bench.txt"
   if ! ngspice -b "$bench.cir" > "$out.raw" 2>&1; then

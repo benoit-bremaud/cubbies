@@ -14,6 +14,7 @@ Tiers follow ADR-0007: P0 is the minimum living cube, each later tier is demonst
 | P1 | INMP441 I2S MEMS microphone | I2S | 3 (SCK, WS, SD; L/R to GND) | 1 | ~2 € |
 | P2 | MPU6050 IMU (or LSM6DS3) | I2C | 2 (shared bus) | 1 | ~1.5 € |
 | P3 | BH1750 ambient light sensor | I2C | 0 (shared bus) | 1 | ~1 € |
+| P0 | I2C expansion connector JST-SH 4-pin (Qwiic/STEMMA QT pinout, issue #18) | I2C | 0 (shared bus) | 1 | ~0.3 € |
 | — | USB-C cable 1 m | — | — | 1 | ~1.5 € |
 | P0 | Buzzer stage: AO3400, 1N4148, 82 Ω, 100 Ω, 100 kΩ; display RESET RC 10 kΩ + 1 µF X7R + 1N4148; SDA boot pull-up 47 kΩ (ADR-0015) | — | — | 1 set | ~0.3 € |
 | — | Hook-up wire, heat-shrink, foam pads | — | — | — | ~1 € |

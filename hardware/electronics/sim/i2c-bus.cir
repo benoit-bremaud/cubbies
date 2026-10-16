@@ -11,6 +11,7 @@
 * The Super Mini onboard LED on GPIO8 adds sink current on SDA: prototype-only, not counted here.
 * Run: ngspice -b i2c-bus.cir
 * ============================================================================
+.include schematic.lib
 .param rp=2.35k cb=100p vp=3.2
 Vp  vp 0 DC {vp}
 Rp  vp sda {rp}
@@ -23,11 +24,14 @@ Vc  ctl 0 PWL(0 1 1u 1 1.001u 0)
 .control
   set noaskquit
   echo "Rpull Vrail Cbus | tr30-70 [ns] | Isink@VOL0.4 [mA]"
-  * 47k; 4.7k||4.7k||47k; 2.2k||4.7k||47k; 2.2k||4.7k||4.7k||47k; each at -5 % and +5 %
-  foreach r 44650 49350 2132 2357 1393 1540 1028 1136
+  * board R5 (from the schematic) alone, then with module pull-ups (conductance in S):
+  * 4.7k||4.7k; 2.2k||4.7k; 2.2k||4.7k||4.7k; each network at -5 % and +5 %
+  foreach gm 0 425.532e-6 667.795e-6 880.561e-6
+   foreach k 0.95 1.05
+    let rnet = $k / (1/r5 + $gm)
     foreach v 3.2 3.3
       foreach c 50p 100p 200p
-        alterparam rp=$r
+        alterparam rp=$&rnet
         alterparam cb=$c
         alterparam vp=$v
         reset
@@ -37,17 +41,18 @@ Vc  ctl 0 PWL(0 1 1u 1 1.001u 0)
         meas tran t30 when v(sda)=lo rise=1
         meas tran t70 when v(sda)=hi rise=1
         let trise = (t70-t30)*1e9
-        let isink = ($v - 0.4) / $r * 1000
-        echo "$r $v $c | $&trise | $&isink"
+        let isink = ($v - 0.4) / rnet * 1000
+        echo "$&rnet $v $c | $&trise | $&isink"
         if isink gt 3
-          echo "FAIL C-0007 sink $&isink mA > 3 mA at $r"
+          echo "FAIL C-0007 sink $&isink mA > 3 mA at $&rnet"
         end
-        if ($r lt 40000) & (trise gt 300) & ($c lt 150e-12)
-          echo "FAIL C-0007 rise $&trise ns > 300 ns at $r $c"
+        if ($gm gt 0) & (trise gt 300) & ($c lt 150e-12)
+          echo "FAIL C-0007 rise $&trise ns > 300 ns at $&rnet $c"
         end
         destroy all
       end
     end
+   end
   end
 .endc
 .end
