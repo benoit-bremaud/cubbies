@@ -246,3 +246,31 @@ How to read it:
 - **Used in**: electronics-spec §Interfaces.
 - **Reproduce**: `python3 calc.py`
 - **Based on**: main at `dc773b1`
+
+## C-0012 — 2026-10-16 — Expansion port J1: current budget for one module (issue #18)
+
+- **Purpose**: Tier 1 (2× thermal margin on the module's share). Give the maximum current a
+  Qwiic/STEMMA QT module plugged into J1 may draw from the XIAO 3V3 (TLV75733).
+- **Method**:
+  - Sustained: LDO junction rise ΔT = (VBUS max − 3.3) × I × θJA (C-0002) must keep
+    Tj ≤ 125 °C on a 35 °C desk; the cube's typical draw (C-0001) plus twice the module's
+    continuous draw must stay under that total.
+  - Peak: the C-0001 peak plus the module's peak must stay ≤ 500 mA (REQ-NF-04).
+- **Inputs**:
+  - C-0001: typical 106 mA, peak 420.3 mA.
+  - C-0002: VBUS max 5.25 V, θJA 200 °C/W (ASSUMED, still OPEN in C-0002).
+  - Desk ambient 35 °C (ASSUMED); Tj max 125 °C (TLV757P recommended operating range, ASSUMED,
+    to read with θJA).
+- **Result**:
+  - The LDO rises by 0.39 °C per mA; the cube may draw at most 231 mA sustained in total.
+  - **Module budget: ≤ 50 mA continuous, ≤ 75 mA peak** (bursts under 1 s). At 50 mA
+    continuous Tj reaches 96 °C; at the peak the cube draws 495 mA.
+  - The owner validated 50 / 80 mA (MCDA, 2026-10-16); the calculation lowers the peak to 75 mA
+    because C-0001's peak is 420.3 mA, so 80 mA would give 500.3 mA.
+  - Consequence: a vibration module (ERM or LRA at 60–90 mA) fits only as short bursts, under
+    the firmware's control. A module above the budget needs its own supply and is out of V1.
+  - **OPEN**: the same θJA and Tj max reading as C-0002; LDO temperature measured at the bench
+    with a 50 mA dummy load on J1 (CDR).
+- **Used in**: ADR-0016; electronics-spec §Power; REQ-NF-12.
+- **Reproduce**: `python3 calc.py`
+- **Based on**: main at `fc6539b`

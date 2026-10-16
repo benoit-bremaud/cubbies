@@ -16,6 +16,7 @@
 | Side faces | 3 × Ø1.2 mm holes in front of the microphone port | sound entry, keep dust out |
 | Bottom | flat, 4 silicone feet; V3 reserve: Ø 40 mm recess for a Qi receiver coil, 1 mm thick, blocked off in V1 | ADR-0002 |
 | Split | two parts: front shell (holds OLED) + rear shell (holds XIAO and modules); snap-fit, 4 cantilever hooks | REQ-NF-11, no screws |
+| Expansion bay (ADR-0016) | inside the rear shell: free volume 20 × 20 × 6 mm (one Qwiic module of 1 × 1 inch or smaller, laid flat on a foam pad) with J1 (JST-SH, horizontal, 6 × 4.3 mm) reachable from the bay and ≥ 8 mm of free space in front of its mouth for a 50 mm Qwiic cable; the rear wall is a removable cover clipped by 2 cantilever hooks, opened with a fingernail notch | REQ-F-20, UC12; no screws (REQ-NF-11) |
 | Internal | XIAO on a 2 mm rail, USB-C flush; modules on 3M foam pads; wire channel | assembly ≤ 45 min |
 
 ## Printing
@@ -31,6 +32,9 @@
 
 - V2: battery pocket 35 × 25 × 8 mm under the modules (shell height +6 mm) and a slide switch
   cut-out on the back; separate revision of the script with a `battery=True` parameter.
+- Expansion bay: script parameters `bay=(20, 20, 6)`, `j1_clearance=8`, `rear_cover_hooks=2`; the
+  envelope stays 40 mm if the bay fits beside the modules, else the shell grows by the bay depth
+  (to check when the script is written with the measured parts).
 - V3: the Qi coil recess becomes open; receiver board under the coil, 5 V to the XIAO input.
 
 ## Deliverables

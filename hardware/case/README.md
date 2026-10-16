@@ -22,4 +22,5 @@ iterations; it is not needed to regenerate the files.
 ## Status
 
 Script not written yet: it starts after the mechanical CDR inputs (module dimensions measured
-on the prototype parts).
+on the prototype parts). It must include the expansion bay and clipped rear cover of ADR-0016
+(parameters in the mechanical spec, "V2 / V3 reserves").

@@ -45,6 +45,7 @@ flowchart LR
     end
     subgraph Making ["Making domain"]
       UC11(("UC11 Build and flash a cube"))
+      UC12(("UC12 Add a capability by plugging a module"))
     end
   end
 
@@ -57,6 +58,8 @@ flowchart LR
   Team --> UC8
   Colleague --> UC9
   Maker --> UC11
+  Colleague --> UC12
+  Maker --> UC12
   Maker --> UC1
   UC7 --- Neighbour
   UC8 --- Neighbour
@@ -76,6 +79,7 @@ flowchart LR
 | UC9 Start a chain reaction | Colleague | Each neighbour reacts once, the wave dies out | REQ-F-12 | G3 | deferred: `social-group` PDR |
 | UC6 Adjust the volume | Colleague | Volume step chosen inside the adoption ritual, after the colour, stored in NVS | REQ-F-05 | S4 | V1 ships a constant; the ritual step is V1.x (ADR-0013) |
 | UC11 Build and flash a cube | Maker | Same binary on every cube, identity untouched (NVS survives) | REQ-NF-09, NF-10 | T1, T2 | V1 |
+| UC12 Add a capability by plugging a module | Colleague (Maker on their behalf) | Known module used after the next boot; unknown module ignored | REQ-F-20, NF-12 | — | V1 (port), behaviours later |
 
 ## Notes
 
