@@ -1,42 +1,49 @@
-# Local review — cubbies (feat/expansion-port-design)
+# Local review — cubbies (docs/cdr-paper-items)
 
 - Date: 2026-10-16
-- Commit: 3c8c7c7 (+ review fixes in the next commit)
-- Scope: branch diff main...HEAD (docs, ADR-0016, C-0012 in `calc.py`)
-- Checks run: design · docs · correctness · security (one general-purpose reviewer, numbers
-  recomputed by hand); tests dimension: no test code changed
-- Verdict: ship after fixes (applied) · Must 2 · Should 6 · Nice 4
+- Commit: 94066d9 (+ review fixes 6657386, a7eee9d)
+- Scope: branch diff main...HEAD (C-0013 XC6210 LDO, C-0014 GPIO8 pull-up R6, C-0015 second
+  method `crosscheck.py`; issues #30, #31, #32)
+- Checks run: correctness + design + security (one reviewer on Opus, numbers recomputed by hand)
+  · docs + tests (doc-auditor, test-quality angle)
+- Verdict: ship after fixes (applied) · Must 5 · Should 9 · Nice 4
 
-## Pre-merge gate (head SHA after the review-fix commit)
+## Pre-merge gate (head SHA a7eee9d)
 | Step | Result |
 |---|---|
-| 1 Tests | ✅ 220/220 native (`pio test -e native`, firmware unchanged) · ✅ `sh hardware/electronics/sim/run.sh`: all benches PASS, C-0012 asserts pass |
-| 2 Coverage | Python 94 % (coverage.py over `calc.py`, `schematic_values.py`, its test); firmware unchanged; no new functions to document |
-| 3 SonarQube | project `cubbies` (localhost:9000): 0 new issues, 0 % duplication, hotspots reviewed; ✅ QUALITY GATE PASSED (first scan without a coverage report failed on coverage 0 %) |
-| 4 Secrets | ✅ gitleaks clean (main..HEAD) · no tracked .env · diff read: nothing sensitive |
-| 5 QA pass | ✅ no UI: real artefacts exercised — `calc.py` output, benches; Mermaid views reviewed |
-- Gate: **GREEN — merge authorised on owner approval**
+| 1 Tests | ✅ `sh hardware/electronics/sim/run.sh`: 5 benches PASS, `test_schematic_values.py`, `test_crosscheck.py`, `crosscheck.py` 139 rows agree; firmware unchanged (native suite not affected) |
+| 2 Coverage | Python 96 % (coverage.py over `calc.py`, `crosscheck.py`, `schematic_values.py` and both tests); every new function documented |
+| 3 SonarQube | project `cubbies` (localhost:9000): ✅ QUALITY GATE PASSED after fixing 1 issue (caught SystemExit) and a regex backtracking hotspot (regex removed) |
+| 4 Secrets | ✅ gitleaks clean (origin/main..HEAD) · no tracked .env · diff read: datasheet figures only |
+| 5 QA pass | ✅ no UI: the artefact is the bench suite (`run.sh`) and the schematic (`kicad-cli sch erc`: 0 violations, PDF re-exported) |
+- Gate: **GREEN — merge authorised** (on owner approval)
 
 ## 🔴 Must Have
-- `docs/hardware/electronics-spec.md:49` `[correctness]` · 3V3 row still said "typical ≤ 300 mA", which C-0002/C-0012 contradict · **fixed**: sustained ≤ 231 mA in total, module included.
-- `docs/decisions/ADR-0016-expansion-port.md:23` `[docs]` · peak trimmed from the validated 80 mA to 75 mA · **fixed**: written down; owner to confirm in the PR.
+- `sim/buzzer-driver.cir:9`, `sim/calc.py` C-0005/C-0010 `[correctness|docs]` · the rail corners still used the TLV75733 window 3.25–3.35 V · fixed: 3.234/3.366 V everywhere; buzzer peak 37.4 mA, recorded in C-0013.
+- `docs/architecture/verification-plan.md:29` `[docs]` · "18 corners" for I2C · fixed: 48 + C-0015.
+- `docs/hardware/calculations/README.md:47` `[docs]` · Tier 1 row said the second engine was open · fixed.
+- `sim/crosscheck.py` reset RC `[correctness|tests]` · the "never low" case was skipped · fixed: checked.
+- `sim/crosscheck.py` `[tests]` · no self-test, sensitivity claim manual · fixed: `test_crosscheck.py` in `run.sh`.
 
 ## 🟡 Should Have
-- `docs/hardware/calculations/log.md` (C-0012) `[correctness]` · "2× margin" ambiguous · **fixed**: defined, 1.48× on the total stated.
-- `diagrams/expansion-port/02-sequence-boot-scan.md` + ADR D3 `[security]` · stuck bus / unbounded read could block boot · **fixed**: single-byte read with timeout, bus recovery, "absent" on failure, rules row.
-- same `[design]` · reserved addresses not enforced · **fixed**: allowlist excludes them, native test required.
-- `diagrams/expansion-port/03-component.md` `[docs]` · Mermaid labels, bus drawn as a series element · **fixed**.
-- `diagrams/expansion-port/02-…` `[docs]` · no use-case view in the folder · **fixed**: links cube-core/01.
-- UC12 actors `[docs]` · Owner vs Colleague · ⚪ already consistent: the diagram declares Colleague as the cube's owner.
+- `sim/strapping-gpio2.cir` G8 control `[correctness]` · tautological (−105 V) · fixed: floating input modelled mid-rail.
+- VIH 2.52 V rounded down `[correctness]` · fixed: 2.525 V.
+- C-0014 text: R6 load 0.35 mA, case B rail wording `[docs]` · fixed.
+- `sim/crosscheck.py` tolerances 30–5000× the observed deviation `[tests]` · fixed: about 5×, stated.
+- `sim/crosscheck.py` `rows()` silently dropped rows `[tests]` · fixed: expected counts 48/24/64.
+- Strapping constants mirror the bench `[design]` · fixed: documented as a wiring guard only.
+- `agree()` contract undocumented `[docs]` · fixed.
+- Module ran at import time `[tests]` · fixed: `main()`.
+- Dropout scaled from 25 °C `[correctness]` · fixed: stated in calc.py and C-0013.
 
 ## 🔵 Nice to Have
-- ADR-0016 `[docs]` · D1 matrix · **fixed** (summary).
-- UC12 3b `[tests]` · **fixed**: verified at the module PDR.
-- `docs/hardware/mechanical-spec.md` `[correctness]` · 1 inch module wider than the 20 mm bay · **fixed**: modules ≤ 20 × 20 mm, bay 22 × 22 × 6 mm.
-- ADR-0016 status Accepted while CDR items are open `[docs]` · ⚪ intentional: the OPEN items are bench checks, as in ADR-0015.
+- `.gitignore` `coverage.xml` · fixed.
+- calc.py header entries · fixed.
+- `review-local.md` previous verdict quotes 231 mA · historical record, left.
+- `run.sh` `^G8` filter comment · left (the header lists the summary lines).
 
 ## ⚪ Disagree / Intentional
-- See the two ⚪ items above.
+- `log.md` C-0002/C-0003/C-0006/C-0007/C-0008/C-0012 still say TLV75733 or "second engine OPEN" · the log is append only; C-0013/C-0014/C-0015 carry the Supersedes lines.
 
 ## Per-dimension summary
-- Design: clean dependency direction, no new port until the first module · Docs: cross-references fixed · Tests: none changed · Security: probe hardened in the design · Correctness: C-0012 arithmetic verified by hand
+- Design: one model per bench, no over-engineering · Docs: stale references fixed · Tests: the second method is now self-tested and sensitive · Security: no secrets, regex hotspot removed · Correctness: numbers recomputed by hand and matching.
