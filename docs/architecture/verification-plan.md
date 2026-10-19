@@ -16,6 +16,7 @@
 | Fuzzing | native test feeding random and malformed frames to the parser | `firmware/test/` | REQ-NF-06 |
 | ERC | `kicad-cli sch erc` | CI (later) and local | GPIO contract, net sanity |
 | Bench measurement | multimeter, phone sound meter, two prototypes, camera for latency | results recorded in `docs/hardware/measurements.md` | current, dB, range, latency, frame rate |
+| Scripted dimension checks | `freecadcmd hardware/case/cubbies_case.py` runs 17 checks (valid solids, 40 mm envelope, 1.6 mm walls, every opening present and the vents on the flat face, bay free of any part, J1 parameters, 0.2 mm hook clearance, barb ramps leading, barb engagement, hook strain against PLA, no overlap, cover push-in stop, OLED module and XIAO clear of shells, hooks and bay) and exports nothing if one fails; mutation-tested 2026-10-19 (a reversed barb and a vent past the corner both fail) | `hardware/case/cubbies_case.py` | REQ-NF-10, REQ-NF-11, ADR-0016 bay |
 | Print trial | the printed enclosure on prototype hardware | photos in `docs/hardware/assembly.md` | REQ-NF-10, REQ-NF-11 |
 | Exploration only | Wokwi (XIAO ESP32-C3, buzzer, MPU6050, SSD1306 as a stand-in) | not versioned | prototyping gestures without hardware; no SSD1331, no I2S mic |
 
@@ -36,7 +37,7 @@
 | Moods, sleep, identity, protocol (REQ-F-05..13) | Unity tests | replayed scenarios with injected clock | PDR |
 | Radio range (REQ-NF-05) | estimate | measured with two prototypes | V1 |
 | Latency, frame rate (REQ-NF-01, 02) | design budget | bench | V1 |
-| Enclosure (REQ-NF-10, 11) | FreeCAD script, dimensions | print and fit on prototype | mechanical CDR |
+| Enclosure (REQ-NF-10, 11), module bay (ADR-0016) | FreeCAD script, 17 scripted dimension checks (green 2026-10-19) | print and fit on prototype | mechanical CDR |
 | Privacy of audio (REQ-NF-07, C7) | architecture rule | code review of the audio adapter | every PR |
 
 ## Rules

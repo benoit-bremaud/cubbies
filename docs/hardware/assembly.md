@@ -33,8 +33,9 @@
    square wave at 2 kHz on the gate.
 4. **Wire to the XIAO.** Follow the contract table; one colour per bus. Test on the bench:
    eyes, tone, tap, serial log of the sound level and IMU.
-5. **Front shell.** Seat DS1 in the window recess, tape the copper pad under the top face,
-   wire SW1 to it.
+5. **Front shell.** Seat DS1 in the window recess and hold its PCB against the inner front wall
+   with a ring of 3M double-sided foam tape around the glass (nothing else stops it moving
+   back); tape the copper pad under the top face, wire SW1 to it.
 6. **Rear shell.** XIAO on its rail with the USB-C flush; MK1 behind the side holes; BZ1 behind
    the slots; U2 flat on the floor (axis orientation marked); foam pads.
 7. **Close and test.** Snap the shells; power; the cube boots into the adoption ritual. Run the

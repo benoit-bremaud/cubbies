@@ -28,3 +28,7 @@ CLAUDE.local.md
 # SonarQube scanner work dir
 .scannerwork/
 hardware/electronics/sim/coverage.xml
+
+# FreeCAD script run artefacts
+__pycache__/
+*.FCBak
