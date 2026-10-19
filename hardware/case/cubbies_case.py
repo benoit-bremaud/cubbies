@@ -35,7 +35,8 @@ HOOK_THICKNESS = 1.0
 HOOK_LENGTH = 4.5  # shell hooks, past the split; stops 0.9 mm short of the OLED module
 COVER_HOOK_LENGTH = 6.0  # rear cover hooks, from the plate's inner face
 BARB = 0.5  # barb height; it engages the mating edge by BARB - TOL
-BARB_LENGTH = 1.5  # ramp length; the ramp leads on insertion, the step retains
+BARB_LENGTH = 1.5  # lead-in ramp; the 45-degree back face (BARB long) retains but
+# releases under a firm pull, so shells and cover can be opened again
 BARB_OFFSET = 0.5  # shell hooks: ramp start, measured from the arm tip
 PLA_STRAIN_LIMIT = 0.025  # printed PLA breaks around 2-3 % strain
 
@@ -96,17 +97,18 @@ def centered_box(
 
 
 def barb(x: float, y: float, z: float, outward: float) -> Part.Shape:
-    """Ramp barb on a hook arm, extruded along z over HOOK_WIDTH.
+    """Releasable barb on a hook arm, extruded along z over HOOK_WIDTH.
 
     (x, y, z) is the ramp start on the arm face; the ramp rises towards +y to BARB in
     the direction outward (-1 or +1 along x), so it leads when the part moves towards
-    -y and its step, facing +y, retains. No support needed when printed arm up.
+    -y. The back face drops at 45 degrees over BARB: it retains, and a firm pull
+    deflects the arm so the part comes apart without breaking a hook. No support
+    needed when printed arm up.
     """
     start = V(x, y, z)
-    top = start + V(0, BARB_LENGTH, 0)
-    face = Part.Face(
-        Part.makePolygon([start, top, top + V(outward * BARB, 0, 0), start])
-    )
+    peak = start + V(outward * BARB, BARB_LENGTH, 0)
+    end = start + V(0, BARB_LENGTH + BARB, 0)
+    face = Part.Face(Part.makePolygon([start, peak, end, start]))
     return face.extrude(V(0, 0, HOOK_WIDTH))
 
 
@@ -180,7 +182,7 @@ def hook_pockets() -> list[Part.Shape]:
     """Pockets in the front shell walls receiving the barbs, TOL all around."""
     depth = BARB + TOL
     w = HOOK_WIDTH + 2 * TOL
-    length = BARB_LENGTH + 2 * TOL
+    length = BARB_LENGTH + BARB + 2 * TOL
     y = SPLIT_Y - HOOK_LENGTH + BARB_OFFSET - TOL
     return around_y_axis(box(depth, length, w, WALL - depth, y, SIZE / 2 - w / 2))
 
@@ -280,8 +282,9 @@ def rear_cover(cube: Part.Shape) -> Part.Shape:
     )
     z = BAY_Z0 + BAY_H / 2 - HOOK_WIDTH / 2
     y = rebate.YMin - COVER_HOOK_LENGTH
-    # The step catches the wall's inner face with TOL of axial play.
-    ramp_y = SIZE - WALL - TOL - BARB_LENGTH
+    # The 45-degree back face ends on the wall's inner face plane, so it meets the
+    # hole edge after a short pull (axial play) and releases under a firm one.
+    ramp_y = SIZE - WALL - BARB - BARB_LENGTH
     for outward in (-1, 1):
         x = hole.XMin + TOL if outward < 0 else hole.XMax - TOL - HOOK_THICKNESS
         arm = box(HOOK_THICKNESS, COVER_HOOK_LENGTH, HOOK_WIDTH, x, y, z)
@@ -397,7 +400,11 @@ def run_checks(front: Part.Shape, rear: Part.Shape, cover: Part.Shape) -> list[s
     worst = max(
         strain(HOOK_LENGTH, shell_engage), strain(COVER_HOOK_LENGTH, cover_engage)
     )
-    check(leads, "barb ramps lead on insertion")
+    peak_y = ramp_y + BARB_LENGTH
+    releases = solid(hook, WALL + TOL - BARB / 4, peak_y + BARB / 2, c)
+    check(
+        leads and releases, "barb ramps lead on insertion, 45-degree back face releases"
+    )
     check(
         shell_engage > 0.1 and cover_engage > 0.1,
         f"barbs engage {shell_engage:.2f} mm (shells), {cover_engage:.2f} mm (cover)",

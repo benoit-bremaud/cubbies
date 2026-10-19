@@ -16,9 +16,9 @@
 | Back face | USB-C cut-out 9.5 × 4 mm aligned with the XIAO connector; 4 horizontal sound slots 8 × 1 mm at the bottom right (x 29.5–37.5, z 2.2–8.3, 0.7 mm ribs), clear of the XIAO, the rounded corner and the cover; the buzzer sits behind them | power, sound |
 | Side faces | 3 × Ø1.2 mm holes in front of the microphone port | sound entry, keep dust out |
 | Bottom | flat, 4 silicone feet; V3 reserve: Ø 40 mm recess for a Qi receiver coil, 1 mm thick, blocked off in V1 | ADR-0002 |
-| Split | front shell 12 mm deep (holds the OLED) + rear shell (holds the XIAO and modules); snap-fit, 4 cantilever hooks on the rear shell, one per side wall (6 mm wide, 1.0 mm thick, 4.5 mm past the split so they stop short of the OLED module), 0.5 mm ramp barbs (ramp leading, step retaining) in pockets of the front shell: 0.3 mm engagement, 2.2 % peak strain (PLA limit taken as 2.5 %) | REQ-NF-11, no screws |
-| Expansion bay (ADR-0016) | inside the rear shell: free volume 22 × 22 × 6 mm (one Qwiic module up to 20 × 20 mm, laid flat on a foam pad) with J1 (JST-SH, horizontal, 6 × 4.3 mm) reachable from the bay and ≥ 8 mm of free space in front of its mouth for a 50 mm Qwiic cable; a removable 1 mm cover plate sits flush in a rebate of the rear wall (1 mm ledges above and below the hole stop it from being pushed in) and is clipped by 2 cantilever hooks 6 mm long on the vertical edges of the hole (0.3 mm engagement, 1.3 % strain); a 6 × 1 mm fingernail recess in the wall above the plate lifts it out | REQ-F-20, UC12; no screws (REQ-NF-11) |
-| Internal | XIAO on a 2 mm rail, USB-C flush; modules on 3M foam pads; wire channel | assembly ≤ 45 min |
+| Split | front shell 12 mm deep (holds the OLED) + rear shell (holds the XIAO and modules); snap-fit, 4 cantilever hooks on the rear shell, one per side wall (6 mm wide, 1.0 mm thick, 4.5 mm past the split so they stop short of the OLED module), 0.5 mm barbs (lead-in ramp, 45° back face that retains but releases under a firm pull, so the cube can be opened for service) in pockets of the front shell: 0.3 mm engagement, 2.2 % peak strain (PLA limit taken as 2.5 %) | REQ-NF-11, no screws |
+| Expansion bay (ADR-0016) | inside the rear shell: free volume 22 × 22 × 6 mm (one Qwiic module up to 20 × 20 mm, laid flat on a foam pad) with J1 (JST-SH, horizontal, 6 × 4.3 mm) reachable from the bay and ≥ 8 mm of free space in front of its mouth for a 50 mm Qwiic cable; a removable 1 mm cover plate sits flush in a rebate of the rear wall (1 mm ledges above and below the hole stop it from being pushed in) and is clipped by 2 cantilever hooks 6 mm long with the same releasable barbs on the vertical edges of the hole (0.3 mm engagement, 1.3 % strain); a 6 × 1 mm fingernail recess in the wall above the plate lifts it out | REQ-F-20, UC12; no screws (REQ-NF-11) |
+| Internal | XIAO on a 2 mm rail, USB-C flush; modules on 3M foam pads; the OLED glass sits in its recess and the module PCB is held against the inner front wall by a ring of 3M double-sided foam tape (the recess only stops forward motion); wire channel | assembly ≤ 45 min |
 
 ## Printing
 
@@ -26,9 +26,9 @@
 |-----------|-------|
 | Material | PLA (colour of the cube's identity or neutral white) |
 | Layer height | 0.2 mm, no supports (overhangs ≤ 45°, window bridging ≤ 20 mm) |
-| Orientation | flat face on the bed, hooks pointing up (detail below) |
+| Orientation | outer face on the bed, open side and hooks pointing up (detail below) |
 | Tolerance | 0.2 mm on snap hooks; test coupon printed first |
-| Orientation detail | front shell front face up (window and pockets need no support); rear shell back face down (the hooks point up, barbs are ramps); rear cover outer face down |
+| Orientation detail | front shell front face down (the window is a through hole, the glass recess and barb pockets open upwards; no ceiling to bridge); rear shell back face down (the hooks point up, barbs are ramps); rear cover outer face down |
 
 ## V2 / V3 reserves
 

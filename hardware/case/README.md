@@ -24,7 +24,7 @@ then writes to `export/`:
 
 | File | Use |
 |------|-----|
-| `cubbies-front.stl` | front shell, print front face up |
+| `cubbies-front.stl` | front shell, print front face down (open side up, no ceiling to bridge) |
 | `cubbies-rear.stl` | rear shell, print back face down |
 | `cubbies-rear-cover.stl` | module bay cover, print outer face down (hooks up) |
 | `cubbies.step` | all three parts, for other CAD tools |
