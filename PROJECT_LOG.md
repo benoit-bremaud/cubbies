@@ -19,8 +19,8 @@ human context: what was done, why, and by which PR.
   slicer; a slicer project is saved once the slicer is known. Front shell prints front face down
   (mechanical spec), not up as the brief said.
 - Codex raised 1 valid point (the coupon check could pass without the pocket), fixed in the PR.
-- Gate: 220 native tests, both board builds, ruff and gitleaks clean on the diff, CI green.
-  Not run: electronics pytest benches (pytest missing locally, files untouched), SonarQube.
+- Gate: 220 native tests, both board builds, electronics benches (`hardware/electronics/sim/run.sh`,
+  all PASS), ruff and gitleaks clean on the diff, CI green. Not run: SonarQube.
 - Open: print-and-fit at the fablab; pre-existing ruff findings unchanged.
 
 ### FreeCAD enclosure script with the module bay (issue #42) — **PR #43 merged** (`d94528e`)
