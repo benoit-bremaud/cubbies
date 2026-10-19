@@ -7,6 +7,22 @@ human context: what was done, why, and by which PR.
 
 ## 2026-10-19
 
+### Print pack for the Grasse fablab (issue #45) — **PR #46 merged** (`e7effe1`)
+
+- `cubbies_case.py` cuts a tolerance coupon from the real shells (left hook and its pocket, the
+  back-wall frame around the cover rebate, printed with a real cover) and checks it (check 18:
+  whole hook, whole pocket, full rebate). It also writes `hardware/case/export/print/`: parts
+  already turned and resting on the bed, plus `coupon-plate.3mf` and `cubbies-plate.3mf`.
+- `hardware/case/PRINT.md`: one-page fablab sheet (files, PLA / 0.2 mm / 4 perimeters / no
+  supports, coupon first, what to check, results to `docs/hardware/assembly.md`).
+- Owner: fablab printer and slicer unknown, so the 3MF plates are geometry only and open in any
+  slicer; a slicer project is saved once the slicer is known. Front shell prints front face down
+  (mechanical spec), not up as the brief said.
+- Codex raised 1 valid point (the coupon check could pass without the pocket), fixed in the PR.
+- Gate: 220 native tests, both board builds, electronics benches (`hardware/electronics/sim/run.sh`,
+  all PASS), ruff and gitleaks clean on the diff, CI green. Not run: SonarQube.
+- Open: print-and-fit at the fablab; pre-existing ruff findings unchanged.
+
 ### FreeCAD enclosure script with the module bay (issue #42) — **PR #43 merged** (`d94528e`)
 
 - `hardware/case/cubbies_case.py` (ADR-0010, CC BY-SA 4.0) generates the front shell, the rear
