@@ -508,6 +508,7 @@ def run_checks(
         all(p.isValid() and p.Volume > 0 for p in coupon_parts)
         and whole_hook < 1e-3
         and pocket_cut < 1e-6
+        and _fits(hook_pockets()[0], c_front.BoundBox)  # the void lies inside it
         and _fits(cover, rebate_bb),
         "coupon holds a whole hook, its pocket and the cover rebate",
     )
