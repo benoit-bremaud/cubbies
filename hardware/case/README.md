@@ -10,18 +10,23 @@ sharing; never edit them by hand.
 freecadcmd hardware/case/cubbies_case.py
 ```
 
-Requires FreeCAD 1.1. Any build works: the snap (`sudo snap install freecad`, command
-`freecad.cmd`) or the AppImage (`FreeCAD-1.1.1.AppImage freecadcmd <script>`). The script first
-runs the dimension checks (envelope, walls, bay volume, J1 clearance, hook and cover clearances,
-part collisions), prints `PASS`/`FAIL` per check through the FreeCAD console and exits non-zero
-without exporting if one fails; set `CUBBIES_CHECK_ONLY=1` to run the checks only. It then
-writes to `export/`:
+Requires FreeCAD 1.1. On the owner's machine (decision 2026-10-19, MCDA 440/500 against the
+snap at 275): the FreeCAD 1.1.1 AppImage in `~/Applications`, called through a `freecadcmd`
+wrapper in `~/.local/bin` (`exec ~/Applications/FreeCAD-1.1.1.AppImage freecadcmd "$@"`): no
+sudo, a pinned version so the parts do not change under an automatic update, and driveable
+headless by an agent. The snap (`sudo snap install freecad`, command `freecad.cmd`) works too.
+
+The script first runs 17 dimension checks (envelope, walls, openings, bay, hook clearance,
+barb direction and engagement, hook strain, cover stop, part collisions), prints `PASS`/`FAIL`
+per check through the FreeCAD console (plain `print` is not shown by `freecadcmd`) and exits
+non-zero without exporting if one fails; set `CUBBIES_CHECK_ONLY=1` to run the checks only. It
+then writes to `export/`:
 
 | File | Use |
 |------|-----|
 | `cubbies-front.stl` | front shell, print front face up |
 | `cubbies-rear.stl` | rear shell, print back face down |
-| `cubbies-rear-cover.stl` | module bay cover, print outer face down |
+| `cubbies-rear-cover.stl` | module bay cover, print outer face down (hooks up) |
 | `cubbies.step` | all three parts, for other CAD tools |
 | `cubbies.FCStd` | FreeCAD document to inspect in the GUI |
 
