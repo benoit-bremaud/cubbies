@@ -128,71 +128,35 @@ def cover_opening() -> Part.Shape:
     return box(width, WALL, BAY[1], (SIZE - width) / 2, SIZE - WALL, BAY_Z0)
 
 
+def around_y_axis(shape: Part.Shape) -> list[Part.Shape]:
+    """The shape and its copies turned 90, 180 and 270 degrees about the cube's y axis.
+
+    Features are modelled once on the left wall; the square section makes the turned
+    copies land exactly on the bottom, right and top walls.
+    """
+    centre, axis = V(SIZE / 2, 0, SIZE / 2), V(0, 1, 0)
+    return [shape.copy().rotate(centre, axis, angle) for angle in (0, 90, 180, 270)]
+
+
 def shell_hooks() -> list[Part.Shape]:
     """Four hook arms (with barbs) on the rear shell, reaching into the front shell."""
-    c = SIZE / 2
     inset = WALL + TOL  # arm outer face sits TOL inside the front shell wall
     y0 = SPLIT_Y - HOOK_LENGTH
-    yb = y0 + 0.5  # barb near the arm tip
-    hooks = []
-    for side in ("left", "right", "bottom", "top"):
-        if side in ("left", "right"):
-            x = inset if side == "left" else SIZE - inset - HOOK_THICKNESS
-            arm = box(
-                HOOK_THICKNESS,
-                HOOK_LENGTH + WALL,
-                HOOK_WIDTH,
-                x,
-                y0,
-                c - HOOK_WIDTH / 2,
-            )
-            out = V(-1, 0, 0) if side == "left" else V(1, 0, 0)
-            bx = x if side == "left" else x + HOOK_THICKNESS
-            barb = wedge_barb(
-                HOOK_WIDTH, BARB_LENGTH, BARB, bx, yb, c - HOOK_WIDTH / 2, out
-            )
-        else:
-            z = inset if side == "bottom" else SIZE - inset - HOOK_THICKNESS
-            arm = box(
-                HOOK_WIDTH,
-                HOOK_LENGTH + WALL,
-                HOOK_THICKNESS,
-                c - HOOK_WIDTH / 2,
-                y0,
-                z,
-            )
-            out = V(0, 0, -1) if side == "bottom" else V(0, 0, 1)
-            bz = z if side == "bottom" else z + HOOK_THICKNESS
-            barb = wedge_barb(
-                HOOK_WIDTH, BARB_LENGTH, BARB, c - HOOK_WIDTH / 2, yb, bz, out
-            )
-        # Root block tying the arm to the rear shell wall, behind the split plane.
-        bb = arm.BoundBox
-        root = box(
-            bb.XLength + (TOL if out.x else 0),
-            WALL,
-            bb.ZLength + (TOL if out.z else 0),
-            bb.XMin - (TOL if out.x < 0 else 0),
-            SPLIT_Y,
-            bb.ZMin - (TOL if out.z < 0 else 0),
-        )
-        hooks.append(arm.fuse(barb).fuse(root))
-    return hooks
+    z0 = SIZE / 2 - HOOK_WIDTH / 2
+    arm = box(HOOK_THICKNESS, HOOK_LENGTH + WALL, HOOK_WIDTH, inset, y0, z0)
+    barb = wedge_barb(HOOK_WIDTH, BARB_LENGTH, BARB, inset, y0 + 0.5, z0, V(-1, 0, 0))
+    # Root block tying the arm to the rear shell wall, behind the split plane.
+    root = box(TOL + HOOK_THICKNESS, WALL, HOOK_WIDTH, WALL, SPLIT_Y, z0)
+    return around_y_axis(arm.fuse(barb).fuse(root))
 
 
 def hook_pockets() -> list[Part.Shape]:
     """Pockets in the front shell walls receiving the barbs, TOL all around."""
-    c = SIZE / 2
     depth = BARB + TOL
     w = HOOK_WIDTH + 2 * TOL
     length = BARB_LENGTH + 2 * TOL
     y = SPLIT_Y - HOOK_LENGTH + 0.5 - TOL
-    return [
-        box(depth, length, w, WALL - depth, y, c - w / 2),
-        box(depth, length, w, SIZE - WALL, y, c - w / 2),
-        box(w, length, depth, c - w / 2, y, WALL - depth),
-        box(w, length, depth, c - w / 2, y, SIZE - WALL),
-    ]
+    return around_y_axis(box(depth, length, w, WALL - depth, y, SIZE / 2 - w / 2))
 
 
 def front_shell(cube: Part.Shape) -> Part.Shape:
