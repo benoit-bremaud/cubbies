@@ -5,6 +5,28 @@ human context: what was done, why, and by which PR.
 
 ---
 
+## 2026-10-19
+
+### FreeCAD enclosure script with the module bay (issue #42) — **PR #43 merged** (`d94528e`)
+
+- `hardware/case/cubbies_case.py` (ADR-0010, CC BY-SA 4.0) generates the front shell, the rear
+  shell and the ADR-0016 bay cover headless (`freecadcmd`), then STL/STEP/FCStd under
+  `hardware/case/export/`. It runs 17 dimension checks first and exports nothing if one fails
+  (envelope, walls, openings, bay, J1 parameters, hook clearance, barb direction, engagement
+  and release, hook strain against PLA, cover push-in stop, part collisions); mutation-tested.
+- Owner MCDA: 40 mm cube with the bay above the XIAO (460/500, 46 mm shell 340); FreeCAD 1.1.1
+  AppImage behind a `~/.local/bin/freecadcmd` wrapper (440/500, snap 275): no sudo, pinned
+  version, headless for agents.
+- review-local: Must 4 (shell barbs reversed, cover hooks never engaged and no push-in stop, a
+  vent slot through the corner, cover hook strain ~18 %) · Should 9 · Nice 4, all fixed. Codex
+  (enabled on the repository) then raised 3 valid points, fixed in the PR: 45° releasable barb
+  back faces (UC12 cover removal), front shell printed face down, DS1 held by 3M foam tape.
+- Gate: 220 native tests, both board builds, benches, ERC 0, gitleaks clean, SonarQube PASSED
+  (new coverage 93.9 %, `cubbies_case.py` 92 % under FreeCAD's Python), docstrings 91 %, CI green.
+- Open: print-and-fit at the mechanical CDR (OLED module and XIAO sizes are estimates); print
+  pack for the Grasse fablab proposed as a follow-up; pre-existing ruff findings in
+  `firmware/tools/golden_sheet.py` and `hardware/electronics/sim/calc.py`.
+
 ## 2026-10-16
 
 ### CDR paper items (issues #30, #31, #32) — C-0013, C-0014, C-0015 — **PR #38 merged** (`1580cd5`)
