@@ -116,6 +116,7 @@ def strain(length: float, deflection: float) -> float:
 
 
 def hollow_cube() -> Part.Shape:
+    """The 40 mm cube with rounded edges, hollowed to WALL; both shells are cut from it."""
     outer = box(SIZE, SIZE, SIZE)
     outer = outer.makeFillet(CORNER_RADIUS, outer.Edges)
     inner = box(SIZE - 2 * WALL, SIZE - 2 * WALL, SIZE - 2 * WALL, WALL, WALL, WALL)
@@ -291,9 +292,33 @@ def rear_cover(cube: Part.Shape) -> Part.Shape:
 
 # --- Dimension checks (verification plan, mechanical row) --------------------------------
 def _fits(shape: Part.Shape, inner: Part.BoundBox) -> bool:
+    """True when the shape's bounding box lies inside `inner` (touching allowed)."""
     loose = App.BoundBox(inner)
     loose.enlarge(1e-6)  # parts may rest against a wall face
     return loose.isInside(shape.BoundBox)
+
+
+def openings_in_place(front: Part.Shape, rear: Part.Shape) -> bool:
+    """Every opening is air at its centre, and the vents stay on the flat back face."""
+
+    def solid(shape: Part.Shape, x: float, y: float, z: float) -> bool:
+        return shape.isInside(V(x, y, z), 1e-6, True)
+
+    c, w = SIZE / 2, WALL / 2
+    vents = [b.BoundBox for b in vent_slots()]
+    mics = [m.BoundBox.Center for m in mic_holes()]
+    vents_flat = all(
+        b.XMax <= SIZE - CORNER_RADIUS and b.ZMin >= CORNER_RADIUS for b in vents
+    )
+    return (
+        vents_flat
+        and not solid(front, c, w, EYE_Z)
+        and not solid(rear, c, SIZE - w, USB_CENTER_Z)
+        and not any(solid(rear, b.Center.x, SIZE - w, b.Center.z) for b in vents)
+        and not any(solid(rear, w, p.y, p.z) for p in mics)
+        and not solid(rear, c, TOUCH_CENTER_Y, SIZE - TOUCH_DIMPLE[2] / 2)
+        and solid(rear, c, TOUCH_CENTER_Y, SIZE - TOUCH_DIMPLE[2] - 0.1)
+    )
 
 
 def run_checks(front: Part.Shape, rear: Part.Shape, cover: Part.Shape) -> list[str]:
@@ -336,22 +361,10 @@ def run_checks(front: Part.Shape, rear: Part.Shape, cover: Part.Shape) -> list[s
         f"wall thickness {WALL} mm on all faces",
     )
 
-    # Openings exist where the spec puts them (a point at the centre is air).
-    vent_centres = [b.BoundBox.Center for b in vent_slots()]
-    mic_centres = [m.BoundBox.Center for m in mic_holes()]
-    vents_flat = all(
-        b.BoundBox.XMax <= SIZE - CORNER_RADIUS and b.BoundBox.ZMin >= CORNER_RADIUS
-        for b in vent_slots()
+    check(
+        openings_in_place(front, rear),
+        "window, USB-C, vents, mic holes, dimple in place",
     )
-    openings = (
-        not solid(front, c, w, EYE_Z)
-        and not solid(rear, c, SIZE - w, USB_CENTER_Z)
-        and not any(solid(rear, p.x, SIZE - w, p.z) for p in vent_centres)
-        and not any(solid(rear, w, p.y, p.z) for p in mic_centres)
-        and not solid(rear, c, TOUCH_CENTER_Y, SIZE - TOUCH_DIMPLE[2] / 2)
-        and solid(rear, c, TOUCH_CENTER_Y, SIZE - TOUCH_DIMPLE[2] - 0.1)
-    )
-    check(openings and vents_flat, "window, USB-C, vents, mic holes, dimple in place")
 
     bay = bay_box()
     intrusion = sum(bay.common(p).Volume for p in parts.values())
