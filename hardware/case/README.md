@@ -16,8 +16,8 @@ wrapper in `~/.local/bin` (`exec ~/Applications/FreeCAD-1.1.1.AppImage freecadcm
 sudo, a pinned version so the parts do not change under an automatic update, and driveable
 headless by an agent. The snap (`sudo snap install freecad`, command `freecad.cmd`) works too.
 
-The script first runs 17 dimension checks (envelope, walls, openings, bay, hook clearance,
-barb direction and engagement, hook strain, cover stop, part collisions), prints `PASS`/`FAIL`
+The script first runs 18 dimension checks (envelope, walls, openings, bay, hook clearance,
+barb direction and engagement, hook strain, cover stop, part collisions, tolerance coupon), prints `PASS`/`FAIL`
 per check through the FreeCAD console (plain `print` is not shown by `freecadcmd`) and exits
 non-zero without exporting if one fails; set `CUBBIES_CHECK_ONLY=1` to run the checks only. It
 then writes to `export/`:
@@ -29,6 +29,7 @@ then writes to `export/`:
 | `cubbies-rear-cover.stl` | module bay cover, print outer face down (hooks up) |
 | `cubbies.step` | all three parts, for other CAD tools |
 | `cubbies.FCStd` | FreeCAD document to inspect in the GUI |
+| `print/` | the same parts turned and laid on the bed, the tolerance coupon and two slicer-neutral 3MF plates: see [PRINT.md](PRINT.md) |
 
 Every dimension is a named parameter at the top of the script; rationale in
 `docs/hardware/mechanical-spec.md`. CI does not run FreeCAD (ADR-0010).

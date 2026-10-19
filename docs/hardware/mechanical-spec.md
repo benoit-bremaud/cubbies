@@ -1,6 +1,6 @@
 # Mechanical specification — cubbies V1 enclosure
 
-> **Status**: scripted, 17 dimension checks green (2026-10-19, issue #42); print-and-fit is the
+> **Status**: scripted, 18 dimension checks green (2026-10-19, issues #42, #45); print-and-fit is the
 > mechanical CDR bench step. Decisions: ADR-0006 (display size), ADR-0010 (FreeCAD scripted),
 > ADR-0016 (module bay). Source of truth: `hardware/case/cubbies_case.py`; generated `.FCStd`,
 > `.step` and `.stl` committed as artefacts for printing and sharing.
@@ -27,7 +27,7 @@
 | Material | PLA (colour of the cube's identity or neutral white) |
 | Layer height | 0.2 mm, no supports (overhangs ≤ 45°, window bridging ≤ 20 mm) |
 | Orientation | outer face on the bed, open side and hooks pointing up (detail below) |
-| Tolerance | 0.2 mm on snap hooks; test coupon printed first |
+| Tolerance | 0.2 mm on snap hooks; test coupon printed first (`hardware/case/PRINT.md`) |
 | Orientation detail | front shell front face down (the window is a through hole, the glass recess and barb pockets open upwards; no ceiling to bridge); rear shell back face down (the hooks point up, barbs are ramps); rear cover outer face down |
 
 ## V2 / V3 reserves

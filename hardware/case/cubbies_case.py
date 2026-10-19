@@ -17,6 +17,7 @@ import os
 import sys
 
 import FreeCAD as App
+import Mesh
 import MeshPart
 import Part
 
@@ -82,6 +83,9 @@ COVER_LEDGE = 1.0  # rebate ledge above and below the hole: the push-in stop
 NOTCH_W, NOTCH_H = 6.0, 1.0  # fingernail recess in the wall above the cover
 
 EXPORT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "export")
+PRINT_DIR = os.path.join(EXPORT_DIR, "print")
+COUPON_MARGIN = 3.0  # wall kept around the sampled hook, pocket and rebate
+PLATE_GAP = 5.0  # spacing between parts on the 3MF plates
 
 
 def box(
@@ -293,6 +297,55 @@ def rear_cover(cube: Part.Shape) -> Part.Shape:
     return plate.removeSplitter()
 
 
+def coupon(front: Part.Shape, rear: Part.Shape) -> tuple[Part.Shape, Part.Shape]:
+    """Tolerance coupon cut from the real shells, so it fits exactly like the cube.
+
+    Front half: the corner of the front shell holding the left barb pocket. Rear half:
+    the matching corner with the left hook, plus the frame of the back wall around the
+    cover rebate (the real cover is printed with it). Each half prints like its shell.
+    """
+    m = COUPON_MARGIN
+    z0, height = SIZE / 2 - HOOK_WIDTH / 2 - m, HOOK_WIDTH + 2 * m
+    corner = WALL + TOL + HOOK_THICKNESS + m
+    front_half = front.common(box(corner, SPLIT_Y, height, 0, 0, z0))
+    hook_y0 = SPLIT_Y - HOOK_LENGTH
+    rebate = cover_rebate().BoundBox
+    frame = box(
+        rebate.XLength + 2 * m,
+        WALL,
+        rebate.ZLength + 2 * m,
+        rebate.XMin - m,
+        SIZE - WALL,
+        rebate.ZMin - m,
+    )
+    rear_corner = box(corner, SIZE - hook_y0, height, 0, hook_y0, z0)
+    rear_half = rear.common(rear_corner.fuse(frame))
+    return front_half.removeSplitter(), rear_half.removeSplitter()
+
+
+def on_bed(shape: Part.Shape, face_down: int) -> Part.Shape:
+    """The shape turned for printing, resting on z = 0 at the origin.
+
+    face_down -1 puts the front (y = 0) face on the bed, +1 the back (y = SIZE) face.
+    """
+    turned = shape.copy()
+    turned.rotate(V(0, 0, 0), V(1, 0, 0), -90 * face_down)
+    bb = turned.BoundBox
+    turned.translate(V(-bb.XMin, -bb.YMin, -bb.ZMin))
+    return turned
+
+
+def plate(shapes: list[Part.Shape]) -> list[Part.Shape]:
+    """Shapes already on the bed, laid side by side along x, PLATE_GAP apart."""
+    placed, x = [], 0.0
+    for shape in shapes:
+        moved = shape.copy()
+        moved.translate(V(x, 0, 0))
+        placed.append(moved)
+        x += shape.BoundBox.XLength + PLATE_GAP
+    return placed
+
+
 # --- Dimension checks (verification plan, mechanical row) --------------------------------
 def _fits(shape: Part.Shape, inner: Part.BoundBox) -> bool:
     """True when the shape's bounding box lies inside `inner` (touching allowed)."""
@@ -324,7 +377,12 @@ def openings_in_place(front: Part.Shape, rear: Part.Shape) -> bool:
     )
 
 
-def run_checks(front: Part.Shape, rear: Part.Shape, cover: Part.Shape) -> list[str]:
+def run_checks(
+    front: Part.Shape,
+    rear: Part.Shape,
+    cover: Part.Shape,
+    coupon_parts: tuple[Part.Shape, Part.Shape],
+) -> list[str]:
     """Return the failed checks (empty when every check passes)."""
     failures: list[str] = []
 
@@ -440,6 +498,19 @@ def run_checks(front: Part.Shape, rear: Part.Shape, cover: Part.Shape) -> list[s
             sum(item.common(p).Volume for p in parts.values()) + item.common(bay).Volume
         )
         check(_fits(item, inner) and hit < 1e-6, f"{name} clears shells, hooks and bay")
+
+    # Coupon: both halves valid, holding a whole hook, its pocket and the full rebate.
+    c_front, c_rear = coupon_parts
+    whole_hook = abs(c_rear.common(shell_hooks()[0]).Volume - shell_hooks()[0].Volume)
+    pocket_cut = c_front.common(hook_pockets()[0]).Volume
+    rebate_bb = c_rear.BoundBox
+    check(
+        all(p.isValid() and p.Volume > 0 for p in coupon_parts)
+        and whole_hook < 1e-3
+        and pocket_cut < 1e-6
+        and _fits(cover, rebate_bb),
+        "coupon holds a whole hook, its pocket and the cover rebate",
+    )
     return failures
 
 
@@ -462,6 +533,49 @@ def export(front: Part.Shape, rear: Part.Shape, cover: Part.Shape) -> None:
     if os.path.exists(fcstd):
         os.remove(fcstd)  # overwriting would leave a .FCBak backup next to it
     doc.saveAs(fcstd)
+    App.closeDocument(doc.Name)
+
+
+def export_print(
+    front: Part.Shape,
+    rear: Part.Shape,
+    cover: Part.Shape,
+    coupon_parts: tuple[Part.Shape, Part.Shape],
+) -> None:
+    """Write print-oriented STLs and two slicer-neutral 3MF plates to PRINT_DIR.
+
+    Orientation (mechanical spec): front pieces front face down, rear pieces and the
+    cover outer face down. The coupon plate carries a real cover for the rebate test.
+    """
+    os.makedirs(PRINT_DIR, exist_ok=True)
+    c_front, c_rear = coupon_parts
+    parts = {
+        "cubbies-front": on_bed(front, -1),
+        "cubbies-rear": on_bed(rear, 1),
+        "cubbies-rear-cover": on_bed(cover, 1),
+        "coupon-front": on_bed(c_front, -1),
+        "coupon-rear": on_bed(c_rear, 1),
+    }
+    plates = {
+        "cubbies-plate.3mf": ["cubbies-front", "cubbies-rear", "cubbies-rear-cover"],
+        "coupon-plate.3mf": ["coupon-front", "coupon-rear", "cubbies-rear-cover"],
+    }
+    doc = App.newDocument("cubbies_print")
+    for name, shape in parts.items():
+        mesh = MeshPart.meshFromShape(
+            Shape=shape, LinearDeflection=0.02, AngularDeflection=0.2
+        )
+        mesh.write(os.path.join(PRINT_DIR, name + ".stl"))
+    for file_name, names in plates.items():
+        objects = []
+        for i, shape in enumerate(plate([parts[n] for n in names])):
+            obj = doc.addObject("Mesh::Feature", f"{names[i].replace('-', '_')}_{i}")
+            obj.Mesh = MeshPart.meshFromShape(
+                Shape=shape, LinearDeflection=0.02, AngularDeflection=0.2
+            )
+            objects.append(obj)
+        Mesh.export(objects, os.path.join(PRINT_DIR, file_name))
+    App.closeDocument(doc.Name)
 
 
 def main() -> None:
@@ -472,12 +586,14 @@ def main() -> None:
     """
     cube = hollow_cube()
     front, rear, cover = front_shell(cube), rear_shell(cube), rear_cover(cube)
-    failures = run_checks(front, rear, cover)
+    coupon_parts = coupon(front, rear)
+    failures = run_checks(front, rear, cover, coupon_parts)
     if failures:
         App.Console.PrintError(f"{len(failures)} check(s) failed; nothing exported.\n")
         sys.exit(1)
     if os.environ.get("CUBBIES_CHECK_ONLY") != "1":
         export(front, rear, cover)
+        export_print(front, rear, cover, coupon_parts)
         App.Console.PrintMessage(f"Exported to {EXPORT_DIR}\n")
 
 
