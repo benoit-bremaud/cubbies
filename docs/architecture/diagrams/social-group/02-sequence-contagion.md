@@ -7,7 +7,8 @@
 > **Rules**: [05a-state-contagion.md](05a-state-contagion.md)
 > **Base**: [social-presence/02](../social-presence/02-sequence-presence.md) (table, presence broadcast)
 
-> **Status**: draft for owner validation (PDR `social-group`, G2).
+> **Status**: validated by the owner 2026-10-22 (PDR `social-group`, G2; decisions in
+> [05a-state-contagion.md](05a-state-contagion.md)).
 
 ## Context
 

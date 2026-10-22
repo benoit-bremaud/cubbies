@@ -9,9 +9,12 @@
 > **Sequence**: [02-sequence-contagion.md](02-sequence-contagion.md)
 > **Requirement**: REQ-F-11, FS8 (mood converges within 60 s) — use case UC8
 
-> **Status**: draft for owner validation (PDR `social-group`, G2). Three decisions are open,
-> scored in the PR: vote rule (D1), allowed targets (D2), placement (D3). This file shows the
-> recommended options.
+> **Status**: validated by the owner 2026-10-22 (PDR `social-group`, G2, issue #52), scored options
+> (criteria: effect 30, stability 25, simplicity 25, robustness 20): D1 neighbours-only plurality
+> with priority tie-break and refractory 430/500 (against 365 self-voting, 275 Prng voter model);
+> D2 every mood but Tired 450/500 (410 Happy/Curious only, 360 all five); D3 mood-engine
+> extension with a `MoodTally` value 450/500 (375 separate class, 325 inside the Social protocol).
+> T_contagion 6 s and T_refractory 60 s accepted.
 
 ## Context
 

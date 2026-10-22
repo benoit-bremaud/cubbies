@@ -80,7 +80,7 @@
 
 ### UC8 — Let moods spread
 - Primary actor: Team (by being together). Requirements: REQ-F-11.
-  Views: [diagrams/social-group/](../diagrams/social-group/) (draft, PDR G2, issue #52).
+  Views: [diagrams/social-group/](../diagrams/social-group/) (PDR G2 validated 2026-10-22, issue #52).
 - Preconditions: the cube is Awake and hears at least one present, awake neighbour (UC7).
 - Minimal guarantee: alone, or with only sleeping or tired neighbours, the cube behaves as solo;
   the owner's attention always wins over the group.
