@@ -100,7 +100,7 @@
 
 ### UC9 — Start a chain reaction
 - Primary actor: Owner (double-taps their cube during a group moment). Requirements: REQ-F-12.
-  Views: [diagrams/social-group/](../diagrams/social-group/) 02b, 05b (PDR G3, issue #55).
+  Views: [diagrams/social-group/](../diagrams/social-group/) 02b, 05b (PDR G3 validated 2026-10-22, issue #55).
 - Preconditions: the cube hears at least one present neighbour (UC7).
 - Minimal guarantee: alone, a double tap is the usual solo Joy; no cube reacts twice to one event
   and the radio carries at most one frame per cube per event.
