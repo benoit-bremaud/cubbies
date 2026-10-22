@@ -59,6 +59,7 @@ class SocialProtocol {
 
   const SocialStats& stats() const { return stats_; }
   static constexpr uint8_t kCapacity = 16;
+  MoodTally moodTally() const;  // present, awake, non-Tired neighbours (social-group/05a)
   const Neighbour& neighbour(uint8_t slot) const { return table_[slot]; }  // slot < kCapacity
 
   // Tuning values (02, 05a).

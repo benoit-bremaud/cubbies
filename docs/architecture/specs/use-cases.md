@@ -80,8 +80,23 @@
 
 ### UC8 — Let moods spread
 - Primary actor: Team (by being together). Requirements: REQ-F-11.
-- Main success scenario: each cube weighs its neighbours' moods into its own; a happy group makes
-  a bored cube curious, a sulking cube dampens the group.
+  Views: [diagrams/social-group/](../diagrams/social-group/) (PDR G2 validated 2026-10-22, issue #52).
+- Preconditions: the cube is Awake and hears at least one present, awake neighbour (UC7).
+- Minimal guarantee: alone, or with only sleeping or tired neighbours, the cube behaves as solo;
+  the owner's attention always wins over the group.
+- Success guarantee: the cube takes the mood most of its neighbours show, at most once a minute.
+- Main success scenario:
+  1. The owner pets cube A; A turns Happy and its presence frames carry the mood.
+  2. Cube B sees Happy as its neighbours' most common mood for 6 s, without being touched or
+     spoken to meanwhile.
+  3. B turns Happy, with the usual eyes cross-fade; its own frames now carry Happy.
+  4. Both cubes settle back on their own timers; neither is pulled again for a minute.
+- Extensions:
+  - 2a. The owner of B pets or calls it during the hold: the pull waits for 6 s of calm.
+  - 2b. The most common mood changes during the hold: the hold restarts.
+  - 2c. A tie: Happy beats Annoyed beats Curious beats Bored (a sulking cube dampens a calm group).
+  - 2d. B was pulled less than a minute ago: nothing happens.
+  - 3a. The pulled mood is Annoyed: B grumbles once (grumpy beep through the Sound gate).
 
 ### UC9 — Start a chain reaction
 - Primary actor: Owner (taps during a group moment). Requirements: REQ-F-12.

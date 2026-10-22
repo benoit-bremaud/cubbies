@@ -196,6 +196,7 @@ void loop() {
   gate.tick();  // first: a sound that just ended must not block this tick's sounds
 
   const Gesture g = gestures.tick();
+  if (g == Gesture::TouchDown) mood.touchDown();  // owner attention before contagion (05a row 6)
   if (g != Gesture::None) applyRoute(route(g, sleepCycle.state()), g);
 
   const SoundClass s = sounds.tick();
@@ -211,7 +212,10 @@ void loop() {
   }
 
   applySleep(sleepCycle.tick());
-  if (sleepCycle.state() == SleepState::Awake) applyMood(mood.tick());
+  if (sleepCycle.state() == SleepState::Awake) {
+    applyMood(mood.contagion(seeded->social.moodTally()));  // after this tick's owner stimuli
+    applyMood(mood.tick());
+  }
 
   eyes.setMood(mood.mood());
   present();

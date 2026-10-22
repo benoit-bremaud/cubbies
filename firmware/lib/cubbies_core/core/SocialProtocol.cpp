@@ -122,4 +122,12 @@ void SocialProtocol::broadcastIfDue(uint32_t now, const SelfState& self) {
   nextBroadcast_ = now + kPresenceMs - kJitterMs + prng_.uniform(2 * kJitterMs + 1);
 }
 
+MoodTally SocialProtocol::moodTally() const {
+  MoodTally t;
+  // Mood byte 5 (asleep) fails the kMoodCount bound; Tired is excluded explicitly (row 9).
+  for (const Neighbour& n : table_)
+    if (present(n.state) && n.mood < kMoodCount && n.mood != static_cast<uint8_t>(Mood::Tired)) ++t.votes[n.mood];
+  return t;
+}
+
 }  // namespace cubbies

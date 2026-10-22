@@ -5,6 +5,27 @@ human context: what was done, why, and by which PR.
 
 ---
 
+## 2026-10-22
+
+### G2 contagious mood (issue #52) — **PR #54**
+
+- PDR `social-group` (G2 part) validated by the owner: UC8 with extensions,
+  `diagrams/social-group/` (05a contagion rows, 02 sequence), traceability. Scored options
+  (effect 30, stability 25, simplicity 25, robustness 20): D1 neighbours-only plurality, ties
+  Happy > Annoyed > Curious > Bored, 60 s refractory 430/500 (365 self-voting, 275 Prng voter);
+  D2 every mood but Tired 450/500; D3 mood-engine extension fed a `MoodTally` value 450/500.
+  T_contagion 6 s, T_refractory 60 s.
+- TDD (red commit first): `MoodTally` + `pulledMood()`, `MoodEngine::contagion()` and
+  `touchDown()`, `SocialProtocol::moodTally()`; one line per Awake tick in `main.cpp`. No new
+  radio field; forged frames capped at one mood change per minute (ADR-0012).
+- review-local: Must 0 · Should 9 (fixed) · Nice 7 (4 fixed). Codex P2 (a touch-down did not
+  break the calm before contagion) fixed in the PR.
+- Gate: 238 native tests, both board builds, benches PASS, gitleaks clean, CI green, new lib
+  code 100 % lines. SonarQube red on main outside the diff (S3776 in `cubbies_case.py` from #46,
+  no Python coverage.xml): owner waiver, tracked in #53.
+- Tooling: PlatformIO needs `REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt` behind the
+  TLS-inspecting endpoint agent.
+
 ## 2026-10-19
 
 ### Print pack for the Grasse fablab (issue #45) — **PR #46 merged** (`e7effe1`)

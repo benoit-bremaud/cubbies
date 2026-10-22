@@ -109,7 +109,8 @@ ADR.
   adds "shake → Annoyed" from Curious and Happy to this table, nothing else changes.
 - **G2 hook**: `NewcomerSeen` is already a stimulus in V1 (greeting). Contagious mood (G2,
   REQ-F-11) will add a transition "neighbour majority mood for T_contagion → that mood" at the
-  `social-group` PDR, not a new machine. Until then REQ-F-11 is **deferred**, not realised here.
+  `social-group` PDR, not a new machine. That transition and its guards are specified in
+  [social-group/05a-state-contagion.md](../social-group/05a-state-contagion.md) (G2, issue #52).
 - **Rare gag (REQ-F-13)**: an extension of this machine (an awake-time accumulator and a rate
   limiter, output through the Sound gate), deferred to the `social-group` PDR with G2/G3.
 - **Not in this diagram**: the long-term "sulks when ignored for two days" (S10) needs persisted

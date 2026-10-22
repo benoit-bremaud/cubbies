@@ -458,8 +458,33 @@ static void test_two_cubes_greet_each_other_once() {
   TEST_ASSERT_EQUAL(3, bSaw);
 }
 
+// moodTally (social-group/05a rows 1, 9): present awake neighbours vote, Tired, asleep and
+// absent ones do not.
+static void test_mood_tally_counts_present_awake_non_tired_neighbours() {
+  Rig r;
+  r.hear(1, 1, 1);  // Happy
+  r.hear(2, 1, 1);  // Happy
+  r.hear(3, 1, 4);  // Annoyed
+  r.hear(6, 1, 2);  // Bored
+  r.hear(4, 1, 3);  // Tired: no vote
+  r.hear(5, 1, 5);  // asleep: no vote
+  r.step();
+  r.step();
+  TEST_ASSERT_EQUAL(EntryState::Waiting, r.stateOf(6));  // Waiting entries vote too
+  cubbies::MoodTally t = r.social.moodTally();
+  TEST_ASSERT_EQUAL_UINT8(2, t.votes[static_cast<uint8_t>(Mood::Happy)]);
+  TEST_ASSERT_EQUAL_UINT8(1, t.votes[static_cast<uint8_t>(Mood::Annoyed)]);
+  TEST_ASSERT_EQUAL_UINT8(1, t.votes[static_cast<uint8_t>(Mood::Bored)]);
+  TEST_ASSERT_EQUAL_UINT8(0, t.votes[static_cast<uint8_t>(Mood::Tired)]);
+  TEST_ASSERT_EQUAL_UINT8(0, t.votes[static_cast<uint8_t>(Mood::Curious)]);
+  r.run(S::kTtlMs + S::kPresenceMs);  // everyone absent
+  t = r.social.moodTally();
+  for (uint8_t v : t.votes) TEST_ASSERT_EQUAL_UINT8(0, v);
+}
+
 int main() {
   UNITY_BEGIN();
+  RUN_TEST(test_mood_tally_counts_present_awake_non_tired_neighbours);
   RUN_TEST(test_unknown_mac_is_stored_waiting);
   RUN_TEST(test_waiting_entry_is_refreshed);
   RUN_TEST(test_first_newcomer_is_greeted);
