@@ -198,16 +198,15 @@ void loop() {
   const Gesture g = gestures.tick();
   if (g == Gesture::TouchDown) mood.touchDown();  // owner attention before contagion (05a row 6)
   if (g != Gesture::None) applyRoute(route(g, sleepCycle.state()), g);
-  if (g == Gesture::DoubleTap && sleepCycle.state() == SleepState::Awake)
-    seeded->social.startChain(identity.paletteIndex);  // social-group/05b rows 1-3
 
   const SoundClass s = sounds.tick();
   if (s != SoundClass::None) applyRoute(route(s, sleepCycle.state()), s);
 
-  const SocialOutput social = seeded->social.tick(SelfState{identity.paletteIndex, identity.adopted,
-                                                            sleepCycle.state(),
-                                                            sleepCycle.wakeOrigin(), mood.mood()});
-  if (social.chain) applyEyesAndSound(route(Gesture::DoubleTap, SleepState::Awake));  // 05b row 5: Joy, mood unchanged
+  const SelfState self{identity.paletteIndex, identity.adopted, sleepCycle.state(), sleepCycle.wakeOrigin(),
+                       mood.mood()};
+  if (g == Gesture::DoubleTap) seeded->social.startChain(self);  // social-group/05b rows 1-3
+  const SocialOutput social = seeded->social.tick(self);
+  if (social.chain) applyEyesAndSound(routeChain(sleepCycle.state()));  // 05b row 5
   if (social.newcomer) {
     const Route r = routeNewcomer(sleepCycle.state());
     applyEyesAndSound(r);

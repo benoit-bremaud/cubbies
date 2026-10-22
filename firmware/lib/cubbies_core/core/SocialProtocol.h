@@ -59,9 +59,9 @@ class SocialProtocol {
   SocialProtocol(IClock& clock, IRadio& radio, Prng& prng, const Mac& self);
 
   SocialOutput tick(const SelfState& self);
-  // Owner double tap (05b rows 1–3): broadcasts a new CHAIN event when a neighbour is present
-  // and the trigger cooldown is over; returns whether a frame was sent.
-  bool startChain(uint8_t paletteIndex);
+  // Owner double tap (05b rows 1–3): broadcasts a new CHAIN event when the cube is Awake, a
+  // neighbour is present and the trigger cooldown is over; returns whether a frame was sent.
+  bool startChain(const SelfState& self);
 
   const SocialStats& stats() const { return stats_; }
   static constexpr uint8_t kCapacity = 16;

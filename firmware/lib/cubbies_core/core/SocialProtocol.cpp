@@ -11,9 +11,9 @@ bool present(EntryState s) { return s == EntryState::Waiting || s == EntryState:
 SocialProtocol::SocialProtocol(IClock& clock, IRadio& radio, Prng& prng, const Mac& self)
     : clock_(clock), radio_(radio), prng_(prng), self_(self) {}
 
-bool SocialProtocol::startChain(uint8_t paletteIndex) {
+bool SocialProtocol::startChain(const SelfState& self) {
   Chain c{};
-  if (!chain_.start(clock_.nowMs(), paletteIndex, static_cast<uint8_t>(prng_.uniform(256)), presentCount(), c))
+  if (!chain_.start(clock_.nowMs(), self.sleep == SleepState::Awake, self.paletteIndex, presentCount(), prng_, c))
     return false;
   uint8_t frame[kFrameSize];
   encodeChain(c, frame);

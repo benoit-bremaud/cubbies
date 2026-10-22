@@ -36,7 +36,8 @@ Bytes 4–7 for **type `0x01` PRESENCE** are above. For **type `0x02` CHAIN** (G
 | 7 | 1 | reserved | `0` | must be zero |
 
 The event key is (origin palette index, event id); a receiver remembers 8 keys for 30 s and
-relays an event at most once (05b rows 6–9), so an event costs at most one frame per cube. Both
+relays an event at most once (05b rows 6–9), so an event costs at most one frame per cube
+(forged traffic is capped at one frame per cube per 5 s, 05b security note). Both
 types share magic, version and the 8-byte size: the adapter and its length check are unchanged,
 and the protocol version stays `1` (a v1 cube built before G3 drops CHAIN as `dropType`, which is
 the allowlist doing its job).

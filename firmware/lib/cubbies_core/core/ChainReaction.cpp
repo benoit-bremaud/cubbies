@@ -4,15 +4,15 @@
 
 namespace cubbies {
 
-bool ChainReaction::start(uint32_t now, uint8_t paletteIndex, uint8_t eventId, uint8_t presentNeighbours,
+bool ChainReaction::start(uint32_t now, bool awake, uint8_t paletteIndex, uint8_t presentNeighbours, Prng& prng,
                           Chain& out) {
-  if (presentNeighbours == 0) return false;                             // row 2
+  if (!awake || presentNeighbours == 0) return false;                   // rows 1, 2
   if (triggered_ && ageMs(now, lastTrigger_) < kTriggerMs) return false;  // row 3
   triggered_ = true;
   lastTrigger_ = now;
   reacted_ = true;  // the origin's own Joy counts as its chain reaction (row 12)
   lastReaction_ = now;
-  out = Chain{paletteIndex, eventId, 0};
+  out = Chain{paletteIndex, static_cast<uint8_t>(prng.uniform(256)), 0};
   remember(out, now);  // row 9
   return true;
 }

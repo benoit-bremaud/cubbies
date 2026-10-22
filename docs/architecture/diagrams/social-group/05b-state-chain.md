@@ -22,7 +22,8 @@
 This diagram answers "when does a cube react to a chain event, when does it relay it, and what
 stops the wave from echoing forever?". The chain is a small machine **per event**, held in a
 `ChainReaction` value owned by the Social protocol: the protocol does the radio I/O, the chain
-object decides (dedupe, delay, relay) from pure inputs (frame, own MAC, neighbour table, clock).
+object decides (dedupe, delay, relay) from pure inputs (frame, rank, clock); the protocol computes
+the rank from its table and the cube's own MAC.
 
 ## Event identity
 
@@ -67,7 +68,7 @@ stateDiagram-v2
 | 9 | the origin hears its own event relayed | ignored (key remembered at row 1) |
 | 10 | a new key while one event is already scheduled | ignored (one pending event at a time); the key is **not** remembered, so a later copy can still be taken |
 | 11 | delay elapsed, cube not Awake (Dozing, Asleep, Waking) | no reaction, no sound; still relays (row 6), so a sleeping cube does not break the wave |
-| 12 | a reaction within T_cooldown 5 s of the last chain reaction | the key is remembered, no reaction, no relay (caps forged-frame nuisance) |
+| 12 | a new event within T_cooldown 5 s of the last chain fire (own trigger, reaction, or silent relay of row 11) | the key is remembered, no reaction, no relay (caps forged-frame nuisance) |
 | 13 | the 8-key ring is full | the oldest key is overwritten |
 | 14 | key older than T_seen 30 s heard again | treated as new (row 4) |
 
@@ -75,7 +76,7 @@ Every age test is `(uint32)(now - then) ≥ T`, wrap-safe (social-presence/06).
 
 ## Why no echo storm
 
-Each cube transmits **at most one frame per event** (row 6 after row 4, never again by rows 8–9),
+Absent forged traffic, each cube transmits **at most one frame per event** (row 6 after row 4, never again by rows 8–9),
 so an event costs at most N frames for N cubes in range, then dies. `kMaxHop 3` bounds the spread
 beyond the origin's radio range, the 8-key ring bounds memory, and T_cooldown bounds the reaction
 rate even under a stream of forged keys.
@@ -84,7 +85,13 @@ rate even under a stream of forged keys.
 
 - **Security**: an attacker in range can forge CHAIN frames and make a cube react at most once per
   T_cooldown (5 s) — a beep and happy eyes on a desk toy, under the risk accepted by ADR-0012;
-  nothing is persisted or relayed beyond kMaxHop. No new ADR.
+  nothing is persisted or relayed beyond kMaxHop. Each forged hop-0 frame is relayed once by every
+  cube in range, so relays are capped by the same T_cooldown (one frame per cube per 5 s). A burst
+  of 8 forged keys can flush a real key from the ring, so a late copy of that event may be taken a
+  second time once the cooldown is over: bounded by the same cap. No new ADR.
+- **Id collisions**: the 8-bit event id gives a 1-in-256 chance that a new tap reuses a key of the
+  same origin still remembered by a neighbour (within T_seen); that neighbour then skips it.
+  Accepted (a missed wave, never a storm).
 - **Deterministic**: clock, Prng (event id only) and the table are inputs; tests replay.
 - **Mood unchanged**: the chain is a reaction, not a stimulus to the mood engine (YAGNI: no
   requirement links it to moods; G2 contagion would otherwise turn every chain into a pull).

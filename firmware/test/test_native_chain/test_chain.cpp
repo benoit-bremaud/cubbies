@@ -2,6 +2,8 @@
 // alone, then the wave over LoopbackRadio through three Social protocols (02b) and the echo bound.
 #include <unity.h>
 
+#include <initializer_list>
+
 #include "FakeClock.h"
 #include "LoopbackRadio.h"
 #include "core/ChainReaction.h"
@@ -32,6 +34,7 @@ namespace {
 using C = ChainReaction;
 constexpr uint32_t kT0 = 1000;
 const Chain kEvent{4, 77, 0};
+Prng gPrng(5, 5);
 
 // Hears `c` at kT0 with `rank`, then fires at the exact deadline.
 ChainFire hearAndFire(C& chain, const Chain& c, uint8_t rank, bool awake = true) {
@@ -47,26 +50,40 @@ void tearDown() {}
 static void test_row1_origin_sends_hop0_with_a_neighbour() {
   C chain;
   Chain out{};
-  TEST_ASSERT_TRUE(chain.start(kT0, 2, 9, 1, out));
+  Prng expected(5, 5), used(5, 5);
+  TEST_ASSERT_TRUE(chain.start(kT0, true, 2, 1, used, out));
   TEST_ASSERT_EQUAL_UINT8(2, out.paletteIndex);
-  TEST_ASSERT_EQUAL_UINT8(9, out.eventId);
+  TEST_ASSERT_EQUAL_UINT8(expected.uniform(256), out.eventId);
   TEST_ASSERT_EQUAL_UINT8(0, out.hop);
+  // The origin's Joy is its chain reaction: a foreign event within T_cooldown is not taken.
+  chain.hear(Chain{5, 1, 0}, kT0 + 1000, 0);
+  TEST_ASSERT_FALSE(chain.tick(kT0 + 5000, true).react);
+}
+
+// Row 1: a cube that is not Awake starts nothing, and a refused trigger draws no Prng value.
+static void test_row1_not_awake_starts_nothing_and_keeps_the_prng() {
+  C chain;
+  Chain out{};
+  Prng used(5, 5), untouched(5, 5);
+  TEST_ASSERT_FALSE(chain.start(kT0, false, 2, 1, used, out));
+  TEST_ASSERT_FALSE(chain.start(kT0, true, 2, 0, used, out));
+  TEST_ASSERT_EQUAL_UINT32(untouched.next(), used.next());
 }
 
 // Row 2: alone, nothing is sent.
 static void test_row2_alone_sends_nothing() {
   C chain;
   Chain out{};
-  TEST_ASSERT_FALSE(chain.start(kT0, 2, 9, 0, out));
+  TEST_ASSERT_FALSE(chain.start(kT0, true, 2, 0, gPrng, out));
 }
 
 // Row 3: a second trigger within T_trigger sends nothing; at T_trigger it sends again.
 static void test_row3_trigger_cooldown() {
   C chain;
   Chain out{};
-  TEST_ASSERT_TRUE(chain.start(kT0, 2, 9, 1, out));
-  TEST_ASSERT_FALSE(chain.start(kT0 + C::kTriggerMs - 1, 2, 10, 1, out));
-  TEST_ASSERT_TRUE(chain.start(kT0 + C::kTriggerMs, 2, 11, 1, out));
+  TEST_ASSERT_TRUE(chain.start(kT0, true, 2, 1, gPrng, out));
+  TEST_ASSERT_FALSE(chain.start(kT0 + C::kTriggerMs - 1, true, 2, 1, gPrng, out));
+  TEST_ASSERT_TRUE(chain.start(kT0 + C::kTriggerMs, true, 2, 1, gPrng, out));
 }
 
 // Row 4: an unseen key fires at T_step × (1 + rank), not one ms earlier.
@@ -123,9 +140,11 @@ static void test_row8_same_key_is_ignored() {
 static void test_row9_origin_ignores_its_own_event() {
   C chain;
   Chain out{};
-  TEST_ASSERT_TRUE(chain.start(kT0, 2, 9, 1, out));
-  chain.hear(Chain{2, 9, 1}, kT0 + C::kCooldownMs + 300, 0);
-  TEST_ASSERT_FALSE(chain.tick(kT0 + 20000, true).react);
+  TEST_ASSERT_TRUE(chain.start(kT0, true, 2, 1, gPrng, out));
+  chain.hear(Chain{2, out.eventId, 1}, kT0 + C::kCooldownMs + 300, 0);
+  const ChainFire f = chain.tick(kT0 + 20000, true);
+  TEST_ASSERT_FALSE(f.react);
+  TEST_ASSERT_FALSE(f.relay);
 }
 
 // Row 10: a new key while one is scheduled is dropped and not remembered.
@@ -147,6 +166,7 @@ static void test_row11_sleeping_cube_relays_without_reacting() {
   const ChainFire f = hearAndFire(chain, kEvent, 0, false);
   TEST_ASSERT_FALSE(f.react);
   TEST_ASSERT_TRUE(f.relay);
+  TEST_ASSERT_EQUAL_UINT8(1, f.frame.hop);
 }
 
 // Row 12: a new event within T_cooldown of the last reaction is remembered, neither reacted to
@@ -172,6 +192,8 @@ static void test_row13_ring_overwrites_the_oldest() {
   const uint32_t fired = kT0 + C::kStepMs;
   for (uint8_t id = 0; id < C::kSeenKeys; ++id) chain.hear(Chain{1, id, 0}, fired + 100, 0);
   const uint32_t after = fired + C::kCooldownMs;
+  chain.hear(Chain{1, 0, 1}, after, 0);  // the oldest of the 8 kept keys: still remembered
+  TEST_ASSERT_FALSE(chain.tick(after + C::kStepMs, true).react);
   chain.hear(Chain{4, 77, 1}, after, 0);  // overwritten by the 8 newer keys: new again
   TEST_ASSERT_TRUE(chain.tick(after + C::kStepMs, true).react);
   const uint32_t later = after + C::kStepMs + C::kCooldownMs;
@@ -228,13 +250,15 @@ struct Fleet {
       }
     }
   }
-  size_t chainFramesSent() const {
+  // CHAIN frames sent by one cube; `lastHop` gets the hop of the last one.
+  static size_t chainFramesSent(const Cube& k, uint8_t* lastHop = nullptr) {
     size_t n = 0;
-    for (const Cube* k : {&a, &b, &c})
-      for (const auto& f : k->radio.sent) {
-        Chain ch{};
-        if (decodeChain(f.data(), f.size(), ch) == DecodeResult::Ok) ++n;
-      }
+    for (const auto& f : k.radio.sent) {
+      Chain ch{};
+      if (decodeChain(f.data(), f.size(), ch) != DecodeResult::Ok) continue;
+      ++n;
+      if (lastHop != nullptr) *lastHop = ch.hop;
+    }
     return n;
   }
 };
@@ -247,7 +271,7 @@ static void test_protocol_alone_start_sends_nothing() {
   Cube a(air, clock, 0x10, 0);
   a.social.tick(a.self);
   const size_t before = a.radio.sent.size();
-  TEST_ASSERT_FALSE(a.social.startChain(0));
+  TEST_ASSERT_FALSE(a.social.startChain(a.self));
   TEST_ASSERT_EQUAL(before, a.radio.sent.size());
 }
 
@@ -256,7 +280,7 @@ static void test_protocol_alone_start_sends_nothing() {
 static void test_protocol_wave_in_mac_order_each_once() {
   Fleet f;
   const uint32_t tapAt = f.clock.nowMs();
-  TEST_ASSERT_TRUE(f.a.social.startChain(0));
+  TEST_ASSERT_TRUE(f.a.social.startChain(f.a.self));
   for (int i = 0; i < 200; ++i) f.step();  // 8 s
   TEST_ASSERT_EQUAL_UINT32(0, f.a.reactions);
   TEST_ASSERT_EQUAL_UINT32(1, f.b.reactions);
@@ -269,19 +293,26 @@ static void test_protocol_wave_in_mac_order_each_once() {
 // No echo storm: one event costs at most one CHAIN frame per cube.
 static void test_protocol_one_frame_per_cube_per_event() {
   Fleet f;
-  TEST_ASSERT_TRUE(f.a.social.startChain(0));
+  TEST_ASSERT_TRUE(f.a.social.startChain(f.a.self));
   for (int i = 0; i < 1000; ++i) f.step();  // 40 s, past T_seen
-  TEST_ASSERT_EQUAL(3, f.chainFramesSent());
+  TEST_ASSERT_EQUAL(1, Fleet::chainFramesSent(f.a));
+  TEST_ASSERT_EQUAL(1, Fleet::chainFramesSent(f.b));
+  TEST_ASSERT_EQUAL(1, Fleet::chainFramesSent(f.c));
 }
 
 // A sleeping neighbour relays but does not report a reaction (row 11).
 static void test_protocol_sleeping_cube_does_not_report() {
-  Fleet f;
-  f.b.self.sleep = SleepState::Asleep;
-  TEST_ASSERT_TRUE(f.a.social.startChain(0));
-  for (int i = 0; i < 200; ++i) f.step();
-  TEST_ASSERT_EQUAL_UINT32(0, f.b.reactions);
-  TEST_ASSERT_EQUAL_UINT32(1, f.c.reactions);
+  for (SleepState st : {SleepState::Dozing, SleepState::Asleep, SleepState::Waking}) {
+    Fleet f;
+    f.b.self.sleep = st;
+    TEST_ASSERT_TRUE(f.a.social.startChain(f.a.self));
+    for (int i = 0; i < 200; ++i) f.step();
+    TEST_ASSERT_EQUAL_UINT32(0, f.b.reactions);
+    TEST_ASSERT_EQUAL_UINT32(1, f.c.reactions);
+    uint8_t hop = 0xFF;
+    TEST_ASSERT_EQUAL(1, Fleet::chainFramesSent(f.b, &hop));  // B relayed
+    TEST_ASSERT_EQUAL_UINT8(1, hop);
+  }
 }
 
 // Malformed CHAIN frames are dropped and counted, never scheduled.
@@ -302,6 +333,7 @@ static void test_protocol_malformed_chain_is_dropped() {
 int main(int, char**) {
   UNITY_BEGIN();
   RUN_TEST(test_row1_origin_sends_hop0_with_a_neighbour);
+  RUN_TEST(test_row1_not_awake_starts_nothing_and_keeps_the_prng);
   RUN_TEST(test_row2_alone_sends_nothing);
   RUN_TEST(test_row3_trigger_cooldown);
   RUN_TEST(test_row4_delay_follows_the_rank);
