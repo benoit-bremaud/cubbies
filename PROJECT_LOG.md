@@ -7,6 +7,20 @@ human context: what was done, why, and by which PR.
 
 ## 2026-10-22
 
+### G3 chain reaction (issue #55) — **PR pending**
+
+- PDR `social-group` (G3 part) validated by the owner: UC9 with extensions,
+  `diagrams/social-group/` 05b chain rows and 02b sequence, CHAIN type in social-presence/06,
+  traceability. Scored options (effect 30, robustness 25, simplicity 25, fit 20): D1 double tap
+  with a present neighbour 425/500; D2 MAC-rank delay 300 ms × (1 + rank) 430/500; D3 8-byte
+  type 0x02 frame, (palette, 8-bit id) key, hop ≤ 3, protocol v1 kept 445/500; D4 `ChainReaction`
+  owned by the Social protocol 420/500. T_trigger 10 s, T_cooldown 5 s, T_seen 30 s (8 keys).
+- TDD (red commit first): `encodeChain`/`decodeChain`, `ChainReaction`, `SocialProtocol::startChain()`,
+  `routeChain()`; `main.cpp` reads the MAC before building the Social protocol.
+- review-local: Must 0 · Should 13 (fixed) · Nice 9 (documented).
+- Gate: 262 native tests, both board builds, benches PASS, gitleaks clean, new lib code 100 %
+  lines. SonarQube red on main outside the diff (#53), as for G2.
+
 ### G2 contagious mood (issue #52) — **PR #54**
 
 - PDR `social-group` (G2 part) validated by the owner: UC8 with extensions,
