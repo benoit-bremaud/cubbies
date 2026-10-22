@@ -41,8 +41,25 @@ DecodeResult decodePresence(const uint8_t* bytes, size_t len, Presence& out) {
   return DecodeResult::Ok;
 }
 
-void encodeChain(const Chain&, uint8_t[kFrameSize]) {}  // red: 05b
+void encodeChain(const Chain& c, uint8_t out[kFrameSize]) {
+  out[0] = kMagic0;
+  out[1] = kMagic1;
+  out[2] = kProtocolVersion;
+  out[3] = kTypeChain;
+  out[4] = c.paletteIndex;
+  out[5] = c.eventId;
+  out[6] = c.hop;
+  out[7] = 0;
+}
 
-DecodeResult decodeChain(const uint8_t*, size_t, Chain&) { return DecodeResult::Type; }  // red
+DecodeResult decodeChain(const uint8_t* bytes, size_t len, Chain& out) {
+  if (bytes == nullptr || len != kFrameSize) return DecodeResult::Len;
+  if (bytes[0] != kMagic0 || bytes[1] != kMagic1) return DecodeResult::Magic;
+  if (bytes[2] != kProtocolVersion) return DecodeResult::Version;
+  if (bytes[3] != kTypeChain) return DecodeResult::Type;
+  if (bytes[4] >= kPaletteSize || bytes[6] > kMaxHop || bytes[7] != 0) return DecodeResult::Range;
+  out = Chain{bytes[4], bytes[5], bytes[6]};
+  return DecodeResult::Ok;
+}
 
 }  // namespace cubbies

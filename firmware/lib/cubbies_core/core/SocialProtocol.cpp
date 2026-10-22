@@ -11,38 +11,47 @@ bool present(EntryState s) { return s == EntryState::Waiting || s == EntryState:
 SocialProtocol::SocialProtocol(IClock& clock, IRadio& radio, Prng& prng, const Mac& self)
     : clock_(clock), radio_(radio), prng_(prng), self_(self) {}
 
-bool SocialProtocol::startChain(uint8_t) { return false; }  // red: 05b
+bool SocialProtocol::startChain(uint8_t paletteIndex) {
+  Chain c{};
+  if (!chain_.start(clock_.nowMs(), paletteIndex, static_cast<uint8_t>(prng_.uniform(256)), presentCount(), c))
+    return false;
+  uint8_t frame[kFrameSize];
+  encodeChain(c, frame);
+  radio_.broadcast(frame, kFrameSize);
+  return true;
+}
 
 SocialOutput SocialProtocol::tick(const SelfState& self) {
   const uint32_t now = clock_.nowMs();
   RxFrame f;
   for (uint8_t i = 0; i < kMaxFramesPerTick && radio_.receive(f); ++i) receive(f);
   expire(now);
-  const SocialOutput out = greet(now);
+  SocialOutput out = greet(now);
+  const ChainFire fire = chain_.tick(now, self.sleep == SleepState::Awake);
+  out.chain = fire.react;
+  if (fire.relay) {
+    uint8_t frame[kFrameSize];
+    encodeChain(fire.frame, frame);
+    radio_.broadcast(frame, kFrameSize);
+  }
   broadcastIfDue(now, self);
   return out;
 }
 
 void SocialProtocol::receive(const RxFrame& f) {
   Presence p{};
-  switch (decodePresence(f.bytes, f.len, p)) {
-    case DecodeResult::Ok:
-      break;
-    case DecodeResult::Len:
-      ++stats_.dropLen;
+  DecodeResult r = decodePresence(f.bytes, f.len, p);
+  if (r == DecodeResult::Type) {
+    Chain c{};
+    r = decodeChain(f.bytes, f.len, c);
+    if (r == DecodeResult::Ok) {
+      chain_.hear(c, f.nowMs, rank());
       return;
-    case DecodeResult::Magic:
-      ++stats_.dropMagic;
-      return;
-    case DecodeResult::Version:
-      ++stats_.dropVersion;
-      return;
-    case DecodeResult::Type:
-      ++stats_.dropType;
-      return;
-    case DecodeResult::Range:
-      ++stats_.dropRange;
-      return;
+    }
+  }
+  if (r != DecodeResult::Ok) {
+    count(r);
+    return;
   }
 
   Neighbour* slot = findSlot(f.mac, f.nowMs);
@@ -59,6 +68,43 @@ void SocialProtocol::receive(const RxFrame& f) {
   slot->paletteIndex = p.paletteIndex;
   slot->mood = p.mood;
   slot->lastSeen = f.nowMs;
+}
+
+void SocialProtocol::count(DecodeResult r) {
+  switch (r) {
+    case DecodeResult::Ok:
+      break;
+    case DecodeResult::Len:
+      ++stats_.dropLen;
+      break;
+    case DecodeResult::Magic:
+      ++stats_.dropMagic;
+      break;
+    case DecodeResult::Version:
+      ++stats_.dropVersion;
+      break;
+    case DecodeResult::Type:
+      ++stats_.dropType;
+      break;
+    case DecodeResult::Range:
+      ++stats_.dropRange;
+      break;
+  }
+}
+
+uint8_t SocialProtocol::presentCount() const {
+  uint8_t n = 0;
+  for (const Neighbour& e : table_)
+    if (present(e.state)) ++n;
+  return n;
+}
+
+// Present neighbours with a lower MAC than this cube: its place in the chain wave (05b).
+uint8_t SocialProtocol::rank() const {
+  uint8_t n = 0;
+  for (const Neighbour& e : table_)
+    if (present(e.state) && e.mac < self_) ++n;
+  return n;
 }
 
 // The known entry for `mac`, else a Free slot, else the Absent entry with the oldest lastSeen

@@ -56,7 +56,7 @@ stateDiagram-v2
 
 | # | Situation | Result |
 |---|-----------|--------|
-| 1 | owner double-taps, at least one present neighbour, origin cooldown over | origin broadcasts CHAIN {own palette, new event id, hop 0}, remembers the key, reacts as usual (Joy) |
+| 1 | owner double-taps an Awake cube, at least one present neighbour, origin cooldown over | origin broadcasts CHAIN {own palette, new event id, hop 0}, remembers the key, reacts as usual (Joy) |
 | 2 | owner double-taps alone (no present neighbour) | no frame, solo Joy only (ADR-0001) |
 | 3 | owner double-taps within T_trigger 10 s of the last trigger | no new frame (Joy only) |
 | 4 | CHAIN frame with an unseen key | scheduled at T_step × (1 + rank); rank = present neighbours with a lower MAC |
