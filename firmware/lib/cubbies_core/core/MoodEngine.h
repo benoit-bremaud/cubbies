@@ -26,6 +26,9 @@ class MoodEngine {
   void restart();                        // Curious, all timers from now (boot and every wake)
   MoodEffect stimulus(Stimulus s);       // a classified stimulus, at most one per call
   MoodEffect tick();                     // timers; call once per tick
+  // An owner touch began: breaks the calm at once, so contagion cannot pull on the tick of the
+  // touch before its gesture is classified (social-group/05a row 6). The mood is unchanged.
+  void touchDown() { lastLoudMs_ = clock_.nowMs(); }
   // Contagion (social-group/05a): call once per Awake tick, before tick(), with the neighbours'
   // tally. Enters the pulled mood once its candidate held T_contagion in calm, out of refractory,
   // and returns that mood's entry effect (Grumpy for Annoyed). The first pull is never
@@ -50,7 +53,7 @@ class MoodEngine {
   Mood mood_ = Mood::Curious;
   uint32_t enteredMs_ = 0;    // when the current mood started
   uint32_t lastAnyMs_ = 0;    // last stimulus of any kind (idle timer)
-  uint32_t lastLoudMs_ = 0;   // last gesture, sound or pull (calm timer); NewcomerSeen does not count
+  uint32_t lastLoudMs_ = 0;   // last gesture, touch-down, sound or pull (calm timer); NewcomerSeen does not count
   uint32_t lastYawnMs_ = 0;
   bool holding_ = false;       // a contagion candidate is being held
   Mood candidate_ = Mood::Curious;

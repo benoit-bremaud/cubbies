@@ -59,7 +59,7 @@ stateDiagram-v2
 | 3 | plurality mood ≠ own mood, held < T_contagion | mood unchanged |
 | 4 | same candidate held ≥ T_contagion, no gesture or sound for T_contagion, not refractory | enter the candidate; its entry effect applies (Grumpy beep for Annoyed); its natural timers restart from now |
 | 5 | candidate changes during the hold | hold restarts from now |
-| 6 | owner gesture or sound (not `NewcomerSeen`) during the hold | pull postponed until calm ≥ T_contagion — the owner always wins |
+| 6 | owner touch-down, gesture or sound (not `NewcomerSeen`) during the hold | pull postponed until calm ≥ T_contagion — the owner always wins |
 | 7 | within T_refractory of the last pull | no pull, whatever the tally |
 | 8 | tie between moods | priority Happy > Annoyed > Curious > Bored |
 | 9 | Tired or asleep neighbours | do not vote |

@@ -137,6 +137,16 @@ static void test_owner_attention_postpones_the_pull() {
   TEST_ASSERT_EQUAL(Mood::Annoyed, n.engine.mood());
 }
 
+// Row 6: a touch-down breaks the calm at once, before its gesture is classified.
+static void test_touch_down_postpones_the_pull() {
+  Rig r;
+  r.run(E::kContagionMs + 1000, MoodTally{});
+  r.run(E::kContagionMs - kTick, tallyOf(Mood::Annoyed));  // held, the next tick would pull
+  r.engine.touchDown();
+  TEST_ASSERT_EQUAL(MoodEffect::None, r.run(kTick, tallyOf(Mood::Annoyed)));
+  TEST_ASSERT_EQUAL(Mood::Curious, r.engine.mood());
+}
+
 // Row 7: at most one pull per T_refractory.
 static void test_refractory_blocks_a_second_pull() {
   Rig r;
@@ -247,6 +257,7 @@ int main() {
   RUN_TEST(test_losing_the_candidate_drops_the_hold);
   RUN_TEST(test_pull_restarts_the_idle_timer);
   RUN_TEST(test_owner_attention_postpones_the_pull);
+  RUN_TEST(test_touch_down_postpones_the_pull);
   RUN_TEST(test_refractory_blocks_a_second_pull);
   RUN_TEST(test_ties_follow_the_priority);
   RUN_TEST(test_tired_never_votes);
