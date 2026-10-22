@@ -19,11 +19,28 @@ tag.)
 |--------|------|-------|----------------|-------|
 | 0 | 2 | magic | `0x43 0x42` ("CB") | filters unrelated ESP-NOW traffic on the channel |
 | 2 | 1 | version | `1` | any other value → drop |
-| 3 | 1 | type | `0x01` PRESENCE | other values reserved (G2 event, G3 chain) → drop in V1 |
+| 3 | 1 | type | `0x01` PRESENCE, `0x02` CHAIN (G3) | other values → drop (`dropType`) |
 | 4 | 1 | palette index | `0 .. paletteSize-1` | out of range → drop |
 | 5 | 1 | mood | `0 .. 5` per the table in 05a (5 = asleep) | out of range → drop |
 | 6 | 1 | flags | bit0 adopted, others `0` | unknown bits set → drop |
 | 7 | 1 | reserved | `0` | must be zero in v1 |
+
+Bytes 4–7 for **type `0x01` PRESENCE** are above. For **type `0x02` CHAIN** (G3,
+[social-group/05b](../social-group/05b-state-chain.md)) they are:
+
+| Offset | Size | Field | Allowed values | Notes |
+|--------|------|-------|----------------|-------|
+| 4 | 1 | origin palette index | `0 .. paletteSize-1` | out of range → drop; copied unchanged by relays |
+| 5 | 1 | event id | `0 .. 255` | drawn by the origin from its lib-owned `Prng`; copied unchanged |
+| 6 | 1 | hop | `0 .. kMaxHop` (3) | origin sends 0, each relay +1; above kMaxHop → drop (`dropRange`) |
+| 7 | 1 | reserved | `0` | must be zero |
+
+The event key is (origin palette index, event id); a receiver remembers 8 keys for 30 s and
+relays an event at most once (05b rows 6–9), so an event costs at most one frame per cube
+(forged traffic is capped at one frame per cube per 5 s, 05b security note). Both
+types share magic, version and the 8-byte size: the adapter and its length check are unchanged,
+and the protocol version stays `1` (a v1 cube built before G3 drops CHAIN as `dropType`, which is
+the allowlist doing its job).
 
 Total 8 bytes, far below the 250-byte ESP-NOW payload limit. The sender MAC is **not** in the
 payload: it is taken from the receive callback metadata, which the radio stack fills in from the

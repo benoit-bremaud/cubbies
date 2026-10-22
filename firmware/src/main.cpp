@@ -58,11 +58,11 @@ struct Seeded {
   EyesRenderer eyes;  // holds the 12 KB framebuffer: never on the loop stack
   SocialProtocol social;
 
-  Seeded(uint64_t eyesSeed, uint64_t socialSeed)
+  Seeded(uint64_t eyesSeed, uint64_t socialSeed, const Mac& self)
       : eyesPrng(eyesSeed, 1),
         socialPrng(socialSeed, 2),
         eyes(clock_, eyesPrng, display),
-        social(clock_, radio, socialPrng) {}
+        social(clock_, radio, socialPrng, self) {}
 };
 Seeded* seeded = nullptr;
 
@@ -160,7 +160,12 @@ void setup() {
   // Wi-Fi first: esp_random() is only truly random once the RF is up (ADR-0013).
   WiFi.mode(WIFI_STA);
   if (!radio.begin()) Serial.println("radio: init failed, cube stays alone");
-  seeded = new Seeded(randomSeed64(), randomSeed64());
+  Mac mac{};  // all zeros if the read fails: a defined, stable default colour
+  if (esp_read_mac(mac.data(), ESP_MAC_WIFI_STA) != ESP_OK) {
+    mac = Mac{};
+    Serial.println("mac: read failed");
+  }
+  seeded = new Seeded(randomSeed64(), randomSeed64(), mac);
 
   touch.begin();
   if (!storage.begin()) Serial.println("nvs: open failed, MAC colour only");
@@ -168,11 +173,6 @@ void setup() {
   if (!mic.begin()) Serial.println("mic: init failed");
   if (!display.begin()) Serial.println("display: init failed");
 
-  Mac mac{};  // all zeros if the read fails: a defined, stable default colour
-  if (esp_read_mac(mac.data(), ESP_MAC_WIFI_STA) != ESP_OK) {
-    mac = Mac{};
-    Serial.println("mac: read failed");
-  }
   identity = resolveIdentity(mac, storage);
 
   gate.setSleepState(sleepCycle.state());
@@ -202,9 +202,11 @@ void loop() {
   const SoundClass s = sounds.tick();
   if (s != SoundClass::None) applyRoute(route(s, sleepCycle.state()), s);
 
-  const SocialOutput social = seeded->social.tick(SelfState{identity.paletteIndex, identity.adopted,
-                                                            sleepCycle.state(),
-                                                            sleepCycle.wakeOrigin(), mood.mood()});
+  const SelfState self{identity.paletteIndex, identity.adopted, sleepCycle.state(), sleepCycle.wakeOrigin(),
+                       mood.mood()};
+  if (g == Gesture::DoubleTap) seeded->social.startChain(self);  // social-group/05b rows 1-3
+  const SocialOutput social = seeded->social.tick(self);
+  if (social.chain) applyEyesAndSound(routeChain(sleepCycle.state()));  // 05b row 5
   if (social.newcomer) {
     const Route r = routeNewcomer(sleepCycle.state());
     applyEyesAndSound(r);

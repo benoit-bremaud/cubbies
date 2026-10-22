@@ -76,6 +76,11 @@ Route routeNewcomer(SleepState sleep) {
   return withSound(withReaction(toMood(Stimulus::NewcomerSeen, false), Reaction::Greet), SoundId::Hello);
 }
 
+Route routeChain(SleepState sleep) {
+  if (sleep != SleepState::Awake) return {};
+  return withSound(withReaction({}, Reaction::Joy), SoundId::Joy);
+}
+
 Route effects(MoodEffect e) {
   switch (e) {
     case MoodEffect::Yawn:

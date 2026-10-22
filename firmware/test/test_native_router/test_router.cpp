@@ -2,6 +2,8 @@
 // 05a ("any" rows, unlisted stimuli still react), and the effect mappings of 05a and 05b.
 #include <unity.h>
 
+#include <initializer_list>
+
 #include "core/StimulusRouter.h"
 #include "eyes/EyesRenderer.h"
 
@@ -12,6 +14,7 @@ using cubbies::MoodEffect;
 using cubbies::Reaction;
 using cubbies::route;
 using cubbies::Route;
+using cubbies::routeChain;
 using cubbies::routeNewcomer;
 using cubbies::SleepEffect;
 using cubbies::SleepState;
@@ -105,6 +108,21 @@ static void test_awake_newcomer_greets() {
   TEST_ASSERT_FALSE(r.toSleep);
   assertReaction(r, Reaction::Greet);
   assertSound(r, SoundId::Hello);
+}
+
+// Chain reaction (social-group/05b rows 5, 11): Joy eyes and sound while Awake, mood and idle
+// timer untouched; nothing otherwise.
+static void test_chain_reaction_routes() {
+  const Route r = routeChain(SleepState::Awake);
+  TEST_ASSERT_FALSE(r.toMood);
+  TEST_ASSERT_FALSE(r.toSleep);
+  assertReaction(r, Reaction::Joy);
+  assertSound(r, SoundId::Joy);
+  for (SleepState st : {SleepState::Dozing, SleepState::Asleep, SleepState::Waking}) {
+    const Route q = routeChain(st);
+    TEST_ASSERT_FALSE(q.react);
+    TEST_ASSERT_FALSE(q.sound);
+  }
 }
 
 // Not Awake: gestures and sounds go to the Sleep cycle only, without reaction or sound.
@@ -202,6 +220,7 @@ int main() {
   RUN_TEST(test_awake_released_reaches_the_mood_and_ends_the_held_reaction);
   RUN_TEST(test_awake_sounds_reach_the_mood);
   RUN_TEST(test_awake_newcomer_greets);
+  RUN_TEST(test_chain_reaction_routes);
   RUN_TEST(test_not_awake_gestures_and_sounds_go_to_sleep_only);
   RUN_TEST(test_not_awake_newcomer_is_dropped);
   RUN_TEST(test_none_routes_nowhere);
