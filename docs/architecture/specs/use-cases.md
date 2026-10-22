@@ -99,10 +99,25 @@
   - 3a. The pulled mood is Annoyed: B grumbles once (grumpy beep through the Sound gate).
 
 ### UC9 — Start a chain reaction
-- Primary actor: Owner (taps during a group moment). Requirements: REQ-F-12.
-- Main success scenario: the tapped cube emits an event; each neighbour reacts once after a short
-  delay proportional to its position in the table, then relays once; the wave dies out.
-- Extensions: 2a. The same event id is heard again: ignored.
+- Primary actor: Owner (double-taps their cube during a group moment). Requirements: REQ-F-12.
+  Views: [diagrams/social-group/](../diagrams/social-group/) 02b, 05b (PDR G3, issue #55).
+- Preconditions: the cube hears at least one present neighbour (UC7).
+- Minimal guarantee: alone, a double tap is the usual solo Joy; no cube reacts twice to one event
+  and the radio carries at most one frame per cube per event.
+- Success guarantee: every cube in range (and up to three relays beyond) reacts once, one after
+  another, at most 300 ms apart.
+- Main success scenario:
+  1. The owner double-taps cube A; A shows its Joy and broadcasts a chain event.
+  2. Each neighbour waits 300 ms times its place in the group (MAC order), then shows Joy with
+     its Joy sound and relays the event once.
+  3. Copies of the event heard again are ignored; the wave dies out.
+- Extensions:
+  - 1a. A is alone: solo Joy, nothing is sent.
+  - 1b. A started a chain less than 10 s ago: solo Joy, nothing is sent.
+  - 2a. The same event id is heard again: ignored.
+  - 2b. A neighbour is dozing or asleep: it does not react but still relays.
+  - 2c. A neighbour reacted to a chain less than 5 s ago: it ignores the new one.
+  - 2d. The event has already been relayed three times: the last cube reacts but does not relay.
 
 ### UC10 — Gather the cubes for a choir (tier B)
 - Primary actor: Team. Requirements: REQ-F-14.
