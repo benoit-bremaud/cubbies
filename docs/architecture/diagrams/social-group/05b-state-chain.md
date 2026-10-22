@@ -36,7 +36,9 @@ the last **8 keys for T_seen 30 s** (ring buffer): a key heard again in that win
 ## Delay: one after another
 
 On first hearing an event, a cube waits `delay = T_step × (1 + rank)`, where `rank` is the number
-of present neighbours (`Waiting` or `Greeted`) whose MAC is lower than its own. Every cube ranks
+of present neighbours (`Waiting` or `Greeted`) whose MAC is lower than its own, **the frame's
+sender excluded** (it has already fired; otherwise an origin with a lower MAC would push the first
+hop to 600 ms, above FS8). Every cube ranks
 itself against the same fleet, so the reactions fire in MAC order, one `T_step` apart
 (**T_step 300 ms**, ≤ 500 ms per hop, FS8). With 16 cubes the last one reacts ≈ 5 s after the tap.
 Two cubes whose tables differ may tie and react together: accepted, it still reads as a wave.
@@ -60,7 +62,7 @@ stateDiagram-v2
 | 1 | owner double-taps an Awake cube, at least one present neighbour, origin cooldown over | origin broadcasts CHAIN {own palette, new event id, hop 0}, remembers the key, reacts as usual (Joy) |
 | 2 | owner double-taps alone (no present neighbour) | no frame, solo Joy only (ADR-0001) |
 | 3 | owner double-taps within T_trigger 10 s of the last trigger | no new frame (Joy only) |
-| 4 | CHAIN frame with an unseen key | scheduled at T_step × (1 + rank); rank = present neighbours with a lower MAC |
+| 4 | CHAIN frame with an unseen key | scheduled at T_step × (1 + rank); rank = present neighbours with a lower MAC, the frame's sender excluded |
 | 5 | delay elapsed, cube Awake | chain reaction: Joy eyes and the Joy sound through the Sound gate; mood unchanged |
 | 6 | delay elapsed, hop < kMaxHop (3) | relays once: same palette and event id, hop + 1 |
 | 7 | delay elapsed, hop = kMaxHop | reacts, does not relay |

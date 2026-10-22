@@ -264,6 +264,30 @@ struct Fleet {
 };
 }  // namespace
 
+// Row 4, FS8: with two cubes the first hop is one T_step whatever the MAC order.
+static void test_protocol_two_cubes_first_hop_within_500ms() {
+  for (int originLow = 0; originLow < 2; ++originLow) {
+    Air air;
+    FakeClock clock(kT0);
+    Cube a(air, clock, originLow ? 0x10 : 0x30, 0), b(air, clock, 0x20, 1);
+    for (int i = 0; i < 3; ++i) {
+      clock.advance(kTick);
+      a.social.tick(a.self);
+      b.social.tick(b.self);
+    }
+    const uint32_t tapAt = clock.nowMs();
+    TEST_ASSERT_TRUE(a.social.startChain(a.self));
+    uint32_t reactedAt = 0;
+    for (int i = 0; i < 50 && reactedAt == 0; ++i) {
+      clock.advance(kTick);
+      a.social.tick(a.self);
+      if (b.social.tick(b.self).chain) reactedAt = clock.nowMs();
+    }
+    TEST_ASSERT_NOT_EQUAL(0, reactedAt);
+    TEST_ASSERT_TRUE(reactedAt - tapAt <= 500);
+  }
+}
+
 // Row 2 through the protocol: alone, startChain sends nothing.
 static void test_protocol_alone_start_sends_nothing() {
   Air air;
@@ -275,8 +299,8 @@ static void test_protocol_alone_start_sends_nothing() {
   TEST_ASSERT_EQUAL(before, a.radio.sent.size());
 }
 
-// Rows 1, 4–6, 8–9: A double-taps, B (lower MAC of the two) reacts first, C one step later,
-// each once, hop ≤ 500 ms (FS8); the origin never reacts to its own event.
+// Rows 1, 4–6, 8–9: A (lowest MAC) double-taps; the sender is not ranked, so B reacts one step
+// after the tap and C one step later, each once, hop ≤ 500 ms (FS8); the origin never reacts.
 static void test_protocol_wave_in_mac_order_each_once() {
   Fleet f;
   const uint32_t tapAt = f.clock.nowMs();
@@ -286,7 +310,7 @@ static void test_protocol_wave_in_mac_order_each_once() {
   TEST_ASSERT_EQUAL_UINT32(1, f.b.reactions);
   TEST_ASSERT_EQUAL_UINT32(1, f.c.reactions);
   TEST_ASSERT_TRUE(f.b.reactedAt < f.c.reactedAt);
-  TEST_ASSERT_UINT32_WITHIN(2 * kTick, ChainReaction::kStepMs * 2, f.b.reactedAt - tapAt);
+  TEST_ASSERT_UINT32_WITHIN(2 * kTick, ChainReaction::kStepMs, f.b.reactedAt - tapAt);
   TEST_ASSERT_UINT32_WITHIN(2 * kTick, ChainReaction::kStepMs, f.c.reactedAt - f.b.reactedAt);
 }
 
@@ -349,6 +373,7 @@ int main(int, char**) {
   RUN_TEST(test_row14_key_expires_after_t_seen_across_the_wrap);
   RUN_TEST(test_protocol_alone_start_sends_nothing);
   RUN_TEST(test_protocol_wave_in_mac_order_each_once);
+  RUN_TEST(test_protocol_two_cubes_first_hop_within_500ms);
   RUN_TEST(test_protocol_one_frame_per_cube_per_event);
   RUN_TEST(test_protocol_sleeping_cube_does_not_report);
   RUN_TEST(test_protocol_malformed_chain_is_dropped);

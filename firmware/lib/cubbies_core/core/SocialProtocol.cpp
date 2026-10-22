@@ -45,7 +45,7 @@ void SocialProtocol::receive(const RxFrame& f) {
     Chain c{};
     r = decodeChain(f.bytes, f.len, c);
     if (r == DecodeResult::Ok) {
-      chain_.hear(c, f.nowMs, rank());
+      chain_.hear(c, f.nowMs, rank(f.mac));
       return;
     }
   }
@@ -99,11 +99,12 @@ uint8_t SocialProtocol::presentCount() const {
   return n;
 }
 
-// Present neighbours with a lower MAC than this cube: its place in the chain wave (05b).
-uint8_t SocialProtocol::rank() const {
+// Present neighbours with a lower MAC than this cube, the frame's sender excluded (it has already
+// fired): its place in the chain wave, so the first hop takes T_step (05b row 4, FS8).
+uint8_t SocialProtocol::rank(const Mac& sender) const {
   uint8_t n = 0;
   for (const Neighbour& e : table_)
-    if (present(e.state) && e.mac < self_) ++n;
+    if (present(e.state) && e.mac < self_ && e.mac != sender) ++n;
   return n;
 }
 

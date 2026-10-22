@@ -17,7 +17,9 @@ human context: what was done, why, and by which PR.
   owned by the Social protocol 420/500. T_trigger 10 s, T_cooldown 5 s, T_seen 30 s (8 keys).
 - TDD (red commit first): `encodeChain`/`decodeChain`, `ChainReaction`, `SocialProtocol::startChain()`,
   `routeChain()`; `main.cpp` reads the MAC before building the Social protocol.
-- review-local: Must 0 · Should 13 (fixed) · Nice 9 (documented).
+- review-local: Must 0 · Should 13 (fixed) · Nice 9 (documented). Codex P1 (first hop 600 ms when
+  the origin has the lower MAC) fixed: the frame sender is not ranked; P2 declined (row 12 caps
+  received events, the owner trigger has its own 10 s cooldown).
 - Gate: 262 native tests, both board builds, benches PASS, gitleaks clean, new lib code 100 %
   lines. SonarQube red on main outside the diff (#53), as for G2.
 

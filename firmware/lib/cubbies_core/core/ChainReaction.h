@@ -24,7 +24,7 @@ class ChainReaction {
   // Origin side (rows 1–3): true and `out` set when a frame must be sent. The event id is drawn
   // from `prng` only then, so a refused trigger does not shift the Prng sequence.
   bool start(uint32_t now, bool awake, uint8_t paletteIndex, uint8_t presentNeighbours, Prng& prng, Chain& out);
-  // Receiver side (rows 4, 8–10, 12–14); `rank` = present neighbours with a lower MAC.
+  // Receiver side (rows 4, 8–10, 12–14); `rank` = present neighbours with a lower MAC, sender excluded.
   void hear(const Chain& c, uint32_t now, uint8_t rank);
   // Fires the pending event once its delay has elapsed (rows 5–7, 11). Any fire, with or without a
   // reaction, starts T_cooldown (row 12), so relays are rate-limited too.
