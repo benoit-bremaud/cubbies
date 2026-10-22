@@ -46,7 +46,7 @@ MoodEffect MoodEngine::stimulus(Stimulus s) {
 
 MoodEffect MoodEngine::contagion(const MoodTally& tally) {
   const uint32_t now = clock_.nowMs();
-  Mood target;
+  Mood target = mood_;
   if (!pulledMood(tally, target) || target == mood_) {
     holding_ = false;
     return MoodEffect::None;
