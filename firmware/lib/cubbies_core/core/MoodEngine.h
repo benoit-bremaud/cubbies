@@ -25,6 +25,9 @@ class MoodEngine {
   void restart();                        // Curious, all timers from now (boot and every wake)
   MoodEffect stimulus(Stimulus s);       // a classified stimulus, at most one per call
   MoodEffect tick();                     // timers; call once per tick
+  // Contagion (social-group/05a): call once per Awake tick, before tick(), with the neighbours'
+  // tally. Enters the pulled mood once its candidate held T_contagion in calm, out of refractory.
+  MoodEffect contagion(const MoodTally& tally);
 
   // Durations (05a starting values, tuning, no ADR).
   static constexpr uint32_t kSettleMs = 10000;
@@ -32,6 +35,8 @@ class MoodEngine {
   static constexpr uint32_t kBoredMs = 180000;
   static constexpr uint32_t kTiredMs = 300000;
   static constexpr uint32_t kYawnMs = 45000;
+  static constexpr uint32_t kContagionMs = 6000;
+  static constexpr uint32_t kRefractoryMs = 60000;
 
  private:
   MoodEffect enter(Mood m);
@@ -42,6 +47,11 @@ class MoodEngine {
   uint32_t lastAnyMs_ = 0;    // last stimulus of any kind (idle timer)
   uint32_t lastLoudMs_ = 0;   // last gesture or sound (calm timer); NewcomerSeen does not count
   uint32_t lastYawnMs_ = 0;
+  bool holding_ = false;       // a contagion candidate is being held
+  Mood candidate_ = Mood::Curious;
+  uint32_t holdSinceMs_ = 0;
+  bool pulled_ = false;        // at least one pull happened (refractory applies)
+  uint32_t lastPullMs_ = 0;
 };
 
 }  // namespace cubbies

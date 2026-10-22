@@ -211,7 +211,10 @@ void loop() {
   }
 
   applySleep(sleepCycle.tick());
-  if (sleepCycle.state() == SleepState::Awake) applyMood(mood.tick());
+  if (sleepCycle.state() == SleepState::Awake) {
+    applyMood(mood.contagion(seeded->social.moodTally()));  // after this tick's owner stimuli
+    applyMood(mood.tick());
+  }
 
   eyes.setMood(mood.mood());
   present();

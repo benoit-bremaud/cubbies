@@ -8,6 +8,7 @@ void MoodEngine::restart() {
   const uint32_t now = clock_.nowMs();
   mood_ = Mood::Curious;
   enteredMs_ = lastAnyMs_ = lastLoudMs_ = lastYawnMs_ = now;
+  holding_ = false;  // a wake starts with no candidate; the refractory period is kept
 }
 
 MoodEffect MoodEngine::enter(Mood m) {
@@ -41,6 +42,27 @@ MoodEffect MoodEngine::stimulus(Stimulus s) {
       return MoodEffect::None;
   }
   return MoodEffect::None;
+}
+
+MoodEffect MoodEngine::contagion(const MoodTally& tally) {
+  const uint32_t now = clock_.nowMs();
+  Mood target;
+  if (!pulledMood(tally, target) || target == mood_) {
+    holding_ = false;
+    return MoodEffect::None;
+  }
+  if (!holding_ || target != candidate_) {
+    holding_ = true;
+    candidate_ = target;
+    holdSinceMs_ = now;
+    return MoodEffect::None;
+  }
+  if (ageMs(now, holdSinceMs_) < kContagionMs || ageMs(now, lastLoudMs_) < kContagionMs) return MoodEffect::None;
+  if (pulled_ && ageMs(now, lastPullMs_) < kRefractoryMs) return MoodEffect::None;
+  holding_ = false;
+  pulled_ = true;
+  lastPullMs_ = lastAnyMs_ = lastLoudMs_ = now;  // the pulled mood lasts its natural duration
+  return enter(target);
 }
 
 MoodEffect MoodEngine::tick() {
