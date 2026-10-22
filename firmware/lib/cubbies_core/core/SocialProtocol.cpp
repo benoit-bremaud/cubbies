@@ -8,8 +8,10 @@ namespace {
 bool present(EntryState s) { return s == EntryState::Waiting || s == EntryState::Greeted; }
 }  // namespace
 
-SocialProtocol::SocialProtocol(IClock& clock, IRadio& radio, Prng& prng)
-    : clock_(clock), radio_(radio), prng_(prng) {}
+SocialProtocol::SocialProtocol(IClock& clock, IRadio& radio, Prng& prng, const Mac& self)
+    : clock_(clock), radio_(radio), prng_(prng), self_(self) {}
+
+bool SocialProtocol::startChain(uint8_t) { return false; }  // red: 05b
 
 SocialOutput SocialProtocol::tick(const SelfState& self) {
   const uint32_t now = clock_.nowMs();

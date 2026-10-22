@@ -7,6 +7,7 @@
 
 #include <cstdint>
 
+#include "core/ChainReaction.h"
 #include "core/Identity.h"
 #include "core/Mood.h"
 #include "core/Prng.h"
@@ -28,6 +29,7 @@ struct SelfState {
 struct SocialOutput {
   bool newcomer = false;
   uint8_t paletteIndex = 0;
+  bool chain = false;  // a chain event fired here and the cube is Awake: react (social-group/05b)
 };
 
 // Drop counters keyed by reason, never by MAC (06 privacy note).
@@ -53,9 +55,13 @@ struct Neighbour {
 
 class SocialProtocol {
  public:
-  SocialProtocol(IClock& clock, IRadio& radio, Prng& prng);
+  // `self` is the cube's own MAC, used to rank it in the chain wave (social-group/05b).
+  SocialProtocol(IClock& clock, IRadio& radio, Prng& prng, const Mac& self);
 
   SocialOutput tick(const SelfState& self);
+  // Owner double tap (05b rows 1–3): broadcasts a new CHAIN event when a neighbour is present
+  // and the trigger cooldown is over; returns whether a frame was sent.
+  bool startChain(uint8_t paletteIndex);
 
   const SocialStats& stats() const { return stats_; }
   static constexpr uint8_t kCapacity = 16;
@@ -74,6 +80,9 @@ class SocialProtocol {
 
  private:
   void receive(const RxFrame& f);
+  void count(DecodeResult r);
+  uint8_t presentCount() const;
+  uint8_t rank() const;
   Neighbour* findSlot(const Mac& mac, uint32_t now);
   void expire(uint32_t now);
   SocialOutput greet(uint32_t now);
@@ -82,6 +91,8 @@ class SocialProtocol {
   IClock& clock_;
   IRadio& radio_;
   Prng& prng_;
+  Mac self_;
+  ChainReaction chain_;
   Neighbour table_[kCapacity];
   SocialStats stats_;
   uint32_t greetings_[kBudget] = {};  // ring of the last greeting times

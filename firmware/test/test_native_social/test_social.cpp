@@ -32,7 +32,7 @@ Mac macOf(uint8_t n) { return Mac{0x24, 0x6F, 0x28, 0x00, 0x00, n}; }
 
 struct Rig {
   explicit Rig(uint32_t startMs = 1000)
-      : clock(startMs), radio(air, macOf(0xAA), clock), prng(42, 7), social(clock, radio, prng) {}
+      : clock(startMs), radio(air, macOf(0xAA), clock), prng(42, 7), social(clock, radio, prng, macOf(0xAA)) {}
   Air air;
   FakeClock clock;
   LoopbackRadio radio;
@@ -342,7 +342,7 @@ static void test_invalid_frames_are_counted_by_reason() {
   const uint8_t shortFrame[3] = {0x43, 0x42, 1};
   const uint8_t badMagic[kFrameSize] = {0, 0x42, 1, 1, 0, 0, 0, 0};
   const uint8_t badVersion[kFrameSize] = {0x43, 0x42, 2, 1, 0, 0, 0, 0};
-  const uint8_t badType[kFrameSize] = {0x43, 0x42, 1, 2, 0, 0, 0, 0};
+  const uint8_t badType[kFrameSize] = {0x43, 0x42, 1, 3, 0, 0, 0, 0};  // 2 is CHAIN since G3
   const uint8_t badRange[kFrameSize] = {0x43, 0x42, 1, 1, 9, 0, 0, 0};
   r.radio.inject(shortFrame, sizeof(shortFrame), macOf(1));
   r.radio.inject(badMagic, kFrameSize, macOf(2));
@@ -440,7 +440,7 @@ static void test_two_cubes_greet_each_other_once() {
   FakeClock clock(5000);
   LoopbackRadio ra(air, macOf(0xA), clock), rb(air, macOf(0xB), clock);
   Prng pa(1, 1), pb(2, 2);
-  SocialProtocol a(clock, ra, pa), b(clock, rb, pb);
+  SocialProtocol a(clock, ra, pa, macOf(0xA)), b(clock, rb, pb, macOf(0xB));
   const SelfState sa{3, true, SleepState::Awake, SleepState::Dozing, Mood::Curious};
   const SelfState sb{6, false, SleepState::Awake, SleepState::Dozing, Mood::Curious};
   uint32_t aGreets = 0, bGreets = 0;

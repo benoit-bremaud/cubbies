@@ -1,4 +1,4 @@
-// Presence codec: the 06 frame layout, the allowlist (one test per drop reason), the 05b mood
+// Frame codec: the 06 PRESENCE and CHAIN layouts, the allowlist (one test per drop reason), the 05b mood
 // byte table, and a fuzz pass (REQ-NF-06: no crash, only valid frames accepted).
 #include <unity.h>
 
@@ -6,7 +6,11 @@
 #include "core/Prng.h"
 #include "core/PresenceCodec.h"
 
+using cubbies::Chain;
+using cubbies::decodeChain;
 using cubbies::decodePresence;
+using cubbies::encodeChain;
+using cubbies::kMaxHop;
 using cubbies::DecodeResult;
 using cubbies::encodePresence;
 using cubbies::kFrameSize;
@@ -125,6 +129,48 @@ static void test_fuzzed_frames_are_never_misread() {
   TEST_ASSERT_TRUE(accepted > 0);
 }
 
+// CHAIN (06, G3): layout, round trip, allowlist.
+static void test_chain_encode_matches_the_06_layout() {
+  uint8_t out[kFrameSize];
+  encodeChain(Chain{5, 0xAB, 2}, out);
+  const uint8_t expected[kFrameSize] = {0x43, 0x42, 1, 0x02, 5, 0xAB, 2, 0};
+  TEST_ASSERT_EQUAL_HEX8_ARRAY(expected, out, kFrameSize);
+}
+
+static void test_chain_round_trips_every_valid_field() {
+  for (uint8_t pal = 0; pal < cubbies::kPaletteSize; ++pal)
+    for (int id = 0; id < 256; ++id)
+      for (uint8_t hop = 0; hop <= kMaxHop; ++hop) {
+        uint8_t buf[kFrameSize];
+        encodeChain(Chain{pal, static_cast<uint8_t>(id), hop}, buf);
+        Chain c{};
+        TEST_ASSERT_EQUAL(DecodeResult::Ok, decodeChain(buf, kFrameSize, c));
+        TEST_ASSERT_EQUAL_UINT8(pal, c.paletteIndex);
+        TEST_ASSERT_EQUAL_UINT8(id, c.eventId);
+        TEST_ASSERT_EQUAL_UINT8(hop, c.hop);
+      }
+}
+
+static DecodeResult decodeChainWith(size_t offset, uint8_t value) {
+  uint8_t buf[kFrameSize] = {0x43, 0x42, 1, 0x02, 1, 7, 0, 0};
+  buf[offset] = value;
+  Chain c{};
+  return decodeChain(buf, kFrameSize, c);
+}
+
+static void test_chain_allowlist_drops_by_reason() {
+  Chain c{};
+  const uint8_t ok[kFrameSize] = {0x43, 0x42, 1, 0x02, 1, 7, 0, 0};
+  TEST_ASSERT_EQUAL(DecodeResult::Len, decodeChain(ok, kFrameSize - 1, c));
+  TEST_ASSERT_EQUAL(DecodeResult::Len, decodeChain(nullptr, kFrameSize, c));
+  TEST_ASSERT_EQUAL(DecodeResult::Magic, decodeChainWith(0, 0x44));
+  TEST_ASSERT_EQUAL(DecodeResult::Version, decodeChainWith(2, 2));
+  TEST_ASSERT_EQUAL(DecodeResult::Type, decodeChainWith(3, 0x01));
+  TEST_ASSERT_EQUAL(DecodeResult::Range, decodeChainWith(4, cubbies::kPaletteSize));
+  TEST_ASSERT_EQUAL(DecodeResult::Range, decodeChainWith(6, kMaxHop + 1));
+  TEST_ASSERT_EQUAL(DecodeResult::Range, decodeChainWith(7, 1));
+}
+
 int main() {
   UNITY_BEGIN();
   RUN_TEST(test_encode_matches_the_06_layout);
@@ -136,5 +182,8 @@ int main() {
   RUN_TEST(test_out_of_range_fields_are_dropped);
   RUN_TEST(test_mood_byte_follows_the_05b_table);
   RUN_TEST(test_fuzzed_frames_are_never_misread);
+  RUN_TEST(test_chain_encode_matches_the_06_layout);
+  RUN_TEST(test_chain_round_trips_every_valid_field);
+  RUN_TEST(test_chain_allowlist_drops_by_reason);
   return UNITY_END();
 }

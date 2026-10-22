@@ -41,4 +41,8 @@ DecodeResult decodePresence(const uint8_t* bytes, size_t len, Presence& out) {
   return DecodeResult::Ok;
 }
 
+void encodeChain(const Chain&, uint8_t[kFrameSize]) {}  // red: 05b
+
+DecodeResult decodeChain(const uint8_t*, size_t, Chain&) { return DecodeResult::Type; }  // red
+
 }  // namespace cubbies
