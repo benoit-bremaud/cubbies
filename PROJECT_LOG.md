@@ -7,7 +7,18 @@ human context: what was done, why, and by which PR.
 
 ## 2026-10-23
 
-### G4 synchronised choir (issue #57) — **PR pending**
+### G5 collective sleep (issue #59) — **PR pending**
+
+- G5 picked by MCDA (465/500 vs G6 jealousy 415, voice study 375, S9 295).
+- PDR `social-group` (G5 part) validated by the owner: REQ-F-20, behaviour B4 (system-initiated,
+  outcome of UC5 + UC8), `diagrams/social-group/` 05d yawn rows and 02d sequence, traceability.
+  Scored options (effect 30, owner safety 25, simplicity 25, robustness 20): D1 only a Bored cube
+  catches the yawn 440/500; D2 it enters Tired and yawns, then the usual sleep cycle 470/500.
+  No new frame: PRESENCE mood byte 3 (Tired/dozing) or 5 (asleep) = drowsy; T_contagion 6 s reused.
+- TDD (red commit first): `MoodTally::drowsy`, `MoodEngine::contagion()` yawn hold evaluated
+  before G2. No `main.cpp` change (already wired by G2).
+
+### G4 synchronised choir (issue #57) — **PR #58** (31b40d0)
 
 - Project resumed after the 2026-10-22 pause; G4 picked by MCDA (410/500 vs voice study 390, S8 330).
 - PDR `social-group` (G4 part) validated by the owner: UC10 with extensions,

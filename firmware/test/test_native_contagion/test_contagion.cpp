@@ -363,7 +363,7 @@ static void test_yawn_row12_the_first_yawn_spreads() {
   makeBored(a);
   makeBored(b);
   makeBored(c);
-  a.run(E::kTiredMs - E::kBoredMs, MoodTally{});  // A reaches Tired on its own
+  a.run(E::kTiredMs, MoodTally{});  // A reaches Tired on its own after T_tired in Bored
   TEST_ASSERT_EQUAL(Mood::Tired, a.engine.mood());
   MoodTally seen;
   seen.drowsy = (a.engine.mood() == Mood::Tired) ? 1 : 0;

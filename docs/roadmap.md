@@ -46,7 +46,7 @@ Within a tier, the order is the implementation order.
 | G2 | Contagious mood: neighbours' moods pull mine | A | G1, S2 |
 | G3 | Chain reaction: one cube triggers, the others react one after another | A | G1 |
 | G4 | Synchronised choir: shared clock, multi-voice melody | B | G1, S4 |
-| G5 | Collective sleep: the first yawn spreads | B | G2, S5 |
+| G5 | Collective sleep: the first yawn spreads (design: social-group 05d, #59) | B | G2, S5 |
 | G6 | Jealousy: the owner pets another cube in range, mine sulks | B | G1, S3 |
 | G7 | Pass the ball: a tap sends a virtual object to a neighbour | C | G1, S3 |
 | G8 | Team poll: one cube asks, each answers by tap, all display the result | C | G7 |
