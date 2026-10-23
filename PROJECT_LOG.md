@@ -5,9 +5,23 @@ human context: what was done, why, and by which PR.
 
 ---
 
+## 2026-10-23
+
+### G4 synchronised choir (issue #57) — **PR pending**
+
+- Project resumed after the 2026-10-22 pause; G4 picked by MCDA (410/500 vs voice study 390, S8 330).
+- PDR `social-group` (G4 part) validated by the owner: UC10 with extensions,
+  `diagrams/social-group/` 05c choir rows and 02c sequence, CHOIR type 0x03 in social-presence/06,
+  traceability, FS8 drift row in the verification plan. Scored options (effect 30, robustness 25,
+  simplicity 25, fit 20): D1 stroke with a present neighbour 430/500; D2 one-shot start anchored
+  on the receive time + lead rest in the Sound gate 475/500; D3 voice = MAC rank mod 3 445/500;
+  dossier 445/500. kLeadMs 500, T_choir 60 s, three voices at rank 2, never relayed.
+- TDD (red commit first): `encodeChoir`/`decodeChoir`, `Choir`, `SocialProtocol::startChoir()`,
+  `SoundGate::play(id, restMs)` and three placeholder voices; `main.cpp` wiring.
+
 ## 2026-10-22
 
-### G3 chain reaction (issue #55) — **PR pending**
+### G3 chain reaction (issue #55) — **PR #56** (6a2807b)
 
 - PDR `social-group` (G3 part) validated by the owner: UC9 with extensions,
   `diagrams/social-group/` 05b chain rows and 02b sequence, CHAIN type in social-presence/06,
