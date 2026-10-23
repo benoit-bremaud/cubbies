@@ -482,9 +482,24 @@ static void test_mood_tally_counts_present_awake_non_tired_neighbours() {
   for (uint8_t v : t.votes) TEST_ASSERT_EQUAL_UINT8(0, v);
 }
 
+// moodTally drowsy count (social-group/05d rows 7, 8): present Tired (or dozing) and asleep
+// neighbours are drowsy; awake and absent ones are not.
+static void test_mood_tally_counts_present_drowsy_neighbours() {
+  Rig r;
+  r.hear(1, 1, 1);  // Happy: not drowsy
+  r.hear(4, 1, 3);  // Tired or dozing
+  r.hear(5, 1, 5);  // asleep
+  r.step();
+  r.step();
+  TEST_ASSERT_EQUAL_UINT8(2, r.social.moodTally().drowsy);
+  r.run(S::kTtlMs + S::kPresenceMs);  // everyone absent
+  TEST_ASSERT_EQUAL_UINT8(0, r.social.moodTally().drowsy);
+}
+
 int main() {
   UNITY_BEGIN();
   RUN_TEST(test_mood_tally_counts_present_awake_non_tired_neighbours);
+  RUN_TEST(test_mood_tally_counts_present_drowsy_neighbours);
   RUN_TEST(test_unknown_mac_is_stored_waiting);
   RUN_TEST(test_waiting_entry_is_refreshed);
   RUN_TEST(test_first_newcomer_is_greeted);

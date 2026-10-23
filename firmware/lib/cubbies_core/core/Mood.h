@@ -14,6 +14,7 @@ constexpr uint8_t kMoodCount = 5;
 // protocol and read by the Mood engine, so neither knows the other.
 struct MoodTally {
   uint8_t votes[kMoodCount] = {};
+  uint8_t drowsy = 0;  // present neighbours Tired, dozing or asleep (mood byte 3 or 5, 05d)
 };
 
 // The mood most neighbours show, ties broken Happy > Annoyed > Curious > Bored; Tired never
