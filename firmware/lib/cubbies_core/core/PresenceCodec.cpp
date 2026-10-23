@@ -62,4 +62,10 @@ DecodeResult decodeChain(const uint8_t* bytes, size_t len, Chain& out) {
   return DecodeResult::Ok;
 }
 
+void encodeChoir(const ChoirStart&, uint8_t out[kFrameSize]) {
+  for (size_t i = 0; i < kFrameSize; ++i) out[i] = 0;
+}
+
+DecodeResult decodeChoir(const uint8_t*, size_t, ChoirStart&) { return DecodeResult::Len; }
+
 }  // namespace cubbies

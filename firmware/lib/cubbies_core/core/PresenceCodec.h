@@ -1,4 +1,4 @@
-// Frame codec (social-presence/06): the 8-byte v1 PRESENCE and CHAIN frames, parsed by allowlist,
+// Frame codec (social-presence/06): the 8-byte v1 PRESENCE, CHAIN and CHOIR frames, parsed by allowlist,
 // and the mood byte computed from the Sleep cycle and Mood engine states (05b table, ADR-0013).
 // Pure functions over a byte array: no clock, no I/O, fuzzed natively.
 #pragma once
@@ -17,6 +17,8 @@ constexpr uint8_t kMagic1 = 0x42;  // 'B'
 constexpr uint8_t kProtocolVersion = 1;
 constexpr uint8_t kTypePresence = 0x01;
 constexpr uint8_t kTypeChain = 0x02;
+constexpr uint8_t kTypeChoir = 0x03;
+constexpr uint8_t kMaxChoirLead = 100;  // × 10 ms (06)
 constexpr uint8_t kMaxHop = 3;
 constexpr uint8_t kMoodAsleep = 5;
 constexpr uint8_t kFlagAdopted = 0x01;
@@ -34,6 +36,13 @@ struct Chain {
   uint8_t hop;  // 0 .. kMaxHop
 };
 
+// CHOIR payload (social-group/05c): the conductor, the melody (0 only in V1) and the lead.
+struct ChoirStart {
+  uint8_t paletteIndex;
+  uint8_t melody;  // 0
+  uint8_t lead;    // 1 .. kMaxChoirLead, in 10 ms units
+};
+
 // Why a frame was dropped; Ok means `out` holds a valid Presence.
 enum class DecodeResult : uint8_t { Ok, Len, Magic, Version, Type, Range };
 
@@ -45,5 +54,7 @@ void encodePresence(const Presence& p, uint8_t out[kFrameSize]);
 DecodeResult decodePresence(const uint8_t* bytes, size_t len, Presence& out);
 void encodeChain(const Chain& c, uint8_t out[kFrameSize]);
 DecodeResult decodeChain(const uint8_t* bytes, size_t len, Chain& out);
+void encodeChoir(const ChoirStart& c, uint8_t out[kFrameSize]);
+DecodeResult decodeChoir(const uint8_t* bytes, size_t len, ChoirStart& out);
 
 }  // namespace cubbies

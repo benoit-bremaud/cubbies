@@ -7,6 +7,10 @@
 #include "core/PresenceCodec.h"
 
 using cubbies::Chain;
+using cubbies::ChoirStart;
+using cubbies::decodeChoir;
+using cubbies::encodeChoir;
+using cubbies::kMaxChoirLead;
 using cubbies::decodeChain;
 using cubbies::decodePresence;
 using cubbies::encodeChain;
@@ -171,6 +175,50 @@ static void test_chain_allowlist_drops_by_reason() {
   TEST_ASSERT_EQUAL(DecodeResult::Range, decodeChainWith(7, 1));
 }
 
+// CHOIR (06, G4): layout, round trip, allowlist.
+static void test_choir_encode_matches_the_06_layout() {
+  uint8_t out[kFrameSize];
+  encodeChoir(ChoirStart{5, 0, 50}, out);
+  const uint8_t expected[kFrameSize] = {0x43, 0x42, 1, 0x03, 5, 0, 50, 0};
+  TEST_ASSERT_EQUAL_HEX8_ARRAY(expected, out, kFrameSize);
+}
+
+static void test_choir_round_trips_every_valid_field() {
+  for (uint8_t pal = 0; pal < cubbies::kPaletteSize; ++pal)
+    for (uint8_t lead = 1; lead <= kMaxChoirLead; ++lead) {
+      uint8_t buf[kFrameSize];
+      encodeChoir(ChoirStart{pal, 0, lead}, buf);
+      ChoirStart c{};
+      TEST_ASSERT_EQUAL(DecodeResult::Ok, decodeChoir(buf, kFrameSize, c));
+      TEST_ASSERT_EQUAL_UINT8(pal, c.paletteIndex);
+      TEST_ASSERT_EQUAL_UINT8(0, c.melody);
+      TEST_ASSERT_EQUAL_UINT8(lead, c.lead);
+    }
+}
+
+static DecodeResult decodeChoirWith(size_t offset, uint8_t value) {
+  uint8_t buf[kFrameSize] = {0x43, 0x42, 1, 0x03, 1, 0, 50, 0};
+  buf[offset] = value;
+  ChoirStart c{};
+  return decodeChoir(buf, kFrameSize, c);
+}
+
+static void test_choir_allowlist_drops_by_reason() {
+  ChoirStart c{};
+  const uint8_t ok[kFrameSize] = {0x43, 0x42, 1, 0x03, 1, 0, 50, 0};
+  TEST_ASSERT_EQUAL(DecodeResult::Ok, decodeChoir(ok, kFrameSize, c));
+  TEST_ASSERT_EQUAL(DecodeResult::Len, decodeChoir(ok, kFrameSize + 1, c));
+  TEST_ASSERT_EQUAL(DecodeResult::Len, decodeChoir(nullptr, kFrameSize, c));
+  TEST_ASSERT_EQUAL(DecodeResult::Magic, decodeChoirWith(1, 0x00));
+  TEST_ASSERT_EQUAL(DecodeResult::Version, decodeChoirWith(2, 2));
+  TEST_ASSERT_EQUAL(DecodeResult::Type, decodeChoirWith(3, 0x02));
+  TEST_ASSERT_EQUAL(DecodeResult::Range, decodeChoirWith(4, cubbies::kPaletteSize));
+  TEST_ASSERT_EQUAL(DecodeResult::Range, decodeChoirWith(5, 1));
+  TEST_ASSERT_EQUAL(DecodeResult::Range, decodeChoirWith(6, 0));
+  TEST_ASSERT_EQUAL(DecodeResult::Range, decodeChoirWith(6, kMaxChoirLead + 1));
+  TEST_ASSERT_EQUAL(DecodeResult::Range, decodeChoirWith(7, 1));
+}
+
 int main() {
   UNITY_BEGIN();
   RUN_TEST(test_encode_matches_the_06_layout);
@@ -185,5 +233,8 @@ int main() {
   RUN_TEST(test_chain_encode_matches_the_06_layout);
   RUN_TEST(test_chain_round_trips_every_valid_field);
   RUN_TEST(test_chain_allowlist_drops_by_reason);
+  RUN_TEST(test_choir_encode_matches_the_06_layout);
+  RUN_TEST(test_choir_round_trips_every_valid_field);
+  RUN_TEST(test_choir_allowlist_drops_by_reason);
   return UNITY_END();
 }

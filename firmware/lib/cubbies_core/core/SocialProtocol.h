@@ -8,6 +8,7 @@
 #include <cstdint>
 
 #include "core/ChainReaction.h"
+#include "core/Choir.h"
 #include "core/Identity.h"
 #include "core/Mood.h"
 #include "core/Prng.h"
@@ -30,6 +31,7 @@ struct SocialOutput {
   bool newcomer = false;
   uint8_t paletteIndex = 0;
   bool chain = false;  // a chain event fired here and the cube is Awake: react (social-group/05b)
+  ChoirCue choir;      // sing this voice after this rest (social-group/05c)
 };
 
 // Drop counters keyed by reason, never by MAC (06 privacy note).
@@ -62,6 +64,9 @@ class SocialProtocol {
   // Owner double tap (05b rows 1–3): broadcasts a new CHAIN event when the cube is Awake, a
   // neighbour is present and the trigger cooldown is over; returns whether a frame was sent.
   bool startChain(const SelfState& self);
+  // Owner stroke (05c rows 1–3): broadcasts a CHOIR start when the cube is Awake, a neighbour is
+  // present and the choir cooldown is over; the conductor's cue comes out of this tick().
+  bool startChoir(const SelfState& self);
 
   const SocialStats& stats() const { return stats_; }
   static constexpr uint8_t kCapacity = 16;
@@ -93,6 +98,7 @@ class SocialProtocol {
   Prng& prng_;
   Mac self_;
   ChainReaction chain_;
+  Choir choir_;
   Neighbour table_[kCapacity];
   SocialStats stats_;
   uint32_t greetings_[kBudget] = {};  // ring of the last greeting times

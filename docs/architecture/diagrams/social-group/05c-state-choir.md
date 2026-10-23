@@ -13,7 +13,8 @@
 > 430/500 (400 automatic on gathering, 355 single tap); D2 one-shot start anchored on the receive
 > time, lead rest in the Sound gate 475/500 (400 start on the tick, 290 continuous shared clock);
 > D3 voice = MAC rank mod 3 445/500 (360 voices assigned by the conductor, 330 unison).
-> Full dossier (this table, 02c, 06) pending owner PDR validation.
+> PDR `social-group` (G4 part) validated by the owner 2026-10-23: kLeadMs 500, T_choir 60 s,
+> three voices, choir rank 2, no relay accepted.
 
 ## Context
 

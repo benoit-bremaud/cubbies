@@ -21,6 +21,8 @@ bool SocialProtocol::startChain(const SelfState& self) {
   return true;
 }
 
+bool SocialProtocol::startChoir(const SelfState&) { return false; }
+
 SocialOutput SocialProtocol::tick(const SelfState& self) {
   const uint32_t now = clock_.nowMs();
   RxFrame f;
