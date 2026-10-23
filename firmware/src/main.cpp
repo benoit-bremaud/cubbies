@@ -205,8 +205,10 @@ void loop() {
   const SelfState self{identity.paletteIndex, identity.adopted, sleepCycle.state(), sleepCycle.wakeOrigin(),
                        mood.mood()};
   if (g == Gesture::DoubleTap) seeded->social.startChain(self);  // social-group/05b rows 1-3
+  if (g == Gesture::Stroke) seeded->social.startChoir(self);     // social-group/05c rows 1-3
   const SocialOutput social = seeded->social.tick(self);
   if (social.chain) applyEyesAndSound(routeChain(sleepCycle.state()));  // 05b row 5
+  if (social.choir.sing) gate.play(choirVoice(social.choir.voice), social.choir.restMs);  // 05c row 4
   if (social.newcomer) {
     const Route r = routeNewcomer(sleepCycle.state());
     applyEyesAndSound(r);

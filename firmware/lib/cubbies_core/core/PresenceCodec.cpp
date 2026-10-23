@@ -62,10 +62,26 @@ DecodeResult decodeChain(const uint8_t* bytes, size_t len, Chain& out) {
   return DecodeResult::Ok;
 }
 
-void encodeChoir(const ChoirStart&, uint8_t out[kFrameSize]) {
-  for (size_t i = 0; i < kFrameSize; ++i) out[i] = 0;
+void encodeChoir(const ChoirStart& c, uint8_t out[kFrameSize]) {
+  out[0] = kMagic0;
+  out[1] = kMagic1;
+  out[2] = kProtocolVersion;
+  out[3] = kTypeChoir;
+  out[4] = c.paletteIndex;
+  out[5] = c.melody;
+  out[6] = c.lead;
+  out[7] = 0;
 }
 
-DecodeResult decodeChoir(const uint8_t*, size_t, ChoirStart&) { return DecodeResult::Len; }
+DecodeResult decodeChoir(const uint8_t* bytes, size_t len, ChoirStart& out) {
+  if (bytes == nullptr || len != kFrameSize) return DecodeResult::Len;
+  if (bytes[0] != kMagic0 || bytes[1] != kMagic1) return DecodeResult::Magic;
+  if (bytes[2] != kProtocolVersion) return DecodeResult::Version;
+  if (bytes[3] != kTypeChoir) return DecodeResult::Type;
+  if (bytes[4] >= kPaletteSize || bytes[5] != 0 || bytes[6] == 0 || bytes[6] > kMaxChoirLead || bytes[7] != 0)
+    return DecodeResult::Range;
+  out = ChoirStart{bytes[4], bytes[5], bytes[6]};
+  return DecodeResult::Ok;
+}
 
 }  // namespace cubbies

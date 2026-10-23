@@ -88,6 +88,7 @@ class SocialProtocol {
   void count(DecodeResult r);
   uint8_t presentCount() const;
   uint8_t rank(const Mac& sender) const;
+  uint8_t lowerMacs() const;
   Neighbour* findSlot(const Mac& mac, uint32_t now);
   void expire(uint32_t now);
   SocialOutput greet(uint32_t now);

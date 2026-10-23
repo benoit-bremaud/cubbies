@@ -21,7 +21,15 @@ bool SocialProtocol::startChain(const SelfState& self) {
   return true;
 }
 
-bool SocialProtocol::startChoir(const SelfState&) { return false; }
+bool SocialProtocol::startChoir(const SelfState& self) {
+  ChoirStart c{};
+  if (!choir_.start(clock_.nowMs(), self.sleep == SleepState::Awake, self.paletteIndex, presentCount(), c))
+    return false;
+  uint8_t frame[kFrameSize];
+  encodeChoir(c, frame);
+  radio_.broadcast(frame, kFrameSize);
+  return true;
+}
 
 SocialOutput SocialProtocol::tick(const SelfState& self) {
   const uint32_t now = clock_.nowMs();
@@ -31,6 +39,7 @@ SocialOutput SocialProtocol::tick(const SelfState& self) {
   SocialOutput out = greet(now);
   const ChainFire fire = chain_.tick(now, self.sleep == SleepState::Awake);
   out.chain = fire.react;
+  out.choir = choir_.tick(now, self.sleep == SleepState::Awake, lowerMacs());
   if (fire.relay) {
     uint8_t frame[kFrameSize];
     encodeChain(fire.frame, frame);
@@ -48,6 +57,14 @@ void SocialProtocol::receive(const RxFrame& f) {
     r = decodeChain(f.bytes, f.len, c);
     if (r == DecodeResult::Ok) {
       chain_.hear(c, f.nowMs, rank(f.mac));
+      return;
+    }
+  }
+  if (r == DecodeResult::Type) {
+    ChoirStart c{};
+    r = decodeChoir(f.bytes, f.len, c);
+    if (r == DecodeResult::Ok) {
+      choir_.hear(c, f.nowMs);
       return;
     }
   }
@@ -98,6 +115,14 @@ uint8_t SocialProtocol::presentCount() const {
   uint8_t n = 0;
   for (const Neighbour& e : table_)
     if (present(e.state)) ++n;
+  return n;
+}
+
+// Present neighbours with a lower MAC than this cube: its choir voice (social-group/05c row 10).
+uint8_t SocialProtocol::lowerMacs() const {
+  uint8_t n = 0;
+  for (const Neighbour& e : table_)
+    if (present(e.state) && e.mac < self_) ++n;
   return n;
 }
 

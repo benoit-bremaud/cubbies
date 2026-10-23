@@ -42,15 +42,22 @@ constexpr Sound kSounds[] = {
 static_assert(sizeof(kSounds) / sizeof(kSounds[0]) == kSoundCount,
               "kSounds must have one entry per SoundId");
 
+constexpr bool fitsTheRestBuffer() {
+  for (const Sound& s : kSounds)
+    if (s.count > SoundGate::kMaxNotes) return false;
+  return true;
+}
+static_assert(fitsTheRestBuffer(), "a note table is longer than SoundGate::kMaxNotes");
+
 const Sound& lookup(SoundId id) { return kSounds[static_cast<uint8_t>(id)]; }
 
 }  // namespace
 
 SoundGate::SoundGate(IClock& clock, IAudio& audio) : clock_(clock), audio_(audio) {}
 
-SoundId choirVoice(uint8_t) { return SoundId::ChoirLow; }
-
-bool SoundGate::play(SoundId id, uint32_t) { return play(id); }
+SoundId choirVoice(uint8_t voice) {
+  return static_cast<SoundId>(static_cast<uint8_t>(SoundId::ChoirLow) + voice % 3);
+}
 
 uint8_t SoundGate::rank(SoundId id) { return lookup(id).rank; }
 
@@ -61,11 +68,20 @@ uint32_t SoundGate::durationMs(SoundId id) {
   return total;
 }
 
-bool SoundGate::play(SoundId id) {
+bool SoundGate::play(SoundId id) { return play(id, 0); }
+
+bool SoundGate::play(SoundId id, uint32_t restMs) {
   if (sleep_ != SleepState::Awake && sleep_ != SleepState::Waking) return false;
   if (playing_ && rank(id) <= rank(current_)) return false;
   const Sound& s = lookup(id);
-  audio_.play(s.notes, s.count, kVolume);
+  restMs_ = restMs < kMaxRestMs ? restMs : kMaxRestMs;
+  if (restMs_ == 0) {
+    audio_.play(s.notes, s.count, kVolume);
+  } else {
+    buffer_[0] = Note{0, static_cast<uint16_t>(restMs_)};
+    for (uint8_t i = 0; i < s.count; ++i) buffer_[i + 1] = s.notes[i];
+    audio_.play(buffer_, static_cast<uint8_t>(s.count + 1), kVolume);
+  }
   playing_ = true;
   current_ = id;
   startMs_ = clock_.nowMs();
@@ -81,7 +97,7 @@ void SoundGate::setSleepState(SleepState s) {
 }
 
 void SoundGate::tick() {
-  if (playing_ && ageMs(clock_.nowMs(), startMs_) >= durationMs(current_)) playing_ = false;
+  if (playing_ && ageMs(clock_.nowMs(), startMs_) >= restMs_ + durationMs(current_)) playing_ = false;
 }
 
 }  // namespace cubbies
