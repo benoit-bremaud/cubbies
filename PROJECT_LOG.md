@@ -7,7 +7,7 @@ human context: what was done, why, and by which PR.
 
 ## 2026-10-23
 
-### Voice and AI research note (issue #61) — **PR pending**
+### Voice and AI research note (issue #61) — **PR #62**
 
 - Voice study picked by MCDA (405/500 vs G6 jealousy 385, S9 275).
 - Owner direction by MCDA (identity 30, feasibility 25, privacy 20, wow 15, BOM 10): group
