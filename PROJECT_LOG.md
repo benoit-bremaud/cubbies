@@ -18,6 +18,10 @@ human context: what was done, why, and by which PR.
   dossier 445/500. kLeadMs 500, T_choir 60 s, three voices at rank 2, never relayed.
 - TDD (red commit first): `encodeChoir`/`decodeChoir`, `Choir`, `SocialProtocol::startChoir()`,
   `SoundGate::play(id, restMs)` and three placeholder voices; `main.cpp` wiring.
+- review-local: Must 0 · Should 19 (fixed) · Nice 8 (4 fixed, 4 documented). Fixed bug: a CHOIR
+  frame received before the last start and drained a tick later passed the 60 s cooldown.
+- Gate: 292 native tests, both board builds, benches PASS, gitleaks clean, new lib code 100 %
+  lines. SonarQube red on main outside the diff (#53), owner waiver. FS8 drift bench pending.
 
 ## 2026-10-22
 
