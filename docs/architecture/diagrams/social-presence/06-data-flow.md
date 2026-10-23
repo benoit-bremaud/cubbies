@@ -19,7 +19,7 @@ tag.)
 |--------|------|-------|----------------|-------|
 | 0 | 2 | magic | `0x43 0x42` ("CB") | filters unrelated ESP-NOW traffic on the channel |
 | 2 | 1 | version | `1` | any other value → drop |
-| 3 | 1 | type | `0x01` PRESENCE, `0x02` CHAIN (G3) | other values → drop (`dropType`) |
+| 3 | 1 | type | `0x01` PRESENCE, `0x02` CHAIN (G3), `0x03` CHOIR (G4) | other values → drop (`dropType`) |
 | 4 | 1 | palette index | `0 .. paletteSize-1` | out of range → drop |
 | 5 | 1 | mood | `0 .. 5` per the table in 05a (5 = asleep) | out of range → drop |
 | 6 | 1 | flags | bit0 adopted, others `0` | unknown bits set → drop |
@@ -41,6 +41,21 @@ relays an event at most once (05b rows 6–9), so an event costs at most one fra
 types share magic, version and the 8-byte size: the adapter and its length check are unchanged,
 and the protocol version stays `1` (a v1 cube built before G3 drops CHAIN as `dropType`, which is
 the allowlist doing its job).
+
+For **type `0x03` CHOIR** (G4, [social-group/05c](../social-group/05c-state-choir.md)) they are:
+
+| Offset | Size | Field | Allowed values | Notes |
+|--------|------|-------|----------------|-------|
+| 4 | 1 | conductor palette index | `0 .. paletteSize-1` | out of range → drop |
+| 5 | 1 | melody id | `0` | the only melody in V1; others → drop (`dropRange`) |
+| 6 | 1 | lead | `1 .. 100` (× 10 ms) | the conductor sends 50 (500 ms); 0 or above 100 → drop (`dropRange`) |
+| 7 | 1 | reserved | `0` | must be zero |
+
+The start time is never on the air: each receiver computes `rxTime + lead × 10 ms` from the
+receive callback's timestamp (wrap-safe `uint32` add, compared as `(int32)(startAt - now) > 0`).
+CHOIR is never relayed, so a choir costs exactly one frame; forged frames make a cube sing at
+most once per 60 s (05c rows 7, 9). Protocol version stays `1`; a pre-G4 cube drops CHOIR as
+`dropType`.
 
 Total 8 bytes, far below the 250-byte ESP-NOW payload limit. The sender MAC is **not** in the
 payload: it is taken from the receive callback metadata, which the radio stack fills in from the

@@ -39,6 +39,7 @@ flowchart LR
       UC7(("UC7 Introduce a cube to the group"))
       UC8(("UC8 Let moods spread — deferred to the social-group PDR"))
       UC9(("UC9 Start a chain reaction — deferred to the social-group PDR"))
+      UC10(("UC10 Gather the cubes for a choir — tier B, social-group/05c"))
     end
     subgraph Settings ["Settings domain"]
       UC6(("UC6 Adjust the volume — V1.x step of the adoption ritual"))
@@ -57,6 +58,7 @@ flowchart LR
   Colleague --> UC6
   Team --> UC8
   Colleague --> UC9
+  Team --> UC10
   Maker --> UC11
   Colleague --> UC12
   Maker --> UC12
@@ -64,6 +66,7 @@ flowchart LR
   UC7 --- Neighbour
   UC8 --- Neighbour
   UC9 --- Neighbour
+  UC10 --- Neighbour
 ```
 
 ## Use cases (Cockburn brief; the full text is in `specs/use-cases.md`)
@@ -77,6 +80,7 @@ flowchart LR
 | UC7 Introduce a cube to the group | Colleague, Neighbour cubes as secondary actors | The awake cubes already present greet the newcomer, and it greets back if awake, each at most once per arrival, as soon as the greeting policy allows | REQ-F-10, NF-05 | G1 | V1 |
 | UC8 Let moods spread | Team | Neighbours' moods pull the cube's mood | REQ-F-11 | G2 | deferred: `social-group` PDR |
 | UC9 Start a chain reaction | Colleague | Each neighbour reacts once, the wave dies out | REQ-F-12 | G3 | deferred: `social-group` PDR |
+| UC10 Gather the cubes for a choir | Team | Every awake cube in range sings one voice, started within 50 ms | REQ-F-14 | G4 | tier B, `social-group` PDR (#57) |
 | UC6 Adjust the volume | Colleague | Volume step chosen inside the adoption ritual, after the colour, stored in NVS | REQ-F-05 | S4 | V1 ships a constant; the ritual step is V1.x (ADR-0013) |
 | UC11 Build and flash a cube | Maker | Same binary on every cube, identity untouched (NVS survives) | REQ-NF-09, NF-10 | T1, T2 | V1 |
 | UC12 Add a capability by plugging a module | Colleague (Maker on their behalf) | Known module used after the next boot; unknown module ignored | REQ-F-20, NF-12 | — | V1 (port), behaviours later |
