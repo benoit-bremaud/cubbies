@@ -15,7 +15,7 @@ human context: what was done, why, and by which PR.
   traceability, FS8 drift row in the verification plan. Scored options (effect 30, robustness 25,
   simplicity 25, fit 20): D1 stroke with a present neighbour 430/500; D2 one-shot start anchored
   on the receive time + lead rest in the Sound gate 475/500; D3 voice = MAC rank mod 3 445/500;
-  dossier 445/500. kLeadMs 500, T_choir 60 s, three voices at rank 2, never relayed.
+  dossier 445/500. kLeadMs 500, T_choir 60 s, three voices at rank 3 (raised from 2 after Codex P2: a Grumpy must not block the choir), never relayed.
 - TDD (red commit first): `encodeChoir`/`decodeChoir`, `Choir`, `SocialProtocol::startChoir()`,
   `SoundGate::play(id, restMs)` and three placeholder voices; `main.cpp` wiring.
 - review-local: Must 0 · Should 19 (fixed) · Nice 8 (4 fixed, 4 documented). Fixed bug: a CHOIR

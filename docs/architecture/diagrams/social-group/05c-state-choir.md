@@ -14,7 +14,8 @@
 > time, lead rest in the Sound gate 475/500 (400 start on the tick, 290 continuous shared clock);
 > D3 voice = MAC rank mod 3 445/500 (360 voices assigned by the conductor, 330 unison).
 > PDR `social-group` (G4 part) validated by the owner 2026-10-23: kLeadMs 500, T_choir 60 s,
-> three voices, choir rank 2, no relay accepted.
+> three voices, choir rank 2, no relay accepted. Choir rank raised to 3 in review (Codex P2,
+> PR #58): a Grumpy in progress must not make the cube miss the choir.
 
 ## Context
 
@@ -78,7 +79,7 @@ rest plus a voice (static_assert), so a singing cube is always cooling (row 6).
 | 9 | any CHOIR frame | never relayed: one frame per choir, no echo |
 | 10 | voice rank: k present neighbours have a lower MAC | voice k mod 3 |
 | 11 | the cube falls asleep during the rest or the melody | the Sound gate stops it (05e), as for any sound |
-| 12 | a reaction sound (tap, double tap, chain, greeting) during the rest or the melody | dropped: the choir voices rank 2 in the Sound gate |
+| 12 | a reaction sound (tap, double tap, chain, greeting) during the rest or the melody | dropped: the choir voices rank 3 in the Sound gate, above every reaction (a Grumpy in progress is replaced, so the cube still sings) |
 
 Every time test is `(uint32)(now - then) ≥ T` or `(int32)(startAt - now) > 0`, wrap-safe
 (social-presence/06).
@@ -95,13 +96,13 @@ accepted (a desk cluster is in range; relays would add latency to the drift budg
 - **The cube is never loud**: voices are ordinary `SoundId`s in the Sound gate's note table, at
   `kVolume`, silent unless Awake or Waking. The gate only gains a lead rest (`play(id, restMs)`).
 - **Placeholder melody**: three short voices (≈ 2.4 s) until the sound-design brick.
-- **Conductor's Purr sound**: the choir voice (rank 2) replaces the Purr sound on the stroke tick;
+- **Conductor's Purr sound**: the choir voice (rank 3) replaces the Purr sound on the stroke tick;
   the conductor's eyes still purr. Accepted: the 500 ms rest is the conductor's breath.
 - **Two conductors within 500 ms**: each cube follows the first frame it hears (row 6); the two
   halves may start up to 500 ms apart. Rare, accepted.
 - **Deterministic**: clock, receive time and the table are inputs; no Prng needed.
 - **Mood unchanged**: the choir is a performance, not a stimulus (as 05b).
-- **Voice dropped by the gate**: if a rank-3 sound (wake-up melody) is playing, the gate drops the
+- **Voice dropped by the gate**: if the wake-up melody (also rank 3) is playing, the gate drops the
   voice but the cooldown has started; the cube sits that choir out. Rare, accepted.
 - **Lone cube**: a forged CHOIR frame makes even a cube with no neighbour sing, at most once per
   60 s at the constant volume; accepted under ADR-0012.

@@ -36,7 +36,7 @@ constexpr Sound kSounds[] = {
     sound(kSurprise, 0), sound(kJoy, 0),    sound(kPurr, 0),       sound(kHello, 0),
     sound(kYawn, 1),     sound(kGrumpy, 2), sound(kWakeMelody, 3),
     sound(kRitualChime, 0), sound(kRitualTick, 0), sound(kAdoption, 0),
-    sound(kChoirLow, 2),    sound(kChoirMid, 2),   sound(kChoirHigh, 2),
+    sound(kChoirLow, 3),    sound(kChoirMid, 3),   sound(kChoirHigh, 3),
 };
 
 static_assert(sizeof(kSounds) / sizeof(kSounds[0]) == kSoundCount,
@@ -73,6 +73,7 @@ bool SoundGate::play(SoundId id, uint32_t restMs) {
   if (playing_ && rank(id) <= rank(current_)) return false;
   const Sound& s = lookup(id);
   // The buzzer's timer task may still read buffer_: stop it before rewriting (IAudio contract).
+  // Defensive: today no sound outranks a rested choir voice.
   if (playing_ && restMs_ > 0) audio_.stop();
   restMs_ = restMs < kMaxRestMs ? restMs : kMaxRestMs;
   if (restMs_ == 0) {

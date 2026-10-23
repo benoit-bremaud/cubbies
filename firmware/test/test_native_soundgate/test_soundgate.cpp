@@ -138,9 +138,9 @@ static void test_rank_order_and_durations() {
   TEST_ASSERT_EQUAL(0, SoundGate::rank(SoundId::RitualChime));  // identity/05b
   TEST_ASSERT_EQUAL(0, SoundGate::rank(SoundId::RitualTick));
   TEST_ASSERT_EQUAL(0, SoundGate::rank(SoundId::Adoption));
-  TEST_ASSERT_EQUAL(2, SoundGate::rank(SoundId::ChoirLow));  // social-group/05c row 12
-  TEST_ASSERT_EQUAL(2, SoundGate::rank(SoundId::ChoirMid));
-  TEST_ASSERT_EQUAL(2, SoundGate::rank(SoundId::ChoirHigh));
+  TEST_ASSERT_EQUAL(3, SoundGate::rank(SoundId::ChoirLow));  // social-group/05c row 12
+  TEST_ASSERT_EQUAL(3, SoundGate::rank(SoundId::ChoirMid));
+  TEST_ASSERT_EQUAL(3, SoundGate::rank(SoundId::ChoirHigh));
   for (SoundId id : kAll) TEST_ASSERT_GREATER_THAN(0, SoundGate::durationMs(id));
 }
 
@@ -196,15 +196,16 @@ static void test_zero_rest_is_plain_and_rest_is_capped() {
   TEST_ASSERT_EQUAL_UINT16(SoundGate::kMaxRestMs, big.audio.lastNotes[0].ms);
 }
 
-// 05c row 12: a reaction during the rest is dropped (Joy lower, Grumpy equal rank); the wake-up
-// melody (rank 3) still replaces it and the buzzer is stopped before the rest buffer is reused.
-static void test_reaction_during_the_rest_is_dropped() {
+// 05c rows 4, 12: the choir (rank 3) replaces a Grumpy in progress, so a grumbling cube still
+// sings; every reaction during the rest or the melody is dropped, and so is the wake-up melody.
+static void test_choir_replaces_grumpy_and_drops_reactions() {
   Rig r;
+  TEST_ASSERT_TRUE(r.gate.play(SoundId::Grumpy));
   TEST_ASSERT_TRUE(r.gate.play(SoundId::ChoirHigh, 500));
   TEST_ASSERT_FALSE(r.gate.play(SoundId::Joy));
   TEST_ASSERT_FALSE(r.gate.play(SoundId::Grumpy));
-  TEST_ASSERT_TRUE(r.gate.play(SoundId::WakeMelody));
-  TEST_ASSERT_EQUAL(1, r.audio.stops);
+  TEST_ASSERT_FALSE(r.gate.play(SoundId::WakeMelody));
+  TEST_ASSERT_EQUAL(0, r.audio.stops);
 }
 
 // 05c row 11: falling asleep in the middle of the melody stops the voice.
@@ -243,7 +244,7 @@ int main() {
   RUN_TEST(test_choir_voices_share_one_length);
   RUN_TEST(test_lead_rest_precedes_the_notes);
   RUN_TEST(test_zero_rest_is_plain_and_rest_is_capped);
-  RUN_TEST(test_reaction_during_the_rest_is_dropped);
+  RUN_TEST(test_choir_replaces_grumpy_and_drops_reactions);
   RUN_TEST(test_sleep_during_the_melody_stops_the_voice);
   RUN_TEST(test_capped_rest_duration_and_no_stale_rest);
   RUN_TEST(test_volume_is_a_level_below_max);
