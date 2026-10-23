@@ -201,7 +201,7 @@ void SocialProtocol::broadcastIfDue(uint32_t now, const SelfState& self) {
 
 MoodTally SocialProtocol::moodTally() const {
   MoodTally t;
-  // Mood byte 5 (asleep) fails the kMoodCount bound; Tired is excluded explicitly (row 9).
+  // Tired (3) and asleep (5) are drowsy, never votes (05a row 9, 05d rows 7, 8).
   constexpr uint8_t kTired = static_cast<uint8_t>(Mood::Tired);
   for (const Neighbour& n : table_) {
     if (!present(n.state)) continue;

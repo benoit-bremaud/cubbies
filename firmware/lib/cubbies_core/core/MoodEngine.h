@@ -56,7 +56,7 @@ class MoodEngine {
   Mood mood_ = Mood::Curious;
   uint32_t enteredMs_ = 0;    // when the current mood started
   uint32_t lastAnyMs_ = 0;    // last stimulus of any kind (idle timer)
-  uint32_t lastLoudMs_ = 0;   // last gesture, touch-down, sound or pull (calm timer); NewcomerSeen does not count
+  uint32_t lastLoudMs_ = 0;   // last gesture, touch-down, sound, pull or caught yawn (calm timer); NewcomerSeen does not count
   uint32_t lastYawnMs_ = 0;
   bool holding_ = false;       // a contagion candidate is being held
   Mood candidate_ = Mood::Curious;

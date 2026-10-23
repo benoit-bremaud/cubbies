@@ -17,6 +17,8 @@ human context: what was done, why, and by which PR.
   No new frame: PRESENCE mood byte 3 (Tired/dozing) or 5 (asleep) = drowsy; T_contagion 6 s reused.
 - TDD (red commit first): `MoodTally::drowsy`, `MoodEngine::contagion()` yawn hold evaluated
   before G2. No `main.cpp` change (already wired by G2).
+- review-local: Must 1 doc (fixed) · Should 3 (fixed) · Nice 6 (2 fixed). Gate: 305 native tests,
+  both boards, benches PASS, ERC 0, ruff, gitleaks clean; SonarQube red only for #53.
 
 ### G4 synchronised choir (issue #57) — **PR #58** (31b40d0)
 

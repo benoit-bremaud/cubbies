@@ -49,12 +49,13 @@ stateDiagram-v2
 | 3 | Bored, drowsy ≥ 1, held < T_contagion | mood unchanged |
 | 4 | Bored, drowsy ≥ 1 held ≥ T_contagion, no gesture or sound for T_contagion | enter Tired: `MoodEffect::Yawn` (through the Sound gate), yawn timer from now |
 | 5 | drowsy falls to 0 during the hold | hold dropped; a new drowsy neighbour restarts it from now |
-| 6 | owner touch-down, gesture or sound during the hold | the stimulus moves Bored to Curious (05a), the hold is dropped — the owner always wins |
+| 6 | owner gesture or sound during the hold | Bored → Curious (05a), hold dropped — the owner always wins |
+| 6b | owner touch-down during the hold | mood unchanged, calm broken: the yawn waits a fresh T_contagion of calm |
 | 7 | neighbour asleep (byte 5) or dozing (byte 3) | counts as drowsy, like Tired |
 | 8 | absent neighbour (`Absent`, `Free`) | never counts |
 | 9 | own mood already Tired | nothing new (no second yawn beyond the Tired yawn timer) |
 | 10 | cube not Awake | not evaluated (the engine is paused); a wake restarts in Curious with no hold |
-| 11 | both a G2 candidate and a drowsy neighbour hold | the yawn is evaluated first; a yawn does not start the G2 refractory, a G2 pull drops the yawn hold (mood no longer Bored) |
+| 11 | both a G2 candidate and a drowsy neighbour hold | the yawn is evaluated first; a yawn does not start the G2 refractory, a caught yawn resets the calm, so a G2 pull out of Tired waits a fresh T_contagion; a G2 pull drops the yawn hold (mood no longer Bored) |
 | 12 | caught cube | broadcasts mood 3, so its own idle neighbours catch the yawn (one hop per T_contagion and up) |
 
 Durations: **T_contagion 6 s** reused from G2 (one presence period with jitter). No refractory:

@@ -1,52 +1,44 @@
-# Local review — cubbies (claude/g4-choir-43d2ed)
+# Local review — cubbies (feat/g5-collective-sleep)
 
 - Date: 2026-10-23
-- Commit: 9a54637 (base `origin/main` 6a2807b)
-- Scope: branch diff main...HEAD: G4 synchronised choir (issue #57) — `core/Choir.{h,cpp}`,
-  `core/PresenceCodec.{h,cpp}` (CHOIR frame, shared header helpers), `core/SocialProtocol.{h,cpp}`,
-  `core/SoundGate.{h,cpp}` (lead rest, three voices), `src/main.cpp`, native tests, social-group
-  PDR docs (UC10, 02c, 05c, 06, traceability, verification plan), PROJECT_LOG
-- Checks run: design (architecture-guardian) · docs (doc-auditor) · tests (test-auditor) ·
-  security + correctness (general-purpose, read-only)
-- Verdict: ship after fixes (applied in 9a54637) · Must 0 · Should 19 (fixed) · Nice 8 (4 fixed, 4 documented)
+- Commit: branch head (base `main` 31b40d0)
+- Scope: branch diff main...HEAD: G5 collective sleep (issue #59) — `core/Mood.h` (`MoodTally::drowsy`),
+  `core/MoodEngine.{h,cpp}` (yawn hold), `core/SocialProtocol.cpp` (drowsy count), native tests,
+  social-group PDR docs (REQ-F-20, B4, 02d, 05d, traceability), roadmap, PROJECT_LOG
+- Checks run: design · docs · tests · security · correctness
+- Verdict: ship after the fixes below (applied) · Must 0 (1 doc Must fixed) · Should 3 (fixed) · Nice 6 (2 fixed)
 
-## Pre-merge gate (head SHA 9a54637)
+## Pre-merge gate
+
 | Step | Result |
 |---|---|
-| 1 Tests | ✅ 292 native tests · ✅ `pio run` xiao_c3 and c3_supermini · ✅ `sim/run.sh` exit 0 |
-| 2 Coverage | new lib code: `Choir.cpp` 100 % lines, `SoundGate.cpp` 100 % lines (manual `g++ --coverage`); docs ≈ 100 % of the new public surface (doc-auditor estimate) |
-| 3 SonarQube | ❌ FAILED on main outside the diff: one issue in `hardware/case/cubbies_case.py` (#53), new_coverage not imported (Community edition); owner waiver as for G2/G3 |
-| 4 Secrets | ✅ gitleaks clean (origin/main..HEAD) · no tracked .env · diff read: nothing sensitive |
-| 5 QA pass | firmware: both board images build; FS8 drift bench on two prototypes pending (verification plan) |
-- Gate: **GREEN with the #53 waiver**
+| 1 Tests | ✅ 305 native (`pio test -e native`) · ✅ `pio run -e xiao_c3 -e c3_supermini` · ✅ benches PASS · ✅ ERC 0 · ✅ ruff |
+| 2 Coverage | new lib lines 100 % executed (`MoodEngine.cpp` 89 % overall from the contagion suite alone; the uncovered lines are pre-G5, covered by `test_native_mood`) · docs: every new symbol commented |
+| 3 SonarQube | ❌ FAILED on main-level conditions only (#53: 2 issues in `hardware/` Python outside the diff, new_coverage not imported) — owner waiver requested |
+| 4 Secrets | ✅ gitleaks clean (main..HEAD) · no tracked .env · diff read: nothing sensitive |
+| 5 QA pass | firmware, no UI: native tests and both board builds; bench check on two prototypes open (no new hardware path) |
+
+- Gate: **GREEN except SonarQube (#53, waiver)**
 
 ## 🔴 Must Have
-_None._
+- `docs/architecture/diagrams/social-group/05d-state-yawn.md` row 6 `[docs]` · touch-down does not move Bored to Curious, it only breaks the calm · **fixed**: row split into 6 / 6b.
 
-## 🟡 Should Have (all fixed in 9a54637)
-- `core/Choir.cpp` `[correctness|security]` · a CHOIR frame received before the last start and drained a tick later passed the cooldown (`ageMs` wrapped) · cooldown judged in `tick()` on the tick's time; regression test `test_row7_backlogged_frame_meets_the_cooldown`
-- `core/SoundGate.cpp` `[design|correctness]` · `buffer_` rewritten while the buzzer timer may read it · `audio_.stop()` first when the previous play used the buffer; tested
-- `core/PresenceCodec.cpp` `[design]` · header write/check copied three times · `writeHeader` / `checkHeader`
-- `core/SoundGate.cpp`, `src/main.cpp` `[design]` · voice count and lead bound linked by comments only · `kChoirVoices`, `kChoirLeadUnitMs`, `kChoirMelody`, two `static_assert`s
-- `core/Choir.h` `[design|docs]` · row 6 relies on cooldown > rest + voice · `static_assert` and 05c note
-- `test_choir.cpp` `[tests]` · frame content not checked on the air; row 9 vacuous; protocol rank, not-Awake wiring, pending guard, wrap on row 8 untested · tests added
-- `test_soundgate.cpp` `[tests]` · one test for three behaviours; capped-rest duration and stale rest untested · split and added
-- `02c`, `05c`, traceability `[docs]` · `ChoirFrame` name, voice names, cooldown anchor, implicit Singing, row ranges · aligned
+## 🟡 Should Have
+- `05d-state-yawn.md` row 11 `[docs]` · caught yawn resets the calm, undocumented · **fixed**.
+- `core/SocialProtocol.cpp:204` `[docs]` · stale comment on byte 5 · **fixed**.
+- `test_contagion.cpp` `[tests]` · calm term of the yawn untested (mutation survived) · **fixed**: `test_yawn_row6b_touch_down_mid_hold_waits_fresh_calm`.
 
 ## 🔵 Nice to Have
-- `SoundGate.h` `[design]` · forwarding overload → default argument (fixed)
-- `SocialProtocol.cpp` `[design]` · `awake` computed once (fixed)
-- `SoundGate.h` `[docs]` · `kMaxNotes` comment (fixed)
-- `test_choir.cpp` `[tests]` · unused `announce` parameter, rank 255 (fixed)
-- `SocialProtocol.cpp` `[design]` · frame-type dispatch by fall-through; switch on the type byte before a fourth type (open)
-- `src/main.cpp` `[correctness]` · voice dropped by a rank-3 sound still starts the cooldown (documented in 05c, accepted)
-- `Choir.cpp` `[correctness]` · rest measured at the tick start, a few ms of drift from same-tick sends (documented, bench)
-- `test_codec.cpp` `[tests]` · truncated CHOIR frame case (open, same shape as CHAIN)
+- `test_contagion.cpp` row 2 `[tests]` · Annoyed not covered · **fixed**.
+- `core/Mood.h`, `core/MoodEngine.h` `[docs]` · comments mention drowsy / caught yawn · **fixed**.
+- `test_yawn_row11` `[tests]` · dropping `holding_ = false` on catch stays green (G2 re-holds and waits a fresh calm anyway) · documented, behaviour equivalent.
+- row 12 example builds the tally by hand, codec path tested separately in `test_native_social` · accepted (unit level).
+- row 10 (not Awake) lives in `main.cpp` (engine paused) · covered by the existing G2 wiring, no new adapter test.
+- `catchesYawn` also mutates the hold · name kept, comment in the header.
 
 ## ⚪ Disagree / Intentional
-- `core/Choir.cpp` `[security]` · a lone cube sings on a forged CHOIR frame · at most once per 60 s at the constant volume, ADR-0012 nuisance risk; 05c note
-- `core/SocialProtocol.cpp` `[design]` · `lowerMacs()` next to `rank(sender)` · two different rules (05b vs 05c), Rule of Three not reached
-- `src/main.cpp` `[tests]` · wiring untested natively · ADR-0014 adapter policy
+- Yawn hold duplicates the G2 hold shape · second occurrence only, Rule of Three.
+- A sleeping neighbour makes any cube that turns Bored beside it Tired 6 s later · by design (D1, owner 2026-10-23); forged frames accepted under ADR-0012.
 
 ## Per-dimension summary
-- Design: dependency rule and single Sound gate held; codec duplication and magic links fixed · Docs: aligned, no noise · Tests: every 05c row covered, false-confidence row 9 fixed · Security: one cooldown bypass fixed, forged-frame nuisance bounded · Correctness: no remaining defect found
+- Design: one guarded transition, no new frame, lib pure · Docs: two table rows aligned · Tests: every 05d row tested, calm term now pinned · Security: bounded counter, allowlisted mood byte · Correctness: no bug, tick order correct.
