@@ -33,6 +33,8 @@ class MoodEngine {
   // tally. Enters the pulled mood once its candidate held T_contagion in calm, out of refractory,
   // and returns that mood's entry effect (Grumpy for Annoyed). The first pull is never
   // refractory; restart() drops the hold but keeps the refractory.
+  // Collective sleep (social-group/05d) is evaluated first: a Bored cube whose drowsy neighbours
+  // held T_contagion in calm enters Tired and returns its Yawn, without starting the refractory.
   MoodEffect contagion(const MoodTally& tally);
 
   // Durations (05a starting values, tuning, no ADR).
@@ -48,16 +50,19 @@ class MoodEngine {
 
  private:
   MoodEffect enter(Mood m);
+  bool catchesYawn(const MoodTally& tally, uint32_t now);
 
   IClock& clock_;
   Mood mood_ = Mood::Curious;
   uint32_t enteredMs_ = 0;    // when the current mood started
   uint32_t lastAnyMs_ = 0;    // last stimulus of any kind (idle timer)
-  uint32_t lastLoudMs_ = 0;   // last gesture, touch-down, sound or pull (calm timer); NewcomerSeen does not count
+  uint32_t lastLoudMs_ = 0;   // last gesture, touch-down, sound, pull or caught yawn (calm timer); NewcomerSeen does not count
   uint32_t lastYawnMs_ = 0;
   bool holding_ = false;       // a contagion candidate is being held
   Mood candidate_ = Mood::Curious;
   uint32_t holdSinceMs_ = 0;
+  bool yawnHolding_ = false;   // a drowsy neighbour is being held (05d)
+  uint32_t yawnSinceMs_ = 0;
   bool pulled_ = false;        // at least one pull happened (refractory applies)
   uint32_t lastPullMs_ = 0;
 };

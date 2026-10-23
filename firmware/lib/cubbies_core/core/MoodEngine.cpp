@@ -8,7 +8,7 @@ void MoodEngine::restart() {
   const uint32_t now = clock_.nowMs();
   mood_ = Mood::Curious;
   enteredMs_ = lastAnyMs_ = lastLoudMs_ = lastYawnMs_ = now;
-  holding_ = false;  // a wake starts with no candidate; the refractory period is kept
+  holding_ = yawnHolding_ = false;  // a wake starts with no candidate; the refractory period is kept
 }
 
 MoodEffect MoodEngine::enter(Mood m) {
@@ -44,8 +44,26 @@ MoodEffect MoodEngine::stimulus(Stimulus s) {
   return MoodEffect::None;
 }
 
+bool MoodEngine::catchesYawn(const MoodTally& tally, uint32_t now) {
+  if (mood_ != Mood::Bored || tally.drowsy == 0) {
+    yawnHolding_ = false;
+    return false;
+  }
+  if (!yawnHolding_) {
+    yawnHolding_ = true;
+    yawnSinceMs_ = now;
+    return false;
+  }
+  return ageMs(now, yawnSinceMs_) >= kContagionMs && ageMs(now, lastLoudMs_) >= kContagionMs;
+}
+
 MoodEffect MoodEngine::contagion(const MoodTally& tally) {
   const uint32_t now = clock_.nowMs();
+  if (catchesYawn(tally, now)) {
+    yawnHolding_ = holding_ = false;
+    lastLoudMs_ = now;  // a G2 pull out of Tired waits a fresh calm (05d row 11)
+    return enter(Mood::Tired);
+  }
   Mood target = mood_;
   if (!pulledMood(tally, target) || target == mood_) {
     holding_ = false;

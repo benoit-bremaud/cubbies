@@ -246,6 +246,157 @@ static void test_contagion_survives_the_clock_wrap() {
   TEST_ASSERT_EQUAL(Mood::Happy, r.engine.mood());
 }
 
+// ---- Collective sleep (social-group/05d): the yawn of a drowsy neighbour. ----
+
+MoodTally drowsyTally(uint8_t drowsy = 1) {
+  MoodTally t;
+  t.drowsy = drowsy;
+  return t;
+}
+
+// Drives a fresh engine to Bored with nobody around (T_bored of idleness).
+static void makeBored(Rig& r) {
+  r.run(E::kBoredMs, MoodTally{});
+  TEST_ASSERT_EQUAL(Mood::Bored, r.engine.mood());
+}
+
+// 05d row 1: no drowsy neighbour — Bored stays Bored.
+static void test_yawn_row1_no_drowsy_neighbour_keeps_bored() {
+  Rig r;
+  makeBored(r);
+  r.run(E::kContagionMs * 3, MoodTally{});
+  TEST_ASSERT_EQUAL(Mood::Bored, r.engine.mood());
+}
+
+// 05d row 2: a cube that is not Bored never catches the yawn.
+static void test_yawn_row2_only_bored_catches() {
+  Rig r;
+  r.run(E::kContagionMs * 3, drowsyTally());
+  TEST_ASSERT_EQUAL(Mood::Curious, r.engine.mood());
+  r.engine.stimulus(Stimulus::Tap);
+  r.run(E::kContagionMs + 2 * kTick, drowsyTally());
+  TEST_ASSERT_EQUAL(Mood::Happy, r.engine.mood());
+  r.engine.stimulus(Stimulus::Loud);
+  r.run(E::kContagionMs + 2 * kTick, drowsyTally());
+  TEST_ASSERT_EQUAL(Mood::Annoyed, r.engine.mood());
+}
+
+// 05d rows 3 and 4: held < T_contagion unchanged, then Tired with a yawn.
+static void test_yawn_rows3_4_held_drowsy_neighbour_makes_bored_tired() {
+  Rig r;
+  makeBored(r);
+  TEST_ASSERT_EQUAL(MoodEffect::None, r.run(E::kContagionMs - kTick, drowsyTally()));
+  TEST_ASSERT_EQUAL(Mood::Bored, r.engine.mood());
+  TEST_ASSERT_EQUAL(MoodEffect::Yawn, r.run(2 * kTick, drowsyTally()));
+  TEST_ASSERT_EQUAL(Mood::Tired, r.engine.mood());
+}
+
+// 05d row 5: losing every drowsy neighbour drops the hold; a new one restarts it.
+static void test_yawn_row5_losing_the_drowsy_neighbour_drops_the_hold() {
+  Rig r;
+  makeBored(r);
+  r.run(E::kContagionMs - 10 * kTick, drowsyTally());
+  r.run(kTick, MoodTally{});
+  r.run(E::kContagionMs - kTick, drowsyTally());
+  TEST_ASSERT_EQUAL(Mood::Bored, r.engine.mood());
+  r.run(2 * kTick, drowsyTally());
+  TEST_ASSERT_EQUAL(Mood::Tired, r.engine.mood());
+}
+
+// 05d row 6: the owner's attention moves Bored to Curious, so the yawn never comes.
+static void test_yawn_row6_owner_attention_wins() {
+  Rig r;
+  makeBored(r);
+  r.run(E::kContagionMs / 2, drowsyTally());
+  r.engine.stimulus(Stimulus::Voice);
+  r.run(E::kContagionMs * 3, drowsyTally());
+  TEST_ASSERT_EQUAL(Mood::Curious, r.engine.mood());
+}
+
+// 05d row 6: a touch-down alone breaks the calm and postpones the yawn.
+static void test_yawn_row6_touch_down_postpones() {
+  Rig r;
+  makeBored(r);
+  r.run(E::kContagionMs + 2 * kTick, MoodTally{});
+  r.engine.touchDown();
+  r.run(E::kContagionMs - 2 * kTick, drowsyTally());
+  TEST_ASSERT_EQUAL(Mood::Bored, r.engine.mood());
+  r.run(4 * kTick, drowsyTally());
+  TEST_ASSERT_EQUAL(Mood::Tired, r.engine.mood());
+}
+
+// 05d row 6b: a touch-down late in the hold breaks the calm; the yawn waits a fresh calm.
+static void test_yawn_row6b_touch_down_mid_hold_waits_fresh_calm() {
+  Rig r;
+  makeBored(r);
+  r.run(E::kContagionMs - 2 * kTick, drowsyTally());
+  r.engine.touchDown();
+  r.run(E::kContagionMs - 2 * kTick, drowsyTally());
+  TEST_ASSERT_EQUAL(Mood::Bored, r.engine.mood());
+  r.run(4 * kTick, drowsyTally());
+  TEST_ASSERT_EQUAL(Mood::Tired, r.engine.mood());
+}
+
+// 05d row 9: a Tired cube gets no extra yawn from its neighbours beyond its own timer.
+static void test_yawn_row9_tired_gets_no_extra_yawn() {
+  Rig r;
+  makeBored(r);
+  r.run(E::kContagionMs + 2 * kTick, drowsyTally());
+  TEST_ASSERT_EQUAL(Mood::Tired, r.engine.mood());
+  TEST_ASSERT_EQUAL(MoodEffect::None, r.run(E::kYawnMs - 4 * kTick, drowsyTally()));
+}
+
+// 05d row 10: restart (a wake) drops the yawn hold.
+static void test_yawn_row10_restart_drops_the_hold() {
+  Rig r;
+  makeBored(r);
+  r.run(E::kContagionMs - kTick, drowsyTally());
+  r.engine.restart();
+  TEST_ASSERT_EQUAL(Mood::Curious, r.engine.mood());
+  r.run(2 * kTick, drowsyTally());
+  TEST_ASSERT_EQUAL(Mood::Curious, r.engine.mood());
+}
+
+// 05d row 11: the yawn wins over a G2 candidate, does not start the refractory, and the G2
+// pull out of Tired waits a fresh T_contagion of calm.
+static void test_yawn_row11_yawn_first_then_g2_waits() {
+  Rig r;
+  makeBored(r);
+  MoodTally t = tallyOf(Mood::Happy);
+  t.drowsy = 1;
+  TEST_ASSERT_EQUAL(MoodEffect::Yawn, r.run(E::kContagionMs + 2 * kTick, t));
+  TEST_ASSERT_EQUAL(Mood::Tired, r.engine.mood());
+  r.run(E::kContagionMs - 2 * kTick, t);
+  TEST_ASSERT_EQUAL(Mood::Tired, r.engine.mood());
+  r.run(4 * kTick, t);
+  TEST_ASSERT_EQUAL(Mood::Happy, r.engine.mood());  // no refractory was started by the yawn
+}
+
+// 05d row 12 (worked example): three idle cubes, the first Tired one sends the others to Tired.
+static void test_yawn_row12_the_first_yawn_spreads() {
+  Rig a, b, c;
+  makeBored(a);
+  makeBored(b);
+  makeBored(c);
+  a.run(E::kTiredMs, MoodTally{});  // A reaches Tired on its own after T_tired in Bored
+  TEST_ASSERT_EQUAL(Mood::Tired, a.engine.mood());
+  MoodTally seen;
+  seen.drowsy = (a.engine.mood() == Mood::Tired) ? 1 : 0;
+  b.run(E::kContagionMs + 2 * kTick, seen);
+  TEST_ASSERT_EQUAL(Mood::Tired, b.engine.mood());
+  seen.drowsy = (b.engine.mood() == Mood::Tired) ? 1 : 0;  // C hears only B
+  c.run(E::kContagionMs + 2 * kTick, seen);
+  TEST_ASSERT_EQUAL(Mood::Tired, c.engine.mood());
+}
+
+// The yawn hold survives the 32-bit wrap.
+static void test_yawn_survives_the_clock_wrap() {
+  Rig r(0xFFFFFFFFu - E::kBoredMs - 2000);
+  makeBored(r);
+  r.run(E::kContagionMs + 2 * kTick, drowsyTally());
+  TEST_ASSERT_EQUAL(Mood::Tired, r.engine.mood());
+}
+
 int main() {
   UNITY_BEGIN();
   RUN_TEST(test_alone_nothing_changes);
@@ -265,5 +416,17 @@ int main() {
   RUN_TEST(test_restart_keeps_the_refractory);
   RUN_TEST(test_two_cubes_converge_without_ping_pong);
   RUN_TEST(test_contagion_survives_the_clock_wrap);
+  RUN_TEST(test_yawn_row1_no_drowsy_neighbour_keeps_bored);
+  RUN_TEST(test_yawn_row2_only_bored_catches);
+  RUN_TEST(test_yawn_rows3_4_held_drowsy_neighbour_makes_bored_tired);
+  RUN_TEST(test_yawn_row5_losing_the_drowsy_neighbour_drops_the_hold);
+  RUN_TEST(test_yawn_row6_owner_attention_wins);
+  RUN_TEST(test_yawn_row6_touch_down_postpones);
+  RUN_TEST(test_yawn_row6b_touch_down_mid_hold_waits_fresh_calm);
+  RUN_TEST(test_yawn_row9_tired_gets_no_extra_yawn);
+  RUN_TEST(test_yawn_row10_restart_drops_the_hold);
+  RUN_TEST(test_yawn_row11_yawn_first_then_g2_waits);
+  RUN_TEST(test_yawn_row12_the_first_yawn_spreads);
+  RUN_TEST(test_yawn_survives_the_clock_wrap);
   return UNITY_END();
 }
