@@ -37,9 +37,10 @@ SocialOutput SocialProtocol::tick(const SelfState& self) {
   for (uint8_t i = 0; i < kMaxFramesPerTick && radio_.receive(f); ++i) receive(f);
   expire(now);
   SocialOutput out = greet(now);
-  const ChainFire fire = chain_.tick(now, self.sleep == SleepState::Awake);
+  const bool awake = self.sleep == SleepState::Awake;
+  const ChainFire fire = chain_.tick(now, awake);
   out.chain = fire.react;
-  out.choir = choir_.tick(now, self.sleep == SleepState::Awake, lowerMacs());
+  out.choir = choir_.tick(now, awake, lowerMacs());
   if (fire.relay) {
     uint8_t frame[kFrameSize];
     encodeChain(fire.frame, frame);

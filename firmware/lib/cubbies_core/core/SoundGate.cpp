@@ -56,7 +56,7 @@ const Sound& lookup(SoundId id) { return kSounds[static_cast<uint8_t>(id)]; }
 SoundGate::SoundGate(IClock& clock, IAudio& audio) : clock_(clock), audio_(audio) {}
 
 SoundId choirVoice(uint8_t voice) {
-  return static_cast<SoundId>(static_cast<uint8_t>(SoundId::ChoirLow) + voice % 3);
+  return static_cast<SoundId>(static_cast<uint8_t>(SoundId::ChoirLow) + voice % kChoirVoices);
 }
 
 uint8_t SoundGate::rank(SoundId id) { return lookup(id).rank; }
@@ -68,12 +68,12 @@ uint32_t SoundGate::durationMs(SoundId id) {
   return total;
 }
 
-bool SoundGate::play(SoundId id) { return play(id, 0); }
-
 bool SoundGate::play(SoundId id, uint32_t restMs) {
   if (sleep_ != SleepState::Awake && sleep_ != SleepState::Waking) return false;
   if (playing_ && rank(id) <= rank(current_)) return false;
   const Sound& s = lookup(id);
+  // The buzzer's timer task may still read buffer_: stop it before rewriting (IAudio contract).
+  if (playing_ && restMs_ > 0) audio_.stop();
   restMs_ = restMs < kMaxRestMs ? restMs : kMaxRestMs;
   if (restMs_ == 0) {
     audio_.play(s.notes, s.count, kVolume);

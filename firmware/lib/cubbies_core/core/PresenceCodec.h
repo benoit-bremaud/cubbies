@@ -18,7 +18,9 @@ constexpr uint8_t kProtocolVersion = 1;
 constexpr uint8_t kTypePresence = 0x01;
 constexpr uint8_t kTypeChain = 0x02;
 constexpr uint8_t kTypeChoir = 0x03;
-constexpr uint8_t kMaxChoirLead = 100;  // × 10 ms (06)
+constexpr uint8_t kMaxChoirLead = 100;     // in kChoirLeadUnitMs (06)
+constexpr uint32_t kChoirLeadUnitMs = 10;  // CHOIR lead unit on the air
+constexpr uint8_t kChoirMelody = 0;        // the only melody in V1
 constexpr uint8_t kMaxHop = 3;
 constexpr uint8_t kMoodAsleep = 5;
 constexpr uint8_t kFlagAdopted = 0x01;
@@ -39,8 +41,8 @@ struct Chain {
 // CHOIR payload (social-group/05c): the conductor, the melody (0 only in V1) and the lead.
 struct ChoirStart {
   uint8_t paletteIndex;
-  uint8_t melody;  // 0
-  uint8_t lead;    // 1 .. kMaxChoirLead, in 10 ms units
+  uint8_t melody;  // kChoirMelody
+  uint8_t lead;    // 1 .. kMaxChoirLead, in kChoirLeadUnitMs
 };
 
 // Why a frame was dropped; Ok means `out` holds a valid Presence.

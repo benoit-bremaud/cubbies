@@ -208,6 +208,8 @@ void loop() {
   if (g == Gesture::Stroke) seeded->social.startChoir(self);     // social-group/05c rows 1-3
   const SocialOutput social = seeded->social.tick(self);
   if (social.chain) applyEyesAndSound(routeChain(sleepCycle.state()));  // 05b row 5
+  static_assert(Choir::kVoices == kChoirVoices, "one SoundId per choir voice");
+  static_assert(kMaxChoirLead * kChoirLeadUnitMs <= SoundGate::kMaxRestMs, "a valid lead is never clamped");
   if (social.choir.sing) gate.play(choirVoice(social.choir.voice), social.choir.restMs);  // 05c row 4
   if (social.newcomer) {
     const Route r = routeNewcomer(sleepCycle.state());

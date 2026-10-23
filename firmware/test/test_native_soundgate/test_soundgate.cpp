@@ -196,16 +196,38 @@ static void test_zero_rest_is_plain_and_rest_is_capped() {
   TEST_ASSERT_EQUAL_UINT16(SoundGate::kMaxRestMs, big.audio.lastNotes[0].ms);
 }
 
-// 05c rows 11, 12: a reaction during the rest is dropped; sleep stops the voice; never silent-gate
-// bypass while dozing.
-static void test_choir_voice_is_protected_and_stops_on_sleep() {
+// 05c row 12: a reaction during the rest is dropped (Joy lower, Grumpy equal rank); the wake-up
+// melody (rank 3) still replaces it and the buzzer is stopped before the rest buffer is reused.
+static void test_reaction_during_the_rest_is_dropped() {
   Rig r;
   TEST_ASSERT_TRUE(r.gate.play(SoundId::ChoirHigh, 500));
   TEST_ASSERT_FALSE(r.gate.play(SoundId::Joy));
   TEST_ASSERT_FALSE(r.gate.play(SoundId::Grumpy));
-  r.gate.setSleepState(SleepState::Dozing);
+  TEST_ASSERT_TRUE(r.gate.play(SoundId::WakeMelody));
   TEST_ASSERT_EQUAL(1, r.audio.stops);
-  TEST_ASSERT_FALSE(r.gate.play(SoundId::ChoirHigh, 500));
+}
+
+// 05c row 11: falling asleep in the middle of the melody stops the voice.
+static void test_sleep_during_the_melody_stops_the_voice() {
+  Rig r;
+  TEST_ASSERT_TRUE(r.gate.play(SoundId::ChoirHigh, 500));
+  r.run(1000);
+  r.gate.setSleepState(SleepState::Asleep);
+  TEST_ASSERT_EQUAL(1, r.audio.stops);
+  TEST_ASSERT_FALSE(r.gate.playing());
+}
+
+// 05c: the capped rest counts in the duration, and a later plain sound does not keep the old rest.
+static void test_capped_rest_duration_and_no_stale_rest() {
+  Rig r;
+  TEST_ASSERT_TRUE(r.gate.play(SoundId::ChoirLow, 5000));
+  r.run(SoundGate::kMaxRestMs + SoundGate::durationMs(SoundId::ChoirLow) - kTick);
+  TEST_ASSERT_TRUE(r.gate.playing());
+  r.run(kTick);
+  TEST_ASSERT_FALSE(r.gate.playing());
+  TEST_ASSERT_TRUE(r.gate.play(SoundId::Joy));
+  r.run(SoundGate::durationMs(SoundId::Joy) + kTick);
+  TEST_ASSERT_FALSE(r.gate.playing());
 }
 
 int main() {
@@ -221,7 +243,9 @@ int main() {
   RUN_TEST(test_choir_voices_share_one_length);
   RUN_TEST(test_lead_rest_precedes_the_notes);
   RUN_TEST(test_zero_rest_is_plain_and_rest_is_capped);
-  RUN_TEST(test_choir_voice_is_protected_and_stops_on_sleep);
+  RUN_TEST(test_reaction_during_the_rest_is_dropped);
+  RUN_TEST(test_sleep_during_the_melody_stops_the_voice);
+  RUN_TEST(test_capped_rest_duration_and_no_stale_rest);
   RUN_TEST(test_volume_is_a_level_below_max);
   RUN_TEST(test_duration_survives_the_clock_wrap);
   return UNITY_END();

@@ -32,19 +32,19 @@ sequenceDiagram
   SA->>SA: present neighbour? cooldown over? (rows 1–3)
   SA-)SB: CHOIR {palette A, melody 0, lead 50}
   SA-->>Main: SocialOutput.choir {voice 1, rest 500 ms}
-  Main->>GA: play(ChoirVoice1, 500)
+  Main->>GA: play(ChoirMid, 500)
   Note over SB: receive callback stamps rxTime (≈ A's send time + 1–5 ms)
   SB->>SB: Awake, cooldown over, rxTime + 500 still ahead (row 4)
   SB-->>SB: SocialOutput.choir {voice 0, rest = rxTime + 500 − now}
-  SB->>GB: play(ChoirVoice0, rest)
+  SB->>GB: play(ChoirLow, rest)
   Note over GA,GB: both buzzer timers end their rest on the same ms (drift = radio latency)
-  GA->>GA: melody voice
+  GA->>GA: mid voice
   GB->>GB: low voice
 ```
 
 ## Notes
 
-- **Dependency direction**: `Choir` knows `IClock` time values and the decoded `ChoirFrame`; it
+- **Dependency direction**: `Choir` knows `IClock` time values and the decoded `ChoirStart`; it
   never sees the radio or the audio port.
 - **Order in the tick**: `startChoir()` is called after the gesture of the tick, before
   `social.tick()`, as `startChain()` (02b); the output is applied after the gesture's route, so

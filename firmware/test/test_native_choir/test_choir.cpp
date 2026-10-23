@@ -3,6 +3,8 @@
 // Rows 11 and 12 (sleep stops the voice, reactions are dropped) are Sound gate tests.
 #include <unity.h>
 
+#include <initializer_list>
+
 #include "FakeClock.h"
 #include "LoopbackRadio.h"
 #include "core/Choir.h"
@@ -155,9 +157,41 @@ static void test_rows_4_7_8_survive_the_clock_wrap() {
   TEST_ASSERT_FALSE(c.tick(t + 1000, true, 0).sing);
 }
 
+// Row 3: a second stroke before the first start is emitted sends nothing.
+static void test_row3_second_stroke_while_pending() {
+  Choir c;
+  ChoirStart out{};
+  TEST_ASSERT_TRUE(c.start(kT0, true, 2, 1, out));
+  TEST_ASSERT_FALSE(c.start(kT0 + 1, true, 2, 1, out));
+}
+
+// Row 7: a backlogged frame stamped before the last start still meets the cooldown.
+static void test_row7_backlogged_frame_meets_the_cooldown() {
+  Choir c;
+  c.hear(kStart, kT0);
+  TEST_ASSERT_TRUE(c.tick(kT0 + kTick, true, 0).sing);
+  c.hear(ChoirStart{4, 0, cubbies::kMaxChoirLead}, kT0 + 10);  // received before the start, drained late
+  TEST_ASSERT_FALSE(c.tick(kT0 + 2 * kTick, true, 0).sing);
+}
+
+// Rows 7, 8 across the wrap: a late frame stays silent, the cooldown straddles 2^32.
+static void test_rows_7_8_late_and_cooldown_across_the_wrap() {
+  const uint32_t t = 0xFFFFFF00u;
+  Choir late;
+  late.hear(kStart, t);
+  TEST_ASSERT_FALSE(late.tick(t + 600, true, 0).sing);
+  Choir c;
+  c.hear(kStart, t);
+  TEST_ASSERT_TRUE(c.tick(t + 300, true, 0).sing);
+  c.hear(kStart, t + 300 + Choir::kCooldownMs - 1);
+  TEST_ASSERT_FALSE(c.tick(t + 300 + Choir::kCooldownMs - 1, true, 0).sing);
+  c.hear(kStart, t + 300 + Choir::kCooldownMs);
+  TEST_ASSERT_TRUE(c.tick(t + 300 + Choir::kCooldownMs, true, 0).sing);
+}
+
 // Row 10: voice = rank mod 3.
 static void test_row10_voice_is_rank_mod_3() {
-  for (uint8_t rank = 0; rank < 7; ++rank) {
+  for (uint8_t rank : {0, 1, 2, 3, 4, 5, 6, 255}) {
     Choir c;
     c.hear(kStart, kT0);
     TEST_ASSERT_EQUAL_UINT8(rank % Choir::kVoices, c.tick(kT0, true, rank).voice);
@@ -179,12 +213,11 @@ struct Cube {
 };
 
 // Makes `cube` see `from` as present.
-void announce(Cube& cube, uint8_t from, FakeClock& clock) {
+void announce(Cube& cube, uint8_t from) {
   uint8_t f[kFrameSize];
   encodePresence(Presence{1, 0, true}, f);
   cube.radio.inject(f, kFrameSize, mac(from));
   cube.social.tick(cube.self);
-  (void)clock;
 }
 
 size_t choirFrames(const LoopbackRadio& r) {
@@ -197,17 +230,23 @@ size_t choirFrames(const LoopbackRadio& r) {
 }
 }  // namespace
 
-// Rows 1, 4, 10 end to end: the conductor and a receiver ticking 23 ms out of phase start their
-// voices on the same absolute millisecond (FS8 drift ≤ 50 ms, here 0 over a latency-free air).
+// Rows 1, 4, 10 end to end: the conductor's frame carries its palette and the lead; a receiver whose
+// clock reads 23 ms more and that drains the frame 17 ms after it arrived starts its voice on the
+// same absolute millisecond (FS8 drift ≤ 50 ms, here 0 over a latency-free air).
 static void test_protocol_two_cubes_start_on_the_same_ms() {
   Air air;
   FakeClock ca(kT0), cb(kT0 + 23);  // B's clock reads 23 ms more: its tick lands 23 ms "later"
   Cube a(air, 0x20, ca, 1), b(air, 0x10, cb, 2);
-  announce(a, 0x10, ca);
-  announce(b, 0x20, cb);
+  announce(a, 0x10);
+  announce(b, 0x20);
   a.radio.sent.clear();
+  a.self.paletteIndex = 3;
 
   TEST_ASSERT_TRUE(a.social.startChoir(a.self));
+  ChoirStart sent{};
+  TEST_ASSERT_EQUAL(DecodeResult::Ok, decodeChoir(a.radio.sent.back().data(), a.radio.sent.back().size(), sent));
+  TEST_ASSERT_EQUAL_UINT8(3, sent.paletteIndex);
+  TEST_ASSERT_EQUAL_UINT8(Choir::kLead, sent.lead);
   const SocialOutput oa = a.social.tick(a.self);
   TEST_ASSERT_TRUE(oa.choir.sing);
   TEST_ASSERT_EQUAL_UINT8(1, oa.choir.voice);  // B has a lower MAC
@@ -233,26 +272,54 @@ static void test_protocol_alone_sends_nothing() {
   TEST_ASSERT_EQUAL(0, choirFrames(a.radio));
 }
 
-// Row 9: one frame per choir, receivers never transmit CHOIR.
-static void test_row9_receivers_never_relay() {
+// Rows 9, 10: one frame per choir, receivers never transmit CHOIR, yet each sings once, and three
+// cubes take the three voices in MAC order.
+static void test_row9_receivers_sing_without_relaying() {
   Air air;
   FakeClock ca(kT0), cb(kT0), cc(kT0);
   Cube a(air, 0x30, ca, 1), b(air, 0x10, cb, 2), c(air, 0x20, cc, 3);
-  announce(a, 0x10, ca);
-  announce(b, 0x30, cb);
-  announce(c, 0x30, cc);
+  announce(a, 0x10);
+  announce(a, 0x20);
+  announce(b, 0x30);
+  announce(b, 0x20);
+  announce(c, 0x30);
+  announce(c, 0x10);
   TEST_ASSERT_TRUE(a.social.startChoir(a.self));
-  for (int i = 0; i < 20; ++i) {
-    ca.advance(kTick);
-    cb.advance(kTick);
-    cc.advance(kTick);
-    a.social.tick(a.self);
-    b.social.tick(b.self);
-    c.social.tick(c.self);
-  }
+  int sung[3] = {0, 0, 0};
+  uint8_t voice[3] = {9, 9, 9};
+  Cube* cubes[3] = {&a, &b, &c};
+  FakeClock* clocks[3] = {&ca, &cb, &cc};
+  for (int t = 0; t < 20; ++t)
+    for (int i = 0; i < 3; ++i) {
+      const SocialOutput o = cubes[i]->social.tick(cubes[i]->self);
+      if (o.choir.sing) {
+        ++sung[i];
+        voice[i] = o.choir.voice;
+      }
+      clocks[i]->advance(kTick);
+    }
+  for (int i = 0; i < 3; ++i) TEST_ASSERT_EQUAL(1, sung[i]);
+  TEST_ASSERT_EQUAL_UINT8(2, voice[0]);  // 0x30: two lower MACs
+  TEST_ASSERT_EQUAL_UINT8(0, voice[1]);  // 0x10
+  TEST_ASSERT_EQUAL_UINT8(1, voice[2]);  // 0x20
   TEST_ASSERT_EQUAL(1, choirFrames(a.radio));
   TEST_ASSERT_EQUAL(0, choirFrames(b.radio));
   TEST_ASSERT_EQUAL(0, choirFrames(c.radio));
+}
+
+// Rows 1, 5 through the protocol: a Dozing cube neither conducts nor sings.
+static void test_protocol_not_awake_neither_conducts_nor_sings() {
+  Air air;
+  FakeClock ca(kT0), cb(kT0);
+  Cube a(air, 0x20, ca, 1), b(air, 0x10, cb, 2);
+  announce(a, 0x10);
+  announce(b, 0x20);
+  a.self.sleep = SleepState::Dozing;
+  TEST_ASSERT_FALSE(a.social.startChoir(a.self));
+  a.self.sleep = SleepState::Awake;
+  b.self.sleep = SleepState::Waking;
+  TEST_ASSERT_TRUE(a.social.startChoir(a.self));
+  TEST_ASSERT_FALSE(b.social.tick(b.self).choir.sing);
 }
 
 // Malformed CHOIR frames are dropped by reason (06 allowlist) and never sing.
@@ -280,10 +347,14 @@ int main(int, char**) {
   RUN_TEST(test_row7_receiver_cooldown);
   RUN_TEST(test_row8_late_frame_is_silent);
   RUN_TEST(test_rows_4_7_8_survive_the_clock_wrap);
+  RUN_TEST(test_row3_second_stroke_while_pending);
+  RUN_TEST(test_row7_backlogged_frame_meets_the_cooldown);
+  RUN_TEST(test_rows_7_8_late_and_cooldown_across_the_wrap);
   RUN_TEST(test_row10_voice_is_rank_mod_3);
   RUN_TEST(test_protocol_two_cubes_start_on_the_same_ms);
   RUN_TEST(test_protocol_alone_sends_nothing);
-  RUN_TEST(test_row9_receivers_never_relay);
+  RUN_TEST(test_row9_receivers_sing_without_relaying);
+  RUN_TEST(test_protocol_not_awake_neither_conducts_nor_sings);
   RUN_TEST(test_protocol_malformed_choir_is_dropped);
   return UNITY_END();
 }

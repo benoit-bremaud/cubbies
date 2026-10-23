@@ -43,7 +43,7 @@ shortens the rest. A frame drained after its start time is too late: the cube st
 ## Voices
 
 `rank` = present neighbours (`Waiting` or `Greeted`) whose MAC is lower than the cube's own (the
-conductor counted like any other); **voice = rank mod 3**: 0 low, 1 melody, 2 high. Every voice
+conductor counted like any other); **voice = rank mod 3**: 0 `ChoirLow`, 1 `ChoirMid`, 2 `ChoirHigh`. Every voice
 has the same total length. Two cubes with different tables may share a voice: accepted, it still
 sounds like a choir. With one neighbour, the two cubes take voices 0 and 1.
 
@@ -56,8 +56,12 @@ stateDiagram-v2
   Idle --> Singing: CHOIR frame, cube Awake, cooldown over, start still ahead → start = rxTime + L
   Idle --> Idle: alone, asleep, cooldown, too late, or malformed → nothing
   Singing --> Singing: another CHOIR frame or stroke → ignored
-  Singing --> Idle: melody length elapsed (T_choir cooldown runs from the start)
+  Singing --> Idle: melody length elapsed (T_choir cooldown runs from the scheduling tick)
 ```
+
+`Singing` is implicit in the code: `Choir` keeps only a pending start and the cooldown, which runs
+from the tick that schedules the voice (up to kLeadMs before it is heard) and outlasts the longest
+rest plus a voice (static_assert), so a singing cube is always cooling (row 6).
 
 ## Transition table (source of the native tests)
 
@@ -69,7 +73,7 @@ stateDiagram-v2
 | 4 | CHOIR frame, cube Awake, cooldown over | sings voice `rank mod 3` after a rest of `rxTime + L − now` ms |
 | 5 | CHOIR frame, cube not Awake (Dozing, Asleep, Waking) | silent, no state change |
 | 6 | CHOIR frame while a choir is pending or singing | ignored (no second start) |
-| 7 | CHOIR frame within T_choir 60 s of the last start | ignored (caps forged-frame nuisance) |
+| 7 | CHOIR frame within T_choir 60 s of the last start, judged on the tick's time (a frame received before the start and drained later is also ignored) | ignored (caps forged-frame nuisance) |
 | 8 | CHOIR frame drained after its start time (`rxTime + L ≤ now`) | silent, cooldown not started |
 | 9 | any CHOIR frame | never relayed: one frame per choir, no echo |
 | 10 | voice rank: k present neighbours have a lower MAC | voice k mod 3 |
@@ -97,4 +101,10 @@ accepted (a desk cluster is in range; relays would add latency to the drift budg
   halves may start up to 500 ms apart. Rare, accepted.
 - **Deterministic**: clock, receive time and the table are inputs; no Prng needed.
 - **Mood unchanged**: the choir is a performance, not a stimulus (as 05b).
+- **Voice dropped by the gate**: if a rank-3 sound (wake-up melody) is playing, the gate drops the
+  voice but the cooldown has started; the cube sits that choir out. Rare, accepted.
+- **Lone cube**: a forged CHOIR frame makes even a cube with no neighbour sing, at most once per
+  60 s at the constant volume; accepted under ADR-0012.
+- **Rest measured at the tick start**: the radio sends of the same tick happen before the gate
+  plays, adding a few ms per cube; under the budget, confirmed on the bench.
 - **Bench**: FS8 drift measured on two prototypes with a microphone recording (verification plan).

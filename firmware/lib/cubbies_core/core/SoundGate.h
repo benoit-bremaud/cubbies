@@ -17,17 +17,19 @@ enum class SoundId : uint8_t { Surprise, Joy, Purr, Hello, Yawn, Grumpy, WakeMel
                                ChoirLow, ChoirMid, ChoirHigh };    // choir voices: social-group/05c
 constexpr uint8_t kSoundCount = 13;
 
-// The choir voice of a MAC rank (05c: voice = rank mod 3).
+constexpr uint8_t kChoirVoices =
+    static_cast<uint8_t>(SoundId::ChoirHigh) - static_cast<uint8_t>(SoundId::ChoirLow) + 1;
+// The choir voice of a voice index (Choir already reduces the rank mod Choir::kVoices; the mod
+// here only keeps the SoundId in range). main.cpp asserts both counts agree.
 SoundId choirVoice(uint8_t voice);
 
 class SoundGate {
  public:
   SoundGate(IClock& clock, IAudio& audio);
 
-  bool play(SoundId id);               // true when forwarded to the buzzer
-  // Same, after a rest of `restMs` (≤ kMaxRestMs) played by the buzzer's own timer, so a choir
+  // True when forwarded to the buzzer; with `restMs`, after a rest of `restMs` (≤ kMaxRestMs) played by the buzzer's own timer, so a choir
   // starts on the same millisecond on every cube whatever its tick phase (social-group/05c).
-  bool play(SoundId id, uint32_t restMs);
+  bool play(SoundId id, uint32_t restMs = 0);
   // Sync with the Sleep cycle after every SleepCycle call that returns an effect and before
   // applying effects(): the wake-up melody starts on a gesture() or sound() that enters Waking.
   // Entering Dozing or Asleep stops the sound in progress.
@@ -39,7 +41,7 @@ class SoundGate {
   static uint32_t durationMs(SoundId id);  // sum of the note durations
 
   static constexpr uint32_t kMaxRestMs = 1000;  // the CHOIR lead bound (06)
-  static constexpr uint8_t kMaxNotes = 8;       // longest note table
+  static constexpr uint8_t kMaxNotes = 8;       // upper bound on any note table (static_assert in .cpp)
   static constexpr VolumeLevel kVolume = 1;  // V1 default, ≤ 40 dB(A) at 1 m (REQ-NF-03)
   static_assert(kVolume <= kMaxVolume, "kVolume must be a level of the four-step scale");
 
