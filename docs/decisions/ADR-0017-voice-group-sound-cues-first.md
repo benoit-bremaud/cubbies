@@ -12,6 +12,17 @@ The research note [voice-and-ai.md](../research/voice-and-ai.md) compares three 
 an MCDA matrix (identity 30, feasibility 25, privacy 20, wow 15, BOM 10): group effect 460/500,
 prosody 395/500, voice commands through an ear cube 360/500. The owner chose the group effect.
 
+## Options and scoring
+
+Weights: identity 30, feasibility on V1 25, privacy 20, wow 15, BOM/power 10 (detail in the
+research note).
+
+| Option | Total /500 |
+|--------|-----------|
+| A. Group sound cues, no words | **460** — chosen |
+| C. Prosody reactions per cube | 395 |
+| B. Voice commands through an S3 ear cube (V1.5) | 360 |
+
 ## Decision
 
 - **First voice brick = group sound cues:** a human sound (clap, knock, loud call) heard by the

@@ -21,8 +21,8 @@ extrapolation. Asked what to keep first, the owner chose the **group effect** (M
   instructions. Frozen at the CDR (ADR-0011).
 - **Microphone:** INMP441 I2S MEMS (P1), on the only I2S peripheral; no speaker, a passive buzzer
   (`docs/bom.md`).
-- **No time source, no Wi-Fi in V1** (ADR-0002); Wi-Fi only on the V1.5 mother cube, credentials
-  in NVS.
+- **No time source, no Wi-Fi in V1** (project rules); Wi-Fi only on the V1.5 mother cube
+  (`docs/roadmap.md`), credentials in NVS.
 - **The cube must never be loud** and goes through one Sound gate.
 
 ## State of the art
@@ -31,8 +31,8 @@ extrapolation. Asked what to keep first, the owner chose the **group effect** (M
 
 | Option | Chips | Fits the C3? | Notes |
 |--------|-------|--------------|-------|
-| Espressif ESP-SR (AFE, WakeNet, MultiNet) | ESP32-S3, ESP32-P4 recommended (AI instructions, octal PSRAM); new models dropped for the original ESP32 | **No** — the C3 is not a target | WakeNet9 offers a few fixed or TTS-trained wake words; MultiNet adds offline commands on S3 [1] |
-| TensorFlow Lite Micro + ESP-NN (`micro_speech`) | all ESP32 incl. C3 | Possible, tight | ESP-NN makes person detection ~8× faster on the C3 (3355 → 426 ms at 160 MHz), against 54 ms on an S3 [2]; a tiny "yes/no" model fits, a custom vocabulary needs training and leaves little CPU for the eyes |
+| Espressif ESP-SR (AFE, WakeNet, MultiNet) | ESP32-S3, ESP32-P4 recommended (AI instructions, octal PSRAM); new models dropped for the original ESP32 (vendor README) | **No** — the C3 is not a target | WakeNet9 offers a few fixed or TTS-trained wake words; MultiNet adds offline commands on S3 [1] |
+| TensorFlow Lite Micro + ESP-NN (`micro_speech`) | all ESP32 incl. C3 | Possible, tight | ESP-NN makes person detection ~8× faster on the C3 (3355 → 426 ms at 160 MHz), against 54 ms on an S3 [2] (vendor README, not re-measured); a tiny "yes/no" model fits, a custom vocabulary needs training and leaves little CPU for the eyes |
 | Edge Impulse / custom TinyML | C3 to S3 | Possible for 1–3 sounds | dataset + training pipeline to own; per-voice accuracy is the risk |
 | Energy and spectral features (RMS, onset, zero-crossings) | any | **Yes** | enough for clap, knock, "someone is talking", loudness and rough prosody; no words, no model |
 
@@ -57,6 +57,8 @@ data as soon as it is recorded or transmitted. Principles (security policy, priv
   a gift-grade feature.
 
 ### Power and BOM impact
+
+Prices are estimates (October 2026 retail), not quotes.
 
 | Path | BOM delta per cube | Power | Firmware cost |
 |------|--------------------|-------|---------------|
@@ -91,8 +93,8 @@ Sensitivity: with wow 30 and identity 15, A 445 vs B 375 — A stays first. **Th
 - Detector: clap vs knock vs loud call, thresholds on the INMP441, false positives from keyboards
   and doors (bench measurements, verification plan).
 - Group reaction: which existing behaviour a sound cue starts (chain G3, choir G4) and how the
-  cubes that heard it agree on one wave (each cube hears the clap itself, so no frame may be
-  needed).
+  cubes that heard it agree on one wave (design intent to confirm in the PDR: each cube hears the clap
+  itself, so no new frame).
 - Self-hearing: the buzzer must not trigger the detector (issue #16).
 
 ## Sources
