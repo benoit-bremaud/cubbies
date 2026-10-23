@@ -120,7 +120,26 @@
   - 2d. The event has already been relayed three times: the last cube reacts but does not relay.
 
 ### UC10 — Gather the cubes for a choir (tier B)
-- Primary actor: Team. Requirements: REQ-F-14.
+- Primary actor: Team (one colleague strokes their cube while the cubes are gathered).
+  Requirements: REQ-F-14. Views: [diagrams/social-group/](../diagrams/social-group/) 02c, 05c
+  (issue #57).
+- Preconditions: the cubes are in radio range of the stroked cube and present to it (UC7).
+- Minimal guarantee: alone, a stroke is the usual solo Purr; a cube never sings louder than the
+  Sound gate's volume, never while asleep, and at most once per minute.
+- Success guarantee: every awake cube in range of the conductor sings one voice of the same
+  melody, all starting within 50 ms of each other (FS8).
+- Main success scenario:
+  1. The colleague strokes cube A; A purrs and broadcasts a choir start, "in 500 ms".
+  2. Each awake neighbour takes a voice from its place in the group (MAC order, three voices).
+  3. After 500 ms every cube, A included, sings its voice; the choir ends with the melody.
+- Extensions:
+  - 1a. A is alone: solo Purr, nothing is sent.
+  - 1b. A took part in a choir less than 60 s ago: solo Purr, nothing is sent.
+  - 2a. A neighbour is dozing or asleep: it stays silent.
+  - 2b. A neighbour sang in a choir less than 60 s ago, or is already singing: it stays silent.
+  - 2c. A neighbour handles the start too late (after its start time): it stays silent.
+  - 2d. A cube is out of A's range: it does not sing (the start is not relayed).
+  - 3a. A cube falls asleep while singing: its voice stops.
 
 ## Not use cases (system-initiated behaviours, listed for traceability only)
 

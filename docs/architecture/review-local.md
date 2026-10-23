@@ -1,52 +1,52 @@
-# Local review — cubbies (feat/55-g3-chain-reaction)
+# Local review — cubbies (claude/g4-choir-43d2ed)
 
-- Date: 2026-10-22
-- Commit: branch head after the review fixes (base `origin/main` 9c29f79)
-- Scope: branch diff main...HEAD: G3 chain reaction (issue #55) — `core/ChainReaction.{h,cpp}`,
-  `core/PresenceCodec.{h,cpp}` (CHAIN frame), `core/SocialProtocol.{h,cpp}`,
-  `core/StimulusRouter.{h,cpp}` (`routeChain`), `src/main.cpp`, native tests, social-group PDR docs
-- Checks run: design (architecture-guardian) · tests (test-auditor) · security + correctness +
-  docs (Opus reviewer)
-- Verdict: ship after fixes (applied) · Must 0 · Should 13 · Nice 9
+- Date: 2026-10-23
+- Commit: 9a54637 (base `origin/main` 6a2807b)
+- Scope: branch diff main...HEAD: G4 synchronised choir (issue #57) — `core/Choir.{h,cpp}`,
+  `core/PresenceCodec.{h,cpp}` (CHOIR frame, shared header helpers), `core/SocialProtocol.{h,cpp}`,
+  `core/SoundGate.{h,cpp}` (lead rest, three voices), `src/main.cpp`, native tests, social-group
+  PDR docs (UC10, 02c, 05c, 06, traceability, verification plan), PROJECT_LOG
+- Checks run: design (architecture-guardian) · docs (doc-auditor) · tests (test-auditor) ·
+  security + correctness (general-purpose, read-only)
+- Verdict: ship after fixes (applied in 9a54637) · Must 0 · Should 19 (fixed) · Nice 8 (4 fixed, 4 documented)
 
-## Pre-merge gate
+## Pre-merge gate (head SHA 9a54637)
 | Step | Result |
 |---|---|
-| 1 Tests | ✅ 262 native Unity tests (20 chain, 3 CHAIN codec, 1 router) · ✅ `pio run` xiao_c3 + c3_supermini · ✅ `sh run.sh` exit 0 |
-| 2 Coverage | new lib code 100 % lines (gcov: `ChainReaction.cpp` 39/39, `encodeChain`/`decodeChain` 18/18, `startChain` 7/7, `rank` 5/5, `presentCount` 5/5, `routeChain` 3/3; `count()` drop branches covered by `test_native_social`) · docs: every new public symbol has a header comment |
-| 3 SonarQube | ❌ FAILED on the project, not on this diff: `new_violations` 1 = python:S3776 in `hardware/case/cubbies_case.py:380`, `new_coverage` 0 % (no Python coverage.xml) — same as main, issue #53. No issue on any file of this diff |
-| 4 Secrets | ✅ gitleaks clean · no tracked `.env*` · diff read: logic, tests, docs only; CHAIN frames carry no MAC |
-| 5 QA pass | ✅ no UI: the product is the firmware — native suite incl. 3-cube loopback wave + both board images build; two-cube bench ripple optional (bench #25) |
-- Gate: **RED on step 3 (pre-existing, outside the diff, #53)** — all other steps green
+| 1 Tests | ✅ 292 native tests · ✅ `pio run` xiao_c3 and c3_supermini · ✅ `sim/run.sh` exit 0 |
+| 2 Coverage | new lib code: `Choir.cpp` 100 % lines, `SoundGate.cpp` 100 % lines (manual `g++ --coverage`); docs ≈ 100 % of the new public surface (doc-auditor estimate) |
+| 3 SonarQube | ❌ FAILED on main outside the diff: one issue in `hardware/case/cubbies_case.py` (#53), new_coverage not imported (Community edition); owner waiver as for G2/G3 |
+| 4 Secrets | ✅ gitleaks clean (origin/main..HEAD) · no tracked .env · diff read: nothing sensitive |
+| 5 QA pass | firmware: both board images build; FS8 drift bench on two prototypes pending (verification plan) |
+- Gate: **GREEN with the #53 waiver**
 
 ## 🔴 Must Have
 _None._
 
-## 🟡 Should Have (all fixed)
-- `src/main.cpp` `[design]` · Awake check of 05b row 1 lived in the adapter · moved into `ChainReaction::start(awake)` / `SocialProtocol::startChain(SelfState)`, tested
-- `src/main.cpp` `[design]` · chain Joy borrowed `route(DoubleTap)` · `routeChain()` added beside `routeNewcomer()`, router test
-- `ChainReaction.cpp` tick `[design|tests]` · silent relay of a sleeping cube starts the cooldown, table said "reaction" · row 12 reworded "last chain fire", header comment
-- `SocialProtocol.cpp` startChain `[design]` · Prng drawn even when the trigger is refused · id drawn inside `start()` after the checks, tested
-- `test_chain.cpp` row 1 `[tests]` · origin cooldown not asserted · added
-- `test_chain.cpp` row 13 `[tests]` · 8-key capacity not proven · oldest kept key asserted
-- `test_chain.cpp` row 11 `[tests]` · relay not proven at protocol level, only Asleep · B's frame hop 1 asserted for Dozing, Asleep, Waking
-- `test_chain.cpp` echo `[tests]` · total of 3 frames could hide 2+1+0 · one frame per cube asserted
-- `test_chain.cpp` row 9 `[tests]` · relay not asserted · added
-- `05b-state-chain.md` `[docs]` · Context said the chain reads the table and MAC · reworded "frame, rank, clock"
-- `05b`/`06` `[security|docs]` · 8 forged keys can flush a real key from the ring · "one frame per event" qualified, cap stated
-- `05b` `[security]` · forged hop-0 frame relayed by every cube · relay cap documented
-- `ChainReaction.h` `[correctness]` · two time bases (frame receive time vs tick now) · documented: `isDue`/`ageMs` tolerate a receive time slightly ahead
+## 🟡 Should Have (all fixed in 9a54637)
+- `core/Choir.cpp` `[correctness|security]` · a CHOIR frame received before the last start and drained a tick later passed the cooldown (`ageMs` wrapped) · cooldown judged in `tick()` on the tick's time; regression test `test_row7_backlogged_frame_meets_the_cooldown`
+- `core/SoundGate.cpp` `[design|correctness]` · `buffer_` rewritten while the buzzer timer may read it · `audio_.stop()` first when the previous play used the buffer; tested
+- `core/PresenceCodec.cpp` `[design]` · header write/check copied three times · `writeHeader` / `checkHeader`
+- `core/SoundGate.cpp`, `src/main.cpp` `[design]` · voice count and lead bound linked by comments only · `kChoirVoices`, `kChoirLeadUnitMs`, `kChoirMelody`, two `static_assert`s
+- `core/Choir.h` `[design|docs]` · row 6 relies on cooldown > rest + voice · `static_assert` and 05c note
+- `test_choir.cpp` `[tests]` · frame content not checked on the air; row 9 vacuous; protocol rank, not-Awake wiring, pending guard, wrap on row 8 untested · tests added
+- `test_soundgate.cpp` `[tests]` · one test for three behaviours; capped-rest duration and stale rest untested · split and added
+- `02c`, `05c`, traceability `[docs]` · `ChoirFrame` name, voice names, cooldown anchor, implicit Singing, row ranges · aligned
 
 ## 🔵 Nice to Have
-- `SocialProtocol.cpp` receive `[design]` · dispatch by `DecodeResult::Type` rather than the type byte · kept: two types only
-- `PresenceCodec.h` `[design]` · rename to `FrameCodec` at the third frame type (Rule of Three)
-- `SocialProtocol.h` `[design]` · `chain` flag name · kept, commented
-- `05b` `[security]` · 1-in-256 event-id collision · documented
-- `test_chain.cpp` `[tests]` · wrap tests for T_trigger / T_cooldown / isDue, rank with absent neighbours, hop 0/2 relays · not added (same `ageMs`/`isDue` helpers as row 14, already wrap-tested)
+- `SoundGate.h` `[design]` · forwarding overload → default argument (fixed)
+- `SocialProtocol.cpp` `[design]` · `awake` computed once (fixed)
+- `SoundGate.h` `[docs]` · `kMaxNotes` comment (fixed)
+- `test_choir.cpp` `[tests]` · unused `announce` parameter, rank 255 (fixed)
+- `SocialProtocol.cpp` `[design]` · frame-type dispatch by fall-through; switch on the type byte before a fourth type (open)
+- `src/main.cpp` `[correctness]` · voice dropped by a rank-3 sound still starts the cooldown (documented in 05c, accepted)
+- `Choir.cpp` `[correctness]` · rest measured at the tick start, a few ms of drift from same-tick sends (documented, bench)
+- `test_codec.cpp` `[tests]` · truncated CHOIR frame case (open, same shape as CHAIN)
 
 ## ⚪ Disagree / Intentional
-- `ChainReaction.cpp` hear `[design]` · a key arriving while an event is pending is not remembered · 05b row 10 (validated)
-- `kMaxHop` in the codec `[design]` · the hop bound is part of the frame allowlist
+- `core/Choir.cpp` `[security]` · a lone cube sings on a forged CHOIR frame · at most once per 60 s at the constant volume, ADR-0012 nuisance risk; 05c note
+- `core/SocialProtocol.cpp` `[design]` · `lowerMacs()` next to `rank(sender)` · two different rules (05b vs 05c), Rule of Three not reached
+- `src/main.cpp` `[tests]` · wiring untested natively · ADR-0014 adapter policy
 
 ## Per-dimension summary
-- Design: no over-engineering, dependency rule kept · Docs: matched the code after rewording · Tests: one per 05b row, no wrong-reason pass · Security: forged-frame nuisance bounded by cooldowns under ADR-0012 · Correctness: all ages wrap-safe, no Must
+- Design: dependency rule and single Sound gate held; codec duplication and magic links fixed · Docs: aligned, no noise · Tests: every 05c row covered, false-confidence row 9 fixed · Security: one cooldown bypass fixed, forged-frame nuisance bounded · Correctness: no remaining defect found
