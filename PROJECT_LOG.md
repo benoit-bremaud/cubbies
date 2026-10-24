@@ -7,7 +7,17 @@ human context: what was done, why, and by which PR.
 
 ## 2026-10-23
 
-### G5 collective sleep (issue #59) — **PR pending**
+### Voice and AI research note (issue #61) — **PR #62**
+
+- Voice study picked by MCDA (405/500 vs G6 jealousy 385, S9 275).
+- Owner direction by MCDA (identity 30, feasibility 25, privacy 20, wow 15, BOM 10): group
+  effect — a human sound triggers the group, no words — 460/500, vs prosody 395, S3 ear cube 360.
+- `docs/research/voice-and-ai.md` (ESP-SR targets S3/P4 not C3, TFLM + ESP-NN on C3, cloud via
+  mother cube, GDPR of an office mic, BOM/power, MicroDuck fleet-simulator ideas), ADR-0017
+  Proposed, roadmap G12 clap wave. Context7 out of quota: library facts from the vendors' READMEs.
+- Also fixed the G5 entry (PR #60). No cubbies GitHub Project exists; issue left off a kanban.
+
+### G5 collective sleep (issue #59) — **PR #60** (9d3045f)
 
 - G5 picked by MCDA (465/500 vs G6 jealousy 415, voice study 375, S9 295).
 - PDR `social-group` (G5 part) validated by the owner: REQ-F-20, behaviour B4 (system-initiated,

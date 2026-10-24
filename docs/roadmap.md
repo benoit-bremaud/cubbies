@@ -14,7 +14,7 @@ requirements (`docs/architecture/specs/requirements.md`) and passes the PDR chec
 | V1.5 | Mother cube and updates | none (Wi-Fi credentials in NVS on one cube) | a release reaches every cube without a cable |
 | V2 | Nomad cube | LiPo + switch, enclosure revision | a cube survives a day unplugged with sleep |
 | V3 | Wireless charging | Qi receiver in the base | charges on the office desk pads |
-| V4 (idea) | Voice | XIAO S3 + I2S amp + speaker | only if V1–V3 prove the demand |
+| V4 (idea) | Voice | XIAO S3 + I2S amp + speaker | only if V1–V3 prove the demand; group sound cues first on V1 (G12, ADR-0017), voice commands or AI only through the mother cube |
 
 ## Backlog, ordered from simplest to hardest
 
@@ -53,6 +53,7 @@ Within a tier, the order is the implementation order.
 | G9 | Chinese whispers: each cube distorts the melody before passing it on | C | G3, S4 |
 | G10 | Flirting (cartoon level): hearts, blush, wink, serenade, bump = kiss, slow dance of blinks | C | G1, P2 |
 | G11 | Birthday / team counter / shared events | C | V1.5 mother cube |
+| G12 | Clap wave: a human sound cue (clap, knock, call) heard by the cubes starts a group reaction; no words, audio never leaves the cube (ADR-0017) | B | S7, G3/G4 |
 
 ### Platform
 
