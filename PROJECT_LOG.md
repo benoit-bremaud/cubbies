@@ -27,7 +27,8 @@ human context: what was done, why, and by which PR.
   stale refs) and 9 Should fixed: `JealousyRepertoire` in `Seeded`, sound ranks, face sheet
   first, `presentSince`, Weary last, exact weight vectors, T_lonely 5 min. Round 4 (3 Must:
   `refuseChoir(out)` clears the returned cue, `presentSince` kept within T_regreet, Weary example
-  respects no-repeat; repertoire passed per call) fixed. REQ-F-22, B5, `diagrams/social-group/` 02e and 05e, PET bytes
+  respects no-repeat; repertoire passed per call) fixed. Round 5: gate open (0 Must), last
+  Should and Nices applied. Five adversarial rounds in total. REQ-F-22, B5, `diagrams/social-group/` 02e and 05e, PET bytes
   in social-presence/06, traceability and verification rows.
 - Fixed a duplicate ID: collective sleep was REQ-F-20 like the expansion port; it becomes
   REQ-F-21 (ADR-0016 keeps REQ-F-20 untouched).

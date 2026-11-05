@@ -44,7 +44,7 @@ arrives from a present neighbour while the cube is Awake. At each step the **con
 cube already knows) selects a weight table, and the cube's lib-owned `Prng` draws one reaction
 from it, so the reaction fits the situation yet stays a little unpredictable. Every reaction is
 eyes plus at most one short sound through the Sound gate. Only the Sulk reaction changes the mood
-(to Annoyed); the others are held overlays (T_react, the renderer's `EyesRenderer::reactionDurationMs(reaction)`, 3 s for
+(to Annoyed); the others are timed overlays (T_react, the renderer's `EyesRenderer::reactionDurationMs(reaction)`, 3 s for
 every G6a reaction) over the unchanged mood.
 
 "Ignored" means no owner attention at all: no touch-down, no gesture and no call (voice, clap)
@@ -57,10 +57,9 @@ to is never jealous.
 stroked neighbour's table entry: its age and the crowd size), when on this tick a decoded PET
 frame names the palette index of its sender's present table entry (`Waiting` or `Greeted`) and
 `self.sleep` is Awake. The flag is cleared every tick, so a PET received while not Awake is lost.
-The stroked neighbour's age comes from a new `Neighbour::presentSince`, set when a new MAC takes
-a `Free` slot or when an entry returns from `Absent` after more than T_regreet (10 min, the
-`Absent → Waiting` path); a return within T_regreet (`Absent → Greeted`) keeps it, so a coffee
-break keeps the friendship.
+The stroked neighbour's age comes from a new `Neighbour::presentSince`, set whenever a new MAC is stored (Free or evicted slot); a known MAC back from `Absent` keeps
+it. A long absence frees the entry after T_regreet (10 min), so that cube comes back as a new MAC,
+while a coffee break keeps the friendship.
 
 The repertoire is a `JealousyRepertoire` class in `lib/` (contexts, weights, no-repeat memory,
 Weary counter), owning its `Prng` (`Prng(seed, 3)`), built in `Seeded` after the Wi-Fi driver is
@@ -151,8 +150,8 @@ gets weight 0** (no immediate repeat; every step keeps at least two positive wei
 | 23 | CHOIR cue while Noticed | sung as usual |
 | 24 | G2 candidate Annoyed on a cube attended less than T_ignored ago | no pull into Annoyed (05a-contagion row 13) |
 | 25 | `restart()` (boot, every wake) | last attention = now (T_ignored grace), Noticed dropped; episode time, the Weary counter and the no-repeat memory kept |
-| 26 | a new MAC, or a neighbour back from `Absent` after more than T_regreet | `presentSince` = now: Newcomer until T_friend |
-| 26b | a neighbour back from `Absent` within T_regreet | `presentSince` kept: still a Friend if it was one |
+| 26 | a new MAC stored (Free or evicted slot, including a cube back after its entry was freed past T_regreet) | `presentSince` = now: Newcomer until T_friend |
+| 26b | a known MAC back from `Absent` | `presentSince` kept: still a Friend if it was one |
 
 Durations (tuning parameters, ADR-0013): **T_ignored 30 s**, **T_notice 60 s**,
 **T_jealous 60 s**, **T_react 3 s** (from the renderer), **T_pet_tx 10 s**, **T_friend 30 min**,
@@ -165,7 +164,8 @@ arrived (Crowd). Alice strokes A: B draws a step-1 reaction, SideGlance favoured
 Alice strokes A again 15 s later: B draws step 2 among Pout 5, PuppyEyes 4, MeToo 5, FakeSleep 1,
 Sulk 0 — say MeToo: its eyes hop and it chirps. C, which saw the same strokes and only just met
 A (Newcomer), turns away, then sulks. Bob strokes B: the hop stops, B purrs. An hour later, after
-three episodes (the last a MeToo), B is Weary: a new double stroke on A draws among Pout 5,
+three episodes (the last a MeToo), B is Weary and not Neglected (a colleague spoke to it 3 min
+ago): a new double stroke on A draws among Pout 5,
 PuppyEyes 2, MeToo 0 (no repeat), FakeSleep 5, Sulk 0 — say a FakeSleep (5 of 12) that peeks sideways.
 
 ## Notes

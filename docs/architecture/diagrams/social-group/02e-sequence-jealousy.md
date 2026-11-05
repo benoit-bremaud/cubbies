@@ -51,7 +51,7 @@ sequenceDiagram
 ## Notes
 
 - **New wiring**: `main.cpp` calls `social.sendPet(self)` on `Gesture::Stroke` next to
-  `startChoir(self)`, calls `mood.jealousy(out.jealousOf)` right after `social.tick(self)` and
+  `startChoir(self)`, calls `mood.jealousy(out.jealousOf, seeded->repertoire)` right after `social.tick(self)` and
   before the choir voice is played, calls `social.refuseChoir(out)` on a step-2 reaction before any choir voice is played, plays the returned eyes
   and sound, and fills `SelfState::inJealousReaction` from `mood.inJealousReaction()`. Both
   refusals are decided in `lib/` and tested natively.
