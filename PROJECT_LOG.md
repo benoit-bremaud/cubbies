@@ -25,7 +25,9 @@ human context: what was done, why, and by which PR.
   contexts, "sworn enemy") 445/500. Adversarial round 2 (1 Must: contradictory crescendo guards)
   folded into the rewrite. Round 3 (2 Must: same-tick choir refusal → `refuseChoir()` in lib,
   stale refs) and 9 Should fixed: `JealousyRepertoire` in `Seeded`, sound ranks, face sheet
-  first, `presentSince`, Weary last, exact weight vectors, T_lonely 5 min. REQ-F-22, B5, `diagrams/social-group/` 02e and 05e, PET bytes
+  first, `presentSince`, Weary last, exact weight vectors, T_lonely 5 min. Round 4 (3 Must:
+  `refuseChoir(out)` clears the returned cue, `presentSince` kept within T_regreet, Weary example
+  respects no-repeat; repertoire passed per call) fixed. REQ-F-22, B5, `diagrams/social-group/` 02e and 05e, PET bytes
   in social-presence/06, traceability and verification rows.
 - Fixed a duplicate ID: collective sleep was REQ-F-20 like the expansion port; it becomes
   REQ-F-21 (ADR-0016 keeps REQ-F-20 untouched).

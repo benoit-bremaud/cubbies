@@ -44,7 +44,8 @@ arrives from a present neighbour while the cube is Awake. At each step the **con
 cube already knows) selects a weight table, and the cube's lib-owned `Prng` draws one reaction
 from it, so the reaction fits the situation yet stays a little unpredictable. Every reaction is
 eyes plus at most one short sound through the Sound gate. Only the Sulk reaction changes the mood
-(to Annoyed); the others are held overlays (T_react 3 s) over the unchanged mood.
+(to Annoyed); the others are held overlays (T_react, the renderer's `EyesRenderer::reactionDurationMs(reaction)`, 3 s for
+every G6a reaction) over the unchanged mood.
 
 "Ignored" means no owner attention at all: no touch-down, no gesture and no call (voice, clap)
 for T_ignored; `Loud` and `NewcomerSeen` do not count as attention. A cube being petted or spoken
@@ -56,13 +57,15 @@ to is never jealous.
 stroked neighbour's table entry: its age and the crowd size), when on this tick a decoded PET
 frame names the palette index of its sender's present table entry (`Waiting` or `Greeted`) and
 `self.sleep` is Awake. The flag is cleared every tick, so a PET received while not Awake is lost.
-The stroked neighbour's age comes from a new `Neighbour::presentSince`, set when the entry turns
-`Waiting` from `Free` or `Absent`, so a friend who leaves for more than T_ttl (15 s) comes back
-as a newcomer until T_friend has passed again.
+The stroked neighbour's age comes from a new `Neighbour::presentSince`, set when a new MAC takes
+a `Free` slot or when an entry returns from `Absent` after more than T_regreet (10 min, the
+`Absent → Waiting` path); a return within T_regreet (`Absent → Greeted`) keeps it, so a coffee
+break keeps the friendship.
 
 The repertoire is a `JealousyRepertoire` class in `lib/` (contexts, weights, no-repeat memory,
 Weary counter), owning its `Prng` (`Prng(seed, 3)`), built in `Seeded` after the Wi-Fi driver is
-up (ADR-0013) and called by `MoodEngine::jealousy()`; the mood engine keeps only the guards,
+up (ADR-0013) and passed to each call, `mood.jealousy(out.jealousOf, seeded->repertoire)`
+(the mood engine is a static global built before `Seeded`, so it holds no reference); the mood engine keeps only the guards,
 the crescendo state and the Sulk transition.
 
 ## Diagram
@@ -84,7 +87,7 @@ no step-2 reaction within T_jealous.
 | Reaction | Step | Eyes | Sound (placeholder until the sound brick) |
 |----------|------|------|-------------------------------------------|
 | SideGlance | 1 | both eyes slide to one side and hold | none |
-| Stare | 1 | eyes held at a side look offset (`setLook`), blink suspended for T_react, then three fast blinks | none |
+| Stare | 1 | eyes held at a side look offset (`setLook`), blink suspended for T_react, then three fast blinks (a new `Timeline` case, pinned by a timeline test) | none |
 | TurnAway | 1 | eyes at the largest look offset (`setLook`), opposite the side of the last glance | none |
 | Pout | 2 | lower lids raised, eyes narrowed | short "hmpf", rank 2 |
 | PuppyEyes | 2 | eyes enlarged with a highlight, lids tilted | small whimper, rank 2 |
@@ -144,14 +147,15 @@ gets weight 0** (no immediate repeat; every step keeps at least two positive wei
 | 20 | own stroke while not Awake, alone, or within T_pet_tx | no PET (ADR-0001) |
 | 21 | flag and a G2 pull or G5 yawn due on the same tick | jealousy is evaluated first, right after `social.tick(self)` |
 | 22 | CHOIR cue while a step-2 reaction is held (or Annoyed from a Sulk) | not sung: `SelfState::inJealousReaction` makes the Choir module return no voice (05c row 13); cooldown as usual |
-| 22b | PET and CHOIR in the same drain, step 2 drawn on that tick | `main.cpp` calls `social.refuseChoir()` right after `mood.jealousy()`: the pending voice is withdrawn in `lib/`, the cooldown kept, the reaction sound plays |
+| 22b | PET and CHOIR in the same drain, step 2 drawn on that tick | `main.cpp` calls `SocialProtocol::refuseChoir(out)` right after `mood.jealousy()` and before playing any choir voice: it clears `out.choir` (the cue already returned by `tick()`), the cooldown already started stays, the reaction sound plays |
 | 23 | CHOIR cue while Noticed | sung as usual |
 | 24 | G2 candidate Annoyed on a cube attended less than T_ignored ago | no pull into Annoyed (05a-contagion row 13) |
 | 25 | `restart()` (boot, every wake) | last attention = now (T_ignored grace), Noticed dropped; episode time, the Weary counter and the no-repeat memory kept |
-| 26 | a neighbour back from `Absent` | `presentSince` = now: Newcomer until T_friend |
+| 26 | a new MAC, or a neighbour back from `Absent` after more than T_regreet | `presentSince` = now: Newcomer until T_friend |
+| 26b | a neighbour back from `Absent` within T_regreet | `presentSince` kept: still a Friend if it was one |
 
 Durations (tuning parameters, ADR-0013): **T_ignored 30 s**, **T_notice 60 s**,
-**T_jealous 60 s**, **T_react 3 s**, **T_pet_tx 10 s**, **T_friend 30 min**,
+**T_jealous 60 s**, **T_react 3 s** (from the renderer), **T_pet_tx 10 s**, **T_friend 30 min**,
 **T_lonely 5 min** (below the 10 min doze chain of FS5, so it can hold while awake), **T_weary 30 min**; T_calm 20 s reused from 05a.
 
 ## Worked example (cubes A, B, C; seed fixed in the test)
@@ -161,7 +165,8 @@ arrived (Crowd). Alice strokes A: B draws a step-1 reaction, SideGlance favoured
 Alice strokes A again 15 s later: B draws step 2 among Pout 5, PuppyEyes 4, MeToo 5, FakeSleep 1,
 Sulk 0 — say MeToo: its eyes hop and it chirps. C, which saw the same strokes and only just met
 A (Newcomer), turns away, then sulks. Bob strokes B: the hop stops, B purrs. An hour later, after
-three episodes, B is Weary: a new double stroke on A gets say a FakeSleep (weight 5 of 17) that peeks sideways.
+three episodes (the last a MeToo), B is Weary: a new double stroke on A draws among Pout 5,
+PuppyEyes 2, MeToo 0 (no repeat), FakeSleep 5, Sulk 0 — say a FakeSleep (5 of 12) that peeks sideways.
 
 ## Notes
 

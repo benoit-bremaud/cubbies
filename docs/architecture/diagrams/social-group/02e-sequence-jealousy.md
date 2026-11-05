@@ -35,11 +35,11 @@ sequenceDiagram
   Main->>SB: tick(self with inJealousReaction)
   SB->>SB: decode (allowlist), sender present, index matches its entry, self Awake?
   SB-->>Main: SocialOutput {jealous, jealousOf = entry age, crowd}
-  Main->>MB: jealousy(jealousOf), right after social.tick, before the choir voice
+  Main->>MB: jealousy(jealousOf, repertoire), right after social.tick, before the choir voice
   MB->>MB: guards G? step 1 or 2? context → weights, no repeat, Prng draw (05e)
   alt a reaction is drawn
     MB-->>Main: JealousReaction (eyes overlay, optional sound; Sulk enters Annoyed)
-    Main->>SB: refuseChoir() if step 2 (withdraws a same-tick choir voice, 05e row 22b)
+    Main->>SB: refuseChoir(out) if step 2 (clears the returned choir cue, 05e row 22b)
     Main->>Gate: its sound at the gate's volume, if any
   else guards fail
     MB-->>Main: none
@@ -52,12 +52,13 @@ sequenceDiagram
 
 - **New wiring**: `main.cpp` calls `social.sendPet(self)` on `Gesture::Stroke` next to
   `startChoir(self)`, calls `mood.jealousy(out.jealousOf)` right after `social.tick(self)` and
-  before the choir voice is played, calls `social.refuseChoir()` on a step-2 reaction, plays the returned eyes
+  before the choir voice is played, calls `social.refuseChoir(out)` on a step-2 reaction before any choir voice is played, plays the returned eyes
   and sound, and fills `SelfState::inJealousReaction` from `mood.inJealousReaction()`. Both
   refusals are decided in `lib/` and tested natively.
 - **Attention memory**: the mood engine already receives every touch-down (`touchDown()`),
   gesture and call (`stimulus()`); it keeps the time of the last one, excluding `Loud` and
   `NewcomerSeen`, for T_ignored and T_lonely; no new port. `Neighbour::presentSince` is the only new field.
 - **Randomness**: `JealousyRepertoire` owns its `Prng(seed, 3)` in `Seeded`, built in `setup()`
-  after the Wi-Fi driver is up (ADR-0013); `MoodEngine` holds a reference to it.
+  after the Wi-Fi driver is up (ADR-0013); `main.cpp` passes it to `mood.jealousy(out.jealousOf, seeded->repertoire)`, since
+  `MoodEngine` is a static global built before `Seeded`.
 - **Dependency direction** unchanged: the flag and context live in `SocialOutput` in `lib/`.
