@@ -17,10 +17,10 @@ choice, so the reasoning can be re-examined when the context changes.
 | [0009](ADR-0009-licensing-mit-code-cc-by-sa-enclosure.md) | Licensing: MIT code, CC BY-SA 4.0 enclosure, private first | Accepted |
 | [0010](ADR-0010-enclosure-freecad-scripted-python.md) | Enclosure: FreeCAD driven by a versioned Python script, MCP for inspection | Accepted |
 | [0011](ADR-0011-design-dossier-and-verification-plan.md) | Design dossier structure, verification plan and gates | Accepted |
-| [0012](ADR-0012-esp-now-unauthenticated-broadcast-accepted-residual-risk.md) | Security: unauthenticated ESP-NOW broadcast accepted as a bounded residual risk in V1 (amends 0005) | Accepted, amended by 0018 |
+| [0012](ADR-0012-esp-now-unauthenticated-broadcast-accepted-residual-risk.md) | Security: unauthenticated ESP-NOW broadcast accepted as a bounded residual risk in V1 (amends 0005) | Accepted, amendment proposed by 0018 |
 | [0013](ADR-0013-cube-core-pdr-decisions.md) | cube-core PDR: lib-owned PRNG, invitation window and ritual volume step, sleep timings, deferrals (amends 0008) | Accepted |
 | [0014](ADR-0014-firmware-graphics-library-and-test-discipline.md) | Firmware: LovyanGFX for the display adapter, TDD on lib + golden images, brick plan F1–F5 | Accepted |
 | [0015](ADR-0015-hardware-validation-fixes.md) | Hardware validation fixes before the CDR: buzzer/SDA swap off strapping GPIO2, display reset RC 1 µF + diode, buzzer 82 Ω | Accepted |
 | [0016](ADR-0016-expansion-port.md) | Expansion port J1: module power budget 50/75 mA, internal bay behind a clipped rear cover, plug-and-play by allowlisted I2C probe | Accepted |
 | [0017](ADR-0017-voice-group-sound-cues-first.md) | Voice: group sound cues on the V1 hardware first, no words, no cloud | Proposed |
-| [0018](ADR-0018-bounded-one-shot-social-events.md) | Security: a received frame may trigger a bounded one-shot social event (amends 0012) | Proposed |
+| [0018](ADR-0018-bounded-one-shot-social-events.md) | Security: a received frame may change the mood through a bounded one-shot social event (amends 0012) | Proposed |
