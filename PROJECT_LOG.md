@@ -7,6 +7,19 @@ human context: what was done, why, and by which PR.
 
 ## 2026-11-05
 
+### SonarQube gate green on main (issue #53)
+
+- `python:S3776` in `cubbies_case.py`: wall probes moved out of `run_checks` into
+  `walls_in_place`, `solid` made one module-level helper. Regenerated STLs and 3MF members are
+  byte-identical; STEP and FCStd differ only by timestamps, UUIDs and object ids (not committed).
+- `python:S8786` in `schematic_values.py`: the issue named the spaced-unit regex, but the flag
+  was the `fullmatch` one (`\d+` then `\d*` with an optional prefix, ~4.5 s on 20000 digits);
+  the decimals now only follow an SI prefix. Red/green with a linear-time test.
+- Coverage tooling by MCDA, option A 395/500 (vs B case excluded 375, C plus gcovr 205):
+  `tools/sonar-scan.sh` + `sonar-project.properties`; the case script is measured inside the
+  FreeCAD python. The Community server has no C/C++ analyser, so no gcov report.
+- Local gate on the branch: OK (new coverage 87.6 %, 0 new violations).
+
 ### G6 jealousy (issue #73)
 
 - Dependabot PRs #67, #66, #50, #71 merged first (codeql-action grouped); G6 picked by MCDA
@@ -27,6 +40,8 @@ human context: what was done, why, and by which PR.
 - Codex P2 on PR #75: a long hold stopped refreshing the calm, so a held cube could sulk;
   fixed by 05e row 2b, `jealousy(padHeld)` fed with `holdMs() > 0`.
 - Owner request: a desktop fleet simulator, filed as #74 (roadmap T11), queued after G6.
+- Merged as PR #75 (`13aff3c`) with an owner SonarQube waiver (MCDA 450/500): the gate was red
+  only from pre-existing debt outside the diff, fixed next in #53.
 
 ## 2026-10-23
 
