@@ -36,6 +36,7 @@
 | Eyes and expressions (REQ-F-01, 02, NF-08) | native PNG render | golden images in CI | PDR (owner review of the images) |
 | Moods, sleep, identity, protocol (REQ-F-05..13) | Unity tests | replayed scenarios with injected clock | PDR |
 | Choir drift ≤ 50 ms (REQ-F-14, FS8) | design budget: radio latency only, lead rest in the Sound gate (social-group/05c) | native test: two cubes out of tick phase start on the same ms; bench: two prototypes recorded by one microphone, onset gap measured | V1 (bench) |
+| Jealousy bounded (REQ-F-22, FS8) | design budget: one PET per stroke, never relayed, one sulk per T_jealous (social-group/05e) | native test: 1 000 forged PET frames in one tick cause at most one sulk; bench: stroke one prototype, the other frowns within one tick | V1 (bench) |
 | Radio range (REQ-NF-05) | estimate | measured with two prototypes | V1 |
 | Latency, frame rate (REQ-NF-01, 02) | design budget | bench | V1 |
 | Enclosure (REQ-NF-10, 11), module bay (ADR-0016) | FreeCAD script, 17 scripted dimension checks (green 2026-10-19) | print and fit on prototype | mechanical CDR |

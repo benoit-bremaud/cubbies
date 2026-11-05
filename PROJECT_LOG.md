@@ -5,6 +5,20 @@ human context: what was done, why, and by which PR.
 
 ---
 
+## 2026-11-05
+
+### G6 jealousy PDR (issue #73) — **PR pending**
+
+- Project resumed; short audit: G1–G5 done, 305 native tests, SonarQube red (#53), bench #33
+  not run yet. G6 picked by MCDA (415/500 vs "social gaze" 410, bench 380, sound brick 380).
+- Signal by MCDA (cute effect and timing 35, simplicity 25, robustness 20, reuse 20): one-shot
+  PET frame `0x04` 430/500 vs a PRESENCE "petted" bit 300 (0–6 s late) vs mood-byte inference 250.
+- Sulk = the existing Annoyed mood (grumpy beep), forgiven by a stroke; T_ignored 30 s,
+  T_jealous 60 s, T_pet_tx 10 s. REQ-F-22, B5, `diagrams/social-group/` 02e and 05e, PET bytes
+  in social-presence/06, traceability and verification rows.
+- Fixed a duplicate ID: collective sleep was REQ-F-20 like the expansion port; it becomes
+  REQ-F-21 (ADR-0016 keeps REQ-F-20 untouched).
+
 ## 2026-10-23
 
 ### Voice and AI research note (issue #61) — **PR #62**

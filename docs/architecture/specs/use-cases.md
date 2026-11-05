@@ -149,8 +149,12 @@
   REQ-F-13.
 - **B4 — Collective sleep** (tier B, G5): an outcome of UC5 (inaction) spread by UC8's
   presence moods; a Bored cube with a drowsy neighbour turns Tired and yawns, then sleeps on its
-  usual timers. Requirement: REQ-F-20. Views: [diagrams/social-group/](../diagrams/social-group/)
+  usual timers. Requirement: REQ-F-21. Views: [diagrams/social-group/](../diagrams/social-group/)
   02d, 05d (issue #59).
+- **B5 — Jealousy** (tier B, G6): an outcome of UC3 (pet the cube) seen by a neighbour; the
+  stroked cube broadcasts one PET frame, an awake neighbour nobody has touched lately turns
+  Annoyed and forgives when stroked itself. Requirement: REQ-F-22. Views:
+  [diagrams/social-group/](../diagrams/social-group/) 02e, 05e (issue #73).
 - **B3 — Motion reactions** (tier B, S9): tilt, shake, upside down. Requirement: REQ-F-15.
 
 ## Domain: Making
