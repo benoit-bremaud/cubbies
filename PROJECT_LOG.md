@@ -24,6 +24,8 @@ human context: what was done, why, and by which PR.
   killed) · Should 5 (fixed) · Nice 6 (5 fixed; the 6th, a sulk mid-song, became 05e row 11 by
   owner decision, 430/500 vs 365). Verify rounds: 2 Nice fixed, then the row 11 diagrams fixed.
   Gate: 327 native tests, both boards, benches PASS, ERC 0, ruff, gitleaks, actionlint clean.
+- Codex P2 on PR #75: a long hold stopped refreshing the calm, so a held cube could sulk;
+  fixed by 05e row 2b, `jealousy(padHeld)` fed with `holdMs() > 0`.
 - Owner request: a desktop fleet simulator, filed as #74 (roadmap T11), queued after G6.
 
 ## 2026-10-23

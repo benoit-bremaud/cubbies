@@ -83,9 +83,9 @@ MoodEffect MoodEngine::contagion(const MoodTally& tally) {
   return enter(target);
 }
 
-MoodEffect MoodEngine::jealousy(bool /*padHeld*/) {
+MoodEffect MoodEngine::jealousy(bool padHeld) {
   const uint32_t now = clock_.nowMs();
-  if (ageMs(now, lastLoudMs_) < kJealousCalmMs) return MoodEffect::None;  // 05e row 2
+  if (padHeld || ageMs(now, lastLoudMs_) < kJealousCalmMs) return MoodEffect::None;  // 05e rows 2, 2b
   if (sulkCount_ > 0) {
     const uint8_t last = static_cast<uint8_t>((sulkHead_ + kJealousBudget - 1) % kJealousBudget);
     const uint32_t sinceLast = ageMs(now, sulks_[last]);
