@@ -26,7 +26,7 @@ are not makers: the cube works from the moment it is plugged in.
 | FS5 | Live a daily rhythm | owner | sleeps when inactive and (from S8) when the office goes dark; wakes on attention | dozes after 10 min, sleeps after 30 min; wakes on touch or sound | F1 |
 | FS6 | Carry an identity | owner, team | colour chosen by the owner, kept across power cycles and updates | palette of 8–12 colours; choice survives OTA | F0 |
 | FS7 | Notice and greet other companions | team | neighbours detected within range; greeting on arrival | detection within 5 s at 10 m indoors; greeting once per arrival | F1 (range) |
-| FS8 | Share moods and react together | team | contagious mood; chain reaction; synchronised choir; collective sleep; jealousy | mood converges within 60 s; an ignored neighbour of a stroked cube reacts within one tick of the PET; an idle cube catches a neighbour's yawn within 15 s; chain hop ≤ 500 ms; choir drift ≤ 50 ms | F2 (choir is tier B) |
+| FS8 | Share moods and react together | team | contagious mood; chain reaction; synchronised choir; collective sleep; jealousy | mood converges within 60 s; an awake neighbour of a stroked cube whose jealousy guards hold (not Tired or Annoyed, ignored ≥ 30 s, out of its 60 s rate limit) reacts within one tick of the PET; an idle cube catches a neighbour's yawn within 15 s; chain hop ≤ 500 ms; choir drift ≤ 50 ms | F2 (choir is tier B) |
 | FS9 | Be built by hand in a small series | maker | parts off the shelf; assembly time; no per-unit firmware | ≤ 45 min per cube after the first; one firmware image | F0 |
 
 ## 3. Constraints

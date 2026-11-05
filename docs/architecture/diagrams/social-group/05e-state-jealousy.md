@@ -3,7 +3,7 @@
 > **Frame**: `stm — Jealousy`
 > **Feature**: `social-group` — backlog item G6a in [docs/roadmap.md](../../../roadmap.md), issue #73
 > **Related ADRs**: ADR-0001 (alone, the social layer is nothing), ADR-0012 (no authentication,
-> accepted nuisance risk; its "nudge only" clause is superseded for bounded one-shot events by
+> accepted nuisance risk; its "nudge only" clause is amended for bounded one-shot mood events by
 > ADR-0018, separate PR), ADR-0013 (timings, single Sound gate, lib-owned `Prng`), ADR-0014
 > (tests follow the conception, golden images)
 > **Base machines**: [cube-core/05a-state-mood-engine.md](../cube-core/05a-state-mood-engine.md)
@@ -22,7 +22,7 @@
 > - D4 echo through G2 (owner safety 40, cute 30, simplicity 30): the sulk starts the G2
 >   refractory and a recently attended cube is never pulled into Annoyed 410/500, against 330
 >   and 290.
-> - D5 ADR-0012 "a received frame only nudges the mood": superseding ADR-0018 450/500.
+> - D5 ADR-0012 "a received frame only nudges the mood": ADR-0018 amending it 450/500 (re-scored 410/500 in the ADR).
 > - D6 crescendo (cute 35, simplicity 25, testability 20, reuse 20) 450/500: a light silent
 >   reaction first, a stronger one if the neighbour is stroked again within T_notice.
 > - D7 choice (cute and surprise 35, context fit 25, testability 20, simplicity 20): weight
