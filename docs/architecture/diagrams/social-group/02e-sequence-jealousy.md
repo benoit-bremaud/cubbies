@@ -47,7 +47,8 @@ sequenceDiagram
 ## Notes
 
 - **Wiring**: `main.cpp` calls `sendPet()` after a `startChoir()` that sent nothing, and
-  `mood.jealousy(gestures.holdMs() > 0)` when the tick's `SocialOutput::pet` is set; `effects(MoodEffect::Sulk)` maps
+  `mood.jealousy(gestures.holdMs() > 0)` when the tick's `SocialOutput::pet` is set;
+  `effects(MoodEffect::Sulk)` maps
   it to the Sulk reaction and the grumble.
 - **Dependency direction** unchanged: the Social protocol and the Mood engine stay unaware of
   each other; `main.cpp` passes the flag.
