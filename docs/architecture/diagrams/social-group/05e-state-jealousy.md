@@ -22,7 +22,7 @@
 > - D4 echo through G2 (owner safety 40, cute 30, simplicity 30): the sulk starts the G2
 >   refractory and a recently attended cube is never pulled into Annoyed 410/500, against 330
 >   and 290.
-> - D5 ADR-0012 "a received frame only nudges the mood": ADR-0018 amending it 450/500 (re-scored 410/500 in the ADR).
+> - D5 ADR-0012 "a received frame only nudges the mood": ADR-0018 amending it 410/500 (against 340 arguing each feature, 305 a held signal).
 > - D6 crescendo (cute 35, simplicity 25, testability 20, reuse 20) 450/500: a light silent
 >   reaction first, a stronger one if the neighbour is stroked again within T_notice.
 > - D7 choice (cute and surprise 35, context fit 25, testability 20, simplicity 20): weight
@@ -152,6 +152,7 @@ gets weight 0** (no immediate repeat; every step keeps at least two positive wei
 | 25 | `restart()` (boot, every wake) | last attention = now (T_ignored grace), Noticed dropped; episode time, the Weary counter and the no-repeat memory kept |
 | 26 | a new MAC stored (Free or evicted slot, including a cube back after its entry was freed past T_regreet) | `presentSince` = now: Newcomer until T_friend |
 | 26b | a known MAC back from `Absent` | `presentSince` kept: still a Friend if it was one |
+| 27 | any PET frame, accepted or dropped | nothing written to NVS, never relayed, no MAC in any log or counter (ADR-0012, ADR-0018 bound 5) |
 
 Durations (tuning parameters, ADR-0013): **T_ignored 30 s**, **T_notice 60 s**,
 **T_jealous 60 s**, **T_react 3 s** (from the renderer), **T_pet_tx 10 s**, **T_friend 30 min**,

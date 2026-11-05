@@ -17,7 +17,7 @@ human context: what was done, why, and by which PR.
   (450/500 vs per-mood 410): first PET a silent side glance, second within T_notice the sulk.
   Adversarial round 1 (5 Must) led to D3 the jealous cube refuses the choir (440), D4 sulk starts
   the G2 refractory and a just-petted cube is never pulled into Annoyed (410, G2 row 13), D5
-  ADR-0018 to supersede ADR-0012's "nudge only" clause, separate PR (450). T_ignored 30 s,
+  ADR-0018 amending ADR-0012's "nudge only" clause, separate PR (410 after its review). T_ignored 30 s,
   T_jealous 60 s, T_notice 60 s, T_pet_tx 10 s.
 - Owner asked for several context-dependent, unpredictable yet cute jealousies: D7 weight tables
   by context drawn with a lib-owned Prng (440/500 vs fixed 375, pure chance 345); D8 split G6a

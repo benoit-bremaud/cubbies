@@ -2,7 +2,7 @@
 
 > **Frame**: `sd — Jealousy`
 > **Feature**: `social-group` — backlog item G6a in [docs/roadmap.md](../../../roadmap.md), issue #73
-> **Related ADRs**: ADR-0005 (versioned frames), ADR-0012 (superseded in part by ADR-0018,
+> **Related ADRs**: ADR-0005 (versioned frames), ADR-0012 (amended in part by ADR-0018,
 > separate PR), ADR-0013 (single Sound gate)
 > **Behaviour**: B5 Jealousy in [specs/use-cases.md](../../specs/use-cases.md)
 > **Rules**: [05e-state-jealousy.md](05e-state-jealousy.md) — **Frame**: PET `0x04` in
