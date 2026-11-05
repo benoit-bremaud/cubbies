@@ -42,8 +42,21 @@ docs/hardware/            electronics spec, calculation log, assembly guide, ben
 firmware/                 PlatformIO project (pioarduino platform, Arduino core 3.3.x)
 hardware/electronics/     KiCad schematic + PDF, sim/ (ngspice benches, closed-form cross-check)
 hardware/case/            3D-printable enclosure (CC BY-SA 4.0), to come
+tools/                    repository-wide scripts (local SonarQube scan)
 PROJECT_LOG.md            operational logbook
 ```
+
+## Local quality scan
+
+The self-hosted SonarQube (Community Build, `main` only) reads `sonar-project.properties`.
+`tools/sonar-scan.sh` measures the Python coverage (sim scripts, then the case script inside the
+FreeCAD python in check-only mode), writes `coverage.xml` and runs the scan:
+
+```bash
+SONAR_TOKEN=$(cat ~/.config/sonarqube/analysis-token) sh tools/sonar-scan.sh
+```
+
+C/C++ is not analysed by the Community server; `firmware/lib` is covered by `pio test -e native`.
 
 ## Licence
 
