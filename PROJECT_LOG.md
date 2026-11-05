@@ -23,7 +23,9 @@ human context: what was done, why, and by which PR.
   by context drawn with a lib-owned Prng (440/500 vs fixed 375, pure chance 345); D8 split G6a
   (engine, six contexts, eight reactions) / G6b (more reactions, group sulk) / later (S8, S9
   contexts, "sworn enemy") 445/500. Adversarial round 2 (1 Must: contradictory crescendo guards)
-  folded into the rewrite. REQ-F-22, B5, `diagrams/social-group/` 02e and 05e, PET bytes
+  folded into the rewrite. Round 3 (2 Must: same-tick choir refusal → `refuseChoir()` in lib,
+  stale refs) and 9 Should fixed: `JealousyRepertoire` in `Seeded`, sound ranks, face sheet
+  first, `presentSince`, Weary last, exact weight vectors, T_lonely 5 min. REQ-F-22, B5, `diagrams/social-group/` 02e and 05e, PET bytes
   in social-presence/06, traceability and verification rows.
 - Fixed a duplicate ID: collective sleep was REQ-F-20 like the expansion port; it becomes
   REQ-F-21 (ADR-0016 keeps REQ-F-20 untouched).

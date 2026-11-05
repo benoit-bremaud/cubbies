@@ -56,6 +56,14 @@ to is never jealous.
 stroked neighbour's table entry: its age and the crowd size), when on this tick a decoded PET
 frame names the palette index of its sender's present table entry (`Waiting` or `Greeted`) and
 `self.sleep` is Awake. The flag is cleared every tick, so a PET received while not Awake is lost.
+The stroked neighbour's age comes from a new `Neighbour::presentSince`, set when the entry turns
+`Waiting` from `Free` or `Absent`, so a friend who leaves for more than T_ttl (15 s) comes back
+as a newcomer until T_friend has passed again.
+
+The repertoire is a `JealousyRepertoire` class in `lib/` (contexts, weights, no-repeat memory,
+Weary counter), owning its `Prng` (`Prng(seed, 3)`), built in `Seeded` after the Wi-Fi driver is
+up (ADR-0013) and called by `MoodEngine::jealousy()`; the mood engine keeps only the guards,
+the crescendo state and the Sulk transition.
 
 ## Diagram
 
@@ -76,28 +84,32 @@ no step-2 reaction within T_jealous.
 | Reaction | Step | Eyes | Sound (placeholder until the sound brick) |
 |----------|------|------|-------------------------------------------|
 | SideGlance | 1 | both eyes slide to one side and hold | none |
-| Stare | 1 | eyes fixed toward one side, no blink for T_react, then three fast blinks | none |
-| TurnAway | 1 | eyes slide to the far edge, away from the side of the last glance | none |
-| Pout | 2 | lower lids raised, eyes narrowed | short "hmpf" |
-| PuppyEyes | 2 | eyes enlarged with a highlight, lids tilted | small whimper |
-| MeToo | 2 | eyes hop up and down | rising chirp |
-| FakeSleep | 2 | eyes close, one eye half-opens and peeks, closes again | none |
-| Sulk | 2 | Annoyed eyes (existing) | grumpy beep (existing) |
+| Stare | 1 | eyes held at a side look offset (`setLook`), blink suspended for T_react, then three fast blinks | none |
+| TurnAway | 1 | eyes at the largest look offset (`setLook`), opposite the side of the last glance | none |
+| Pout | 2 | lower lids raised, eyes narrowed | short "hmpf", rank 2 |
+| PuppyEyes | 2 | eyes enlarged with a highlight, lids tilted | small whimper, rank 2 |
+| MeToo | 2 | eyes hop up and down | rising chirp, rank 2 |
+| FakeSleep | 2 | eyes close, one eye half-opens and peeks sideways, closes again | none |
+| Sulk | 2 | Annoyed eyes (existing) | grumpy beep (existing), rank 2 |
 
-New eye frames (Stare, TurnAway, Pout, PuppyEyes, MeToo, FakeSleep) get golden images reviewed
-in the TDD PR; SideGlance reuses the renderer's look offset (`setLook`), Sulk reuses Annoyed.
+The new sounds rank 2 in the Sound gate, like Grumpy (cube-core/05e): a choir voice (3) wins,
+a greeting (0) is replaced. SideGlance, Stare and TurnAway reuse the look offset (`setLook`) and
+Sulk reuses Annoyed; the four new eye frames (Pout, PuppyEyes, MeToo, FakeSleep) are drawn first,
+as a face sheet of golden images validated by the owner before any repertoire logic (gates.md,
+ADR-0014, F1b precedent). The reaction length is the renderer's `reactionDurationMs()`; T_react
+names it and is not a second constant.
 
 ## Contexts and weights
 
 Each reaction of the step starts from its base weight; every context that holds adds its
-modifiers (never below 0). The **last reaction drawn at the same step gets weight 0** (no
-immediate repeat); if every weight is 0, the base table is used without the repeat rule.
+modifiers (never below 0), **Weary applied last**. The **last reaction drawn at the same step
+gets weight 0** (no immediate repeat; every step keeps at least two positive weights).
 
 | Context | Source | Holds when | Step 1 modifiers | Step 2 modifiers |
 |---------|--------|-----------|------------------|------------------|
 | — base | — | always | SideGlance 3, Stare 2, TurnAway 2 | Pout 3, PuppyEyes 2, MeToo 2, FakeSleep 1, Sulk 2 |
 | Bored | mood | mood Bored | TurnAway +1 | PuppyEyes +3 |
-| Happy | mood | mood Happy (via G2 or a call) | Stare +1 | Pout +2 |
+| Happy | mood | mood Happy (only through a G2 pull) | Stare +1 | Pout +2 |
 | Crowd | table | ≥ 2 present neighbours | Stare +2 | MeToo +3 |
 | Newcomer | table | stroked neighbour present < T_friend | TurnAway +2 | Sulk +2 |
 | Friend | table | stroked neighbour present ≥ T_friend | SideGlance +2 | Pout +2, Sulk −2 |
@@ -121,7 +133,9 @@ immediate repeat); if every weight is 0, the base table is used without the repe
 | 11 | jealous cube is stroked during any reaction | the overlay stops; 05a applies (Annoyed → Happy, purr): the cube forgives |
 | 12 | Sulk left alone | Annoyed → Curious after calm T_calm (05a) |
 | 13 | weights with seed s and context c | the draw equals the reference sequence for (s, c) (replayable) |
-| 14 | the same step drawn twice in a row | never the same reaction twice (weight 0), unless every weight is 0 |
+| 13b | `weights(step, contexts, last)` on combined contexts | exact vectors: Crowd + Friend at step 1 → SideGlance 5, Stare 4, TurnAway 2; Crowd + Friend + Neglected at step 2 → Pout 5, PuppyEyes 4, MeToo 5, FakeSleep 1, Sulk 0; Weary + Newcomer → Sulk 0 |
+| 13c | 10 000 draws on one context | frequencies within ±2 % of the weights (no repeat applied) |
+| 14 | the same step drawn twice in a row | never the same reaction twice (weight 0) |
 | 15 | each context of the table holds alone | its modifiers apply, never below 0; Weary sets Sulk to 0 |
 | 16 | PET from a MAC that is not present, or whose index differs from that entry | no flag (Social protocol) |
 | 17 | PET frame with a reserved byte not zero or an out-of-range index | dropped by the decoder (`dropRange`), counted |
@@ -129,23 +143,25 @@ immediate repeat); if every weight is 0, the base table is used without the repe
 | 19 | own stroke, Awake, ≥ 1 present neighbour, ≥ T_pet_tx since the last PET | sends one PET; own mood follows 05a (purr) |
 | 20 | own stroke while not Awake, alone, or within T_pet_tx | no PET (ADR-0001) |
 | 21 | flag and a G2 pull or G5 yawn due on the same tick | jealousy is evaluated first, right after `social.tick(self)` |
-| 22 | CHOIR cue on the tick a step-2 reaction starts or while it is held (or Annoyed from a Sulk) | not sung: `SelfState::sulking` makes the Choir module return no voice (05c row 13); cooldown as usual |
+| 22 | CHOIR cue while a step-2 reaction is held (or Annoyed from a Sulk) | not sung: `SelfState::inJealousReaction` makes the Choir module return no voice (05c row 13); cooldown as usual |
+| 22b | PET and CHOIR in the same drain, step 2 drawn on that tick | `main.cpp` calls `social.refuseChoir()` right after `mood.jealousy()`: the pending voice is withdrawn in `lib/`, the cooldown kept, the reaction sound plays |
 | 23 | CHOIR cue while Noticed | sung as usual |
 | 24 | G2 candidate Annoyed on a cube attended less than T_ignored ago | no pull into Annoyed (05a-contagion row 13) |
-| 25 | `restart()` (boot, every wake) | last attention = now (T_ignored grace), Noticed dropped; episode time and the Weary counter kept |
+| 25 | `restart()` (boot, every wake) | last attention = now (T_ignored grace), Noticed dropped; episode time, the Weary counter and the no-repeat memory kept |
+| 26 | a neighbour back from `Absent` | `presentSince` = now: Newcomer until T_friend |
 
 Durations (tuning parameters, ADR-0013): **T_ignored 30 s**, **T_notice 60 s**,
 **T_jealous 60 s**, **T_react 3 s**, **T_pet_tx 10 s**, **T_friend 30 min**,
-**T_lonely 10 min**, **T_weary 30 min**; T_calm 20 s reused from 05a.
+**T_lonely 5 min** (below the 10 min doze chain of FS5, so it can hold while awake), **T_weary 30 min**; T_calm 20 s reused from 05a.
 
 ## Worked example (cubes A, B, C; seed fixed in the test)
 
-B has been alone for 15 min (Neglected), Curious, with A present for an hour (Friend) and C just
+B has been ignored by its owner for 6 min (Neglected; C's arrival greeting kept it awake), Curious, with A present for an hour (Friend) and C just
 arrived (Crowd). Alice strokes A: B draws a step-1 reaction, SideGlance favoured by Friend.
 Alice strokes A again 15 s later: B draws step 2 among Pout 5, PuppyEyes 4, MeToo 5, FakeSleep 1,
 Sulk 0 — say MeToo: its eyes hop and it chirps. C, which saw the same strokes and only just met
 A (Newcomer), turns away, then sulks. Bob strokes B: the hop stops, B purrs. An hour later, after
-three episodes, B is Weary: a new double stroke on A gets a FakeSleep that peeks at A.
+three episodes, B is Weary: a new double stroke on A gets say a FakeSleep (weight 5 of 17) that peeks sideways.
 
 ## Notes
 

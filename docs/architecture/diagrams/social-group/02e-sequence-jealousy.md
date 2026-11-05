@@ -1,7 +1,7 @@
 # Sequence diagram — social-group — strokes on cube A make cube B jealous
 
 > **Frame**: `sd — Jealousy`
-> **Feature**: `social-group` — backlog item G6 in [docs/roadmap.md](../../../roadmap.md), issue #73
+> **Feature**: `social-group` — backlog item G6a in [docs/roadmap.md](../../../roadmap.md), issue #73
 > **Related ADRs**: ADR-0005 (versioned frames), ADR-0012 (superseded in part by ADR-0018,
 > separate PR), ADR-0013 (single Sound gate)
 > **Behaviour**: B5 Jealousy in [specs/use-cases.md](../../specs/use-cases.md)
@@ -25,25 +25,26 @@ sequenceDiagram
   participant SA as Social protocol (cube A, lib)
   participant SB as Social protocol (cube B, lib)
   participant Main as main.cpp tick (cube B)
-  participant MB as Mood engine + repertoire (cube B, lib)
+  participant MB as Mood engine → JealousyRepertoire (cube B, lib)
   participant Gate as Sound gate (cube B, lib)
 
   Owner->>GA: stroke on A
   GA-->>SA: Gesture::Stroke (A purrs, 05a; may conduct a choir, 05c)
   SA->>SA: sendPet(self): Awake, a present neighbour, ≥ T_pet_tx? (05e rows 19, 20)
   SA->>SB: PET {stroked palette index = A} (broadcast, once)
-  Main->>SB: tick(self with sulking)
+  Main->>SB: tick(self with inJealousReaction)
   SB->>SB: decode (allowlist), sender present, index matches its entry, self Awake?
   SB-->>Main: SocialOutput {jealous, jealousOf = entry age, crowd}
   Main->>MB: jealousy(jealousOf), right after social.tick, before the choir voice
   MB->>MB: guards G? step 1 or 2? context → weights, no repeat, Prng draw (05e)
   alt a reaction is drawn
     MB-->>Main: JealousReaction (eyes overlay, optional sound; Sulk enters Annoyed)
+    Main->>SB: refuseChoir() if step 2 (withdraws a same-tick choir voice, 05e row 22b)
     Main->>Gate: its sound at the gate's volume, if any
   else guards fail
     MB-->>Main: none
   end
-  Note over SB: while a step-2 reaction is held, SelfState::sulking makes Choir return no voice (05c row 13)
+  Note over SB: while a step-2 reaction is held, SelfState::inJealousReaction makes Choir return no voice (05c row 13)
   Note over MB: a stroke on B stops the reaction and turns it Happy (05a)
 ```
 
@@ -51,11 +52,12 @@ sequenceDiagram
 
 - **New wiring**: `main.cpp` calls `social.sendPet(self)` on `Gesture::Stroke` next to
   `startChoir(self)`, calls `mood.jealousy(out.jealousOf)` right after `social.tick(self)` and
-  before the choir voice is played, plays the returned eyes and sound, and fills
-  `SelfState::sulking` from `mood.sulking()`. The choir refusal itself is decided in `lib/`.
+  before the choir voice is played, calls `social.refuseChoir()` on a step-2 reaction, plays the returned eyes
+  and sound, and fills `SelfState::inJealousReaction` from `mood.inJealousReaction()`. Both
+  refusals are decided in `lib/` and tested natively.
 - **Attention memory**: the mood engine already receives every touch-down (`touchDown()`),
   gesture and call (`stimulus()`); it keeps the time of the last one, excluding `Loud` and
-  `NewcomerSeen`, for T_ignored and T_lonely; no new port.
-- **Randomness**: the repertoire draws from its own lib-owned `Prng`, seeded by `main.cpp` after
-  the Wi-Fi driver is up (ADR-0013).
+  `NewcomerSeen`, for T_ignored and T_lonely; no new port. `Neighbour::presentSince` is the only new field.
+- **Randomness**: `JealousyRepertoire` owns its `Prng(seed, 3)` in `Seeded`, built in `setup()`
+  after the Wi-Fi driver is up (ADR-0013); `MoodEngine` holds a reference to it.
 - **Dependency direction** unchanged: the flag and context live in `SocialOutput` in `lib/`.

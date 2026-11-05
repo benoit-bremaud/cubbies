@@ -69,8 +69,8 @@ For **type `0x04` PET** (G6, [social-group/05e](../social-group/05e-state-jealou
 A cube sends one PET when its gesture classifier reports a stroke (`Gesture::Stroke`, contact ≥ 1.5 s), only when Awake with a present
 neighbour, at most once per `T_pet_tx` (10 s). PET is never relayed and is acted on only when
 the sender MAC is a present neighbour (`Waiting` or `Greeted`) whose table entry has the same
-palette index, so it costs one frame per stroke; forged frames make a cube sulk at most once per
-`T_jealous` (60 s, 05e row 8), and only on the second frame within `T_notice`. Protocol version stays `1`; a pre-G6 cube
+palette index, so it costs one frame per stroke; forged frames make a cube show a step-2 reaction at most
+once per `T_jealous` (60 s, 05e row 9), and only on the second frame within `T_notice`. Protocol version stays `1`; a pre-G6 cube
 drops PET as `dropType`.
 
 Total 8 bytes, far below the 250-byte ESP-NOW payload limit. The sender MAC is **not** in the
