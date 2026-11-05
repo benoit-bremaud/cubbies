@@ -19,7 +19,7 @@ CUBBIES_COV_SITE="$work/site"
 export COVERAGE_FILE="$CUBBIES_ROOT/.coverage" CUBBIES_ROOT CUBBIES_COV_SITE
 cov() { uvx --from "coverage==$COVERAGE_VERSION" coverage "$@"; }
 
-cov erase
+rm -f "$CUBBIES_ROOT/.coverage" "$CUBBIES_ROOT"/.coverage.*  # coverage erase keeps parallel files
 for script in schematic_values.py test_schematic_values.py test_crosscheck.py calc.py crosscheck.py; do
   (cd hardware/electronics/sim && cov run -p --source=. "$script" > "$work/$script.log" 2>&1) \
     || { cat "$work/$script.log"; exit 1; }
@@ -43,9 +43,10 @@ except Exception:
 finally:
     cov.stop()
     cov.save()
+print("CASE-COV-OK")  # freecadcmd exits 0 on any exception, so success must be explicit
 PY
 freecadcmd "$work/case_cov.py" > "$work/case.log" 2>&1 || { cat "$work/case.log"; exit 1; }
-if tr '\r\t' '\n\n' < "$work/case.log" | grep -q '^FAIL'; then cat "$work/case.log"; exit 1; fi
+if tr '\r\t' '\n\n' < "$work/case.log" | grep -q '^FAIL' || ! grep -q CASE-COV-OK "$work/case.log"; then cat "$work/case.log"; exit 1; fi
 
 cov combine -q
 cov xml -q -o coverage.xml
