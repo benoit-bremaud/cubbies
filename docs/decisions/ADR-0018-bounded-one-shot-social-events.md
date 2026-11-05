@@ -1,7 +1,9 @@
 # ADR-0018: Security — a received frame may change the mood through a bounded one-shot social event
 
 **Status:** Proposed — 2026-11-05 — Amends ADR-0012 (the "nudge only" consequence only; the
-accepted residual risk and its four rules, including "nothing received is relayed", stand)
+accepted residual risk and its four rules stand; the G3 CHAIN relay already departs from
+ADR-0012's "nothing received is relayed" rule, a known exception tracked in issue #78 and not
+widened here)
 
 ## Context
 
@@ -46,8 +48,9 @@ every bound below holds.** The feature's state diagram lists each bound as a tes
 2. **Only from a present neighbour** (sender MAC in the table, `Waiting` or `Greeted`, and the
    named palette index matching that entry). This raises the cost of a fresh forged MAC;
    impersonating a cube that is already present passes it, which bound 3 caps.
-3. **Rate-limited per cube**: at most one mood change per stated cooldown, never shorter than
-   60 s. The cooldown is the bound on forged traffic.
+3. **Rate-limited per cube, across features**: at most one radio-triggered mood change per cube
+   per 60 s, shared by every feature governed by this ADR (a feature may add a longer cooldown of
+   its own). The shared budget is the bound on forged traffic.
 4. **Never while not Awake**: no event wakes a cube, and nothing received while dozing or
    asleep is replayed at the wake.
 5. **ADR-0012 effect envelope otherwise**: RAM only, eyes, at most one short sound through the
@@ -71,7 +74,7 @@ governed by this ADR; they stay under ADR-0012's nuisance acceptance as designed
 - Future mood-changing one-shot features (for example G10 flirting) cite this checklist in their
   PDR instead of reopening ADR-0012.
 - The adoption-day briefing adds one line to ADR-0012's: a cube in range can be imitated, and
-  the worst that follows is a wrong face or a beep, or a mood change at most once per minute per
-  event type, undone by a stroke. Other effects keep their own cooldowns (for example CHAIN 5 s,
+  the worst that follows is a wrong face or a beep, or one radio-triggered mood change per minute
+  whatever the feature, undone by a stroke. Other effects keep their own cooldowns (for example CHAIN 5 s,
   greetings 10 s).
 - Fleet authentication remains the V2 ADR scoped by ADR-0012; this ADR does not change it.
