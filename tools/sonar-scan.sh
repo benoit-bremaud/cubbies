@@ -10,7 +10,7 @@ cd "$(dirname "$0")/.."
 : "${SONAR_TOKEN:?set SONAR_TOKEN to the analysis token}"
 token=$SONAR_TOKEN
 unset SONAR_TOKEN  # only sonar-scanner gets it
-COVERAGE_VERSION=7.10.7
+COVERAGE_VERSION=7.17.1
 FREECAD_PYTHON=3.11
 work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT

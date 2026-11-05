@@ -505,20 +505,25 @@ def run_checks(
         )
         check(_fits(item, inner) and hit < 1e-6, f"{name} clears shells, hooks and bay")
 
-    # Coupon: both halves valid, holding a whole hook, its pocket and the full rebate.
-    c_front, c_rear = coupon_parts
-    whole_hook = abs(c_rear.common(shell_hooks()[0]).Volume - shell_hooks()[0].Volume)
-    pocket_cut = c_front.common(hook_pockets()[0]).Volume
-    rebate_bb = c_rear.BoundBox
     check(
-        all(p.isValid() and p.Volume > 0 for p in coupon_parts)
-        and whole_hook < 1e-3
-        and pocket_cut < 1e-6
-        and _fits(hook_pockets()[0], c_front.BoundBox)  # the void lies inside it
-        and _fits(cover, rebate_bb),
+        coupon_ok(coupon_parts, cover),
         "coupon holds a whole hook, its pocket and the cover rebate",
     )
     return failures
+
+
+def coupon_ok(coupon_parts: tuple[Part.Shape, Part.Shape], cover: Part.Shape) -> bool:
+    """Both coupon halves are valid and hold a whole hook, its pocket and the rebate."""
+    c_front, c_rear = coupon_parts
+    hook, pocket = shell_hooks()[0], hook_pockets()[0]
+    whole_hook = abs(c_rear.common(hook).Volume - hook.Volume)
+    return (
+        all(p.isValid() and p.Volume > 0 for p in coupon_parts)
+        and whole_hook < 1e-3
+        and c_front.common(pocket).Volume < 1e-6
+        and _fits(pocket, c_front.BoundBox)  # the void lies inside it
+        and _fits(cover, c_rear.BoundBox)
+    )
 
 
 def export(front: Part.Shape, rear: Part.Shape, cover: Part.Shape) -> None:

@@ -1,7 +1,7 @@
 # ADR-0012: Security — unauthenticated ESP-NOW broadcast accepted as a bounded residual risk in V1
 
 **Status:** Accepted — 2026-10-14 — Amends ADR-0005 (security consequence only; the transport
-decision stands)
+decision stands); amendment proposed by [ADR-0018](ADR-0018-bounded-one-shot-social-events.md) (bounded one-shot mood events)
 
 ## Context
 
@@ -97,6 +97,8 @@ parsing makes the social layer safe is amended: it makes it robust, not authenti
   say hello" is answered by this ADR, not by a hotfix.
 - G2 mood contagion inherits the impersonation risk. Its design must not let a received mood
   byte do more than nudge the local mood engine, so a forged frame cannot force a state.
+  > Amendment proposed by ADR-0018: a single frame may change the mood through a bounded one-shot
+  > social event (seven bounds); contagion keeps its hold.
 - The V2 ADR that introduces fleet authentication is already scoped: a **fleet key stored in
   NVS, never in source or build flags**, provisioned at adoption by a channel that exists by then
   (mother cube or phone), used to authenticate broadcast frames with a software MAC and to
