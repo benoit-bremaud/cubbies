@@ -2,6 +2,8 @@
 // test per row of the receiver table on the Mood engine, and the Sulk effect mapping (02e).
 #include <unity.h>
 
+#include <initializer_list>
+
 #include "FakeClock.h"
 #include "LoopbackRadio.h"
 #include "core/Identity.h"
@@ -104,6 +106,7 @@ struct Cube {
   // The main.cpp stroke wiring (02e): a choir when allowed, otherwise PET.
   void stroke() {
     if (!social.startChoir(self)) social.sendPet(self);
+    social.tick(self);  // main.cpp ticks after the stroke: the choir enters its cooldown
   }
 };
 
@@ -112,6 +115,15 @@ void announce(Cube& cube, uint8_t from) {
   encodePresence(Presence{1, 0, true}, f);
   cube.radio.inject(f, kFrameSize, mac(from));
   cube.social.tick(cube.self);
+}
+
+size_t choirFrames(const LoopbackRadio& r) {
+  size_t n = 0;
+  for (const auto& f : r.sent) {
+    cubbies::ChoirStart c{};
+    if (cubbies::decodeChoir(f.data(), f.size(), c) == DecodeResult::Ok) ++n;
+  }
+  return n;
 }
 
 size_t petFrames(const LoopbackRadio& r) {
@@ -133,10 +145,13 @@ static void test_s1_s2_choir_first_then_pet() {
   Cube b(air, 2, clock, 6);
   announce(a, 2);
   a.stroke();
+  TEST_ASSERT_EQUAL_size_t(1, choirFrames(a.radio));
   TEST_ASSERT_EQUAL_size_t(0, petFrames(a.radio));
   b.social.tick(b.self);  // drains the CHOIR
   clock.advance(30000);
+  announce(a, 2);
   a.stroke();
+  TEST_ASSERT_EQUAL_size_t(1, choirFrames(a.radio));  // choir cooling down: PET instead
   TEST_ASSERT_EQUAL_size_t(1, petFrames(a.radio));
   Pet p{};
   TEST_ASSERT_EQUAL(DecodeResult::Ok, decodePet(a.radio.sent.back().data(), kFrameSize, p));
@@ -158,6 +173,7 @@ static void test_s3_pet_sender_cooldown() {
   clock.advance(SocialProtocol::kPetCooldownMs - 1);
   announce(a, 2);
   a.stroke();
+  TEST_ASSERT_EQUAL_size_t(1, choirFrames(a.radio));  // still in the choir cooldown: sendPet ran
   TEST_ASSERT_EQUAL_size_t(1, petFrames(a.radio));
   clock.advance(1);
   a.stroke();
@@ -237,6 +253,11 @@ static void test_row1_row7_calm_cube_sulks_mood_unchanged() {
 
 // Row 7: the sulk plays the same in Annoyed and Happy, and leaves the mood as it was.
 static void test_row7_sulk_in_any_mood() {
+  Rig h;
+  h.engine.stimulus(Stimulus::Tap);  // Curious → Happy
+  h.clock.advance(E::kJealousCalmMs);
+  TEST_ASSERT_EQUAL(MoodEffect::Sulk, h.engine.jealousy());
+  TEST_ASSERT_EQUAL(Mood::Happy, h.engine.mood());
   Rig r;
   r.engine.stimulus(Stimulus::Loud);  // Curious → Annoyed
   TEST_ASSERT_EQUAL(Mood::Annoyed, r.engine.mood());
@@ -253,8 +274,17 @@ static void test_row2_cube_in_use_is_not_jealous() {
   r.engine.stimulus(Stimulus::Tap);
   r.clock.advance(E::kJealousCalmMs - 1);
   TEST_ASSERT_EQUAL(MoodEffect::None, r.engine.jealousy());
-  r.engine.touchDown();
+  for (const Stimulus s : {Stimulus::Voice, Stimulus::Loud}) {
+    r.clock.advance(E::kJealousCalmMs);
+    r.engine.stimulus(s);
+    r.clock.advance(E::kJealousCalmMs - 1);
+    TEST_ASSERT_EQUAL(MoodEffect::None, r.engine.jealousy());
+  }
   r.clock.advance(E::kJealousCalmMs);
+  r.engine.touchDown();
+  r.clock.advance(E::kJealousCalmMs - 1);
+  TEST_ASSERT_EQUAL(MoodEffect::None, r.engine.jealousy());
+  r.clock.advance(1);
   TEST_ASSERT_EQUAL(MoodEffect::Sulk, r.engine.jealousy());  // a fresh PET once calm again
 }
 
@@ -301,11 +331,40 @@ static void test_row8_sulk_leaves_calm_refractory_and_idle_untouched() {
   TEST_ASSERT_EQUAL(Mood::Bored, r.engine.mood());  // the idle timer ran on
   MoodTally t;
   t.votes[static_cast<uint8_t>(Mood::Happy)] = 1;
-  for (uint32_t s = 0; s <= E::kContagionMs; s += kTick) {
-    r.clock.advance(kTick);
-    r.engine.contagion(t);
+  r.engine.contagion(t);  // the hold starts now
+  r.clock.advance(E::kContagionMs - kTick);
+  r.engine.contagion(t);
+  r.clock.advance(E::kJealousMs);  // out of the cooldown, the hold still running
+  r.engine.contagion(t);
+  TEST_ASSERT_EQUAL(Mood::Happy, r.engine.mood());  // first pull: no refractory, calm held
+}
+
+// Row 8 (calm): a sulk in the middle of a G2 hold does not delay the pull.
+static void test_row8_sulk_does_not_break_the_calm() {
+  Rig r;
+  r.idle(E::kBoredMs);
+  TEST_ASSERT_EQUAL(Mood::Bored, r.engine.mood());
+  MoodTally t;
+  t.votes[static_cast<uint8_t>(Mood::Happy)] = 1;
+  r.engine.contagion(t);  // the hold starts now
+  r.clock.advance(E::kContagionMs - kTick);
+  TEST_ASSERT_EQUAL(MoodEffect::None, r.engine.contagion(t));
+  TEST_ASSERT_EQUAL(MoodEffect::Sulk, r.engine.jealousy());
+  r.clock.advance(kTick);
+  r.engine.contagion(t);
+  TEST_ASSERT_EQUAL(Mood::Happy, r.engine.mood());
+}
+
+// Row 4 across the wrap: a full budget older than the window is forgotten, never aliased.
+static void test_budget_forgotten_after_a_long_quiet_spell() {
+  Rig r;
+  r.idle(E::kJealousCalmMs);
+  for (uint8_t i = 0; i < E::kJealousBudget; ++i) {
+    TEST_ASSERT_EQUAL(MoodEffect::Sulk, r.engine.jealousy());
+    r.clock.advance(E::kJealousMs);
   }
-  TEST_ASSERT_EQUAL(Mood::Happy, r.engine.mood());  // calm held: the pull happened on time
+  r.clock.advance(0xFFFFFFFFu - 2 * E::kJealousMs);  // last sulk ≈ 2^32 − 60 s ago
+  TEST_ASSERT_EQUAL(MoodEffect::Sulk, r.engine.jealousy());
 }
 
 // Row 10: a wake (restart) keeps the cooldown and the budget.
@@ -357,6 +416,8 @@ int main() {
   RUN_TEST(test_row4_global_budget);
   RUN_TEST(test_row6_at_most_one_sulk);
   RUN_TEST(test_row8_sulk_leaves_calm_refractory_and_idle_untouched);
+  RUN_TEST(test_row8_sulk_does_not_break_the_calm);
+  RUN_TEST(test_budget_forgotten_after_a_long_quiet_spell);
   RUN_TEST(test_row10_restart_keeps_cooldown);
   RUN_TEST(test_cooldown_across_the_clock_wrap);
   RUN_TEST(test_sulk_effect_maps_to_eyes_and_grumble);

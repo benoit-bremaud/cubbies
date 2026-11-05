@@ -1,7 +1,8 @@
 // Social protocol (social-presence/02, 05a): drains at most 4 frames per tick from IRadio, keeps
 // the 16-slot neighbour table (RAM only), greets each newcomer once per arrival under a cooldown
 // and a sliding budget, and broadcasts PRESENCE every 5 s ± 1 s (Prng jitter). Returns the
-// greeting as a SocialOutput that main.cpp hands to routeNewcomer(). Drop counters by reason are
+// greeting as a SocialOutput that main.cpp hands to routeNewcomer(). It also starts and hears
+// CHAIN, CHOIR and PET (social-group/05b, 05c, 05e). Drop counters by reason are
 // exposed through stats() for debug output.
 #pragma once
 

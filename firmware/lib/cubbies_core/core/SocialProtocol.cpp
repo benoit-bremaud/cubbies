@@ -34,7 +34,8 @@ bool SocialProtocol::startChoir(const SelfState& self) {
 bool SocialProtocol::sendPet(const SelfState& self) {
   const uint32_t now = clock_.nowMs();
   if (self.sleep != SleepState::Awake || presentCount() == 0) return false;  // 05e S4
-  if (petSent_ && ageMs(now, lastPetMs_) < kPetCooldownMs) return false;    // S3
+  // S3; after ~49.7 days without a PET the age may alias and drop one stroke (accepted, as Choir)
+  if (petSent_ && ageMs(now, lastPetMs_) < kPetCooldownMs) return false;
   petSent_ = true;
   lastPetMs_ = now;
   uint8_t frame[kFrameSize];
