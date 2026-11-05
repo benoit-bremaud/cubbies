@@ -22,6 +22,9 @@ human context: what was done, why, and by which PR.
   script let the scan run; the wrapper now exits 1) · Should 3 (sim logs shown on failure,
   CLAUDE.md layout, run.sh FAIL noise filed as #82) · Nice 5 (fixed; freecadcmd exit code on
   plain regeneration filed as #83). Commit 2bfa8b3 says it clears S8786; cd1f250 does.
+- Verify round 2: Must 1 (`coverage erase` kept stale parallel files, merged into the next
+  report; now removed with rm) · Should 1 (wrapper failures before `try` exited 0; a
+  `CASE-COV-OK` sentinel is now required) · Nice 2 (fixed).
 - Local gate on the branch: OK (new coverage 87.6 %, 0 new violations).
 
 ### G6 jealousy (issue #73)
