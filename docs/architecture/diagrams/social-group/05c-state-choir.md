@@ -79,8 +79,8 @@ rest plus a voice (static_assert), so a singing cube is always cooling (row 6).
 | 9 | any CHOIR frame | never relayed: one frame per choir, no echo |
 | 10 | voice rank: k present neighbours have a lower MAC | voice k mod 3 |
 | 11 | the cube falls asleep during the rest or the melody | the Sound gate stops it (05e), as for any sound |
-| 12b | CHOIR cue while the cube sulks (Annoyed from G6 jealousy) | not sung, frown kept; cooldown as row 4 ([05e](05e-state-jealousy.md) row 16b, issue #73) |
-| 12 | a reaction sound (tap, double tap, chain, greeting) during the rest or the melody | dropped: the choir voices rank 3 in the Sound gate, above every reaction (a Grumpy in progress is replaced, so the cube still sings) |
+| 12 | a reaction sound (tap, double tap, chain, greeting) during the rest or the melody | dropped: the choir voices rank 3 in the Sound gate, above every reaction (a Grumpy in progress is replaced, so the cube still sings, unless it is jealous, row 13) |
+| 13 | CHOIR frame while the cube is in a G6 jealous reaction (`SelfState::sulking`) | no voice, frown kept; cooldown as row 4 ([05e](05e-state-jealousy.md) row 22, issue #73) |
 
 Every time test is `(uint32)(now - then) ≥ T` or `(int32)(startAt - now) > 0`, wrap-safe
 (social-presence/06).

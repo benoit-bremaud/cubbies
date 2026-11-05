@@ -96,6 +96,7 @@
   - 2b. The most common mood changes during the hold: the hold restarts.
   - 2c. A tie: Happy beats Annoyed beats Curious beats Bored (a sulking cube dampens a calm group).
   - 2d. B was pulled less than a minute ago: nothing happens.
+  - 2e. The mood is Annoyed and B's owner petted or called it less than 30 s ago: no pull (G6, social-group/05a row 13).
   - 3a. The pulled mood is Annoyed: B grumbles once (grumpy beep through the Sound gate).
 
 ### UC9 — Start a chain reaction
@@ -139,6 +140,7 @@
   - 2b. A neighbour sang in a choir less than 60 s ago, or is already singing: it stays silent.
   - 2c. A neighbour handles the start too late (after its start time): it stays silent.
   - 2d. A cube is out of A's range: it does not sing (the start is not relayed).
+  - 2e. A neighbour is in a jealous reaction (G6): it refuses to sing and keeps its frown.
   - 3a. A cube falls asleep while singing: its voice stops.
 
 ## Not use cases (system-initiated behaviours, listed for traceability only)
@@ -154,7 +156,9 @@
 - **B3 — Motion reactions** (tier B, S9): tilt, shake, upside down. Requirement: REQ-F-15.
 - **B5 — Jealousy** (tier B, G6): an outcome of UC3 (pet the cube) seen by a neighbour; the
   stroked cube broadcasts one PET frame, an awake neighbour nobody has paid attention to lately
-  glances sideways, then turns Annoyed on a second stroke, and forgives when stroked itself. Requirement: REQ-F-22. Views:
+  reacts with a light silent reaction, then a stronger one on a second stroke, each drawn by
+  context from a repertoire (glance, stare, pout, puppy eyes, "me too!", fake sleep, sulk), and
+  forgives when stroked itself. Requirement: REQ-F-22. Views:
   [diagrams/social-group/](../diagrams/social-group/) 02e, 05e (issue #73).
 
 ## Domain: Making

@@ -47,7 +47,8 @@ Within a tier, the order is the implementation order.
 | G3 | Chain reaction: one cube triggers, the others react one after another | A | G1 |
 | G4 | Synchronised choir: shared clock, multi-voice melody | B | G1, S4 |
 | G5 | Collective sleep: the first yawn spreads (design: social-group 05d, #59) | B | G2, S5 |
-| G6 | Jealousy: the owner pets another cube in range, mine sulks (design: social-group 05e, #73) | B | G1, S3 |
+| G6a | Jealousy: the owner pets another cube in range, mine reacts in a crescendo drawn by context from a repertoire (glance, stare, turn away, pout, puppy eyes, "me too!", fake sleep, sulk) (design: social-group 05e, #73) | B | G1, S3 |
+| G6b | Jealousy, more: tear, broken heart, mimic, sigh, tremble, exaggerated reconciliation, group sulk; later light (S8) and motion (S9) contexts, optional "sworn enemy" pair | C | G6a |
 | G7 | Pass the ball: a tap sends a virtual object to a neighbour | C | G1, S3 |
 | G8 | Team poll: one cube asks, each answers by tap, all display the result | C | G7 |
 | G9 | Chinese whispers: each cube distorts the melody before passing it on | C | G3, S4 |

@@ -25,35 +25,37 @@ sequenceDiagram
   participant SA as Social protocol (cube A, lib)
   participant SB as Social protocol (cube B, lib)
   participant Main as main.cpp tick (cube B)
-  participant MB as Mood engine (cube B, lib)
+  participant MB as Mood engine + repertoire (cube B, lib)
   participant Gate as Sound gate (cube B, lib)
 
   Owner->>GA: stroke on A
   GA-->>SA: Gesture::Stroke (A purrs, 05a; may conduct a choir, 05c)
-  SA->>SA: sendPet(self): Awake, a present neighbour, ≥ T_pet_tx? (05e rows 14, 14b)
+  SA->>SA: sendPet(self): Awake, a present neighbour, ≥ T_pet_tx? (05e rows 19, 20)
   SA->>SB: PET {stroked palette index = A} (broadcast, once)
-  Main->>SB: tick(self)
+  Main->>SB: tick(self with sulking)
   SB->>SB: decode (allowlist), sender present, index matches its entry, self Awake?
-  SB-->>Main: SocialOutput {jealous = true}
-  Main->>MB: jealousy()
-  alt first step (05e row 2)
-    MB-->>Main: MoodEffect::SideGlance (mood unchanged, Noticed)
-  else second PET within T_notice (05e row 2b)
-    MB-->>Main: MoodEffect::Grumpy (mood now Annoyed, timers from now, G2 refractory)
-    Main->>Gate: grumpy beep at the gate's volume
-    Note over Main: a CHOIR cue on this tick or during the sulk is not sung (05e row 16b)
+  SB-->>Main: SocialOutput {jealous, jealousOf = entry age, crowd}
+  Main->>MB: jealousy(jealousOf), right after social.tick, before the choir voice
+  MB->>MB: guards G? step 1 or 2? context → weights, no repeat, Prng draw (05e)
+  alt a reaction is drawn
+    MB-->>Main: JealousReaction (eyes overlay, optional sound; Sulk enters Annoyed)
+    Main->>Gate: its sound at the gate's volume, if any
   else guards fail
-    MB-->>Main: MoodEffect::None
+    MB-->>Main: none
   end
-  Note over MB: a later stroke on B turns it Happy (05a), calm T_calm turns it Curious
+  Note over SB: while a step-2 reaction is held, SelfState::sulking makes Choir return no voice (05c row 13)
+  Note over MB: a stroke on B stops the reaction and turns it Happy (05a)
 ```
 
 ## Notes
 
 - **New wiring**: `main.cpp` calls `social.sendPet(self)` on `Gesture::Stroke` next to
-  `startChoir(self)`, and calls `mood.jealousy()` (clock injected, like every engine call) when
-  `SocialOutput::jealous` is set, after the gestures and before `contagion()` (05e row 15). It
-  skips the choir voice while `mood.sulking()` is true.
+  `startChoir(self)`, calls `mood.jealousy(out.jealousOf)` right after `social.tick(self)` and
+  before the choir voice is played, plays the returned eyes and sound, and fills
+  `SelfState::sulking` from `mood.sulking()`. The choir refusal itself is decided in `lib/`.
 - **Attention memory**: the mood engine already receives every touch-down (`touchDown()`),
-  gesture and call (`stimulus()`); it keeps the time of the last one for T_ignored, no new port.
-- **Dependency direction** unchanged: the flag lives in `SocialOutput` in `lib/`.
+  gesture and call (`stimulus()`); it keeps the time of the last one, excluding `Loud` and
+  `NewcomerSeen`, for T_ignored and T_lonely; no new port.
+- **Randomness**: the repertoire draws from its own lib-owned `Prng`, seeded by `main.cpp` after
+  the Wi-Fi driver is up (ADR-0013).
+- **Dependency direction** unchanged: the flag and context live in `SocialOutput` in `lib/`.
