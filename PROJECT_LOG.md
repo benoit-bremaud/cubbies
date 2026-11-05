@@ -5,6 +5,16 @@ human context: what was done, why, and by which PR.
 
 ---
 
+## 2026-11-05
+
+### ADR-0018 bounded one-shot social events (issue #73) — **PR pending**
+
+- Owner decision D5 of the G6a study (PR #76; 450/500 vs held signal 305, per-PDR argument 350):
+  a single frame may trigger a one-shot social event, mood included, under seven bounds
+  (allowlist, present sender, cooldown ≥ 60 s for a mood change, Awake only, ADR-0012 effect
+  envelope, touch overrides, no G2 echo). Amends ADR-0012's "nudge only" consequence; G2/G5 keep
+  their holds; CHAIN and CHOIR recognised as already within the bounds.
+
 ## 2026-10-23
 
 ### Voice and AI research note (issue #61) — **PR #62**
