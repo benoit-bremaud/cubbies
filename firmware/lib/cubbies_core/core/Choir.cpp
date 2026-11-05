@@ -33,7 +33,9 @@ ChoirCue Choir::tick(uint32_t now, bool awake, uint8_t rank) {
   return ChoirCue{true, static_cast<uint8_t>(rank % kVoices), static_cast<uint32_t>(rest)};  // rows 4, 10
 }
 
-bool Choir::singing(uint32_t) const { return false; }
+bool Choir::singing(uint32_t now) const {
+  return pending_ || (started_ && ageMs(now, lastStart_) < kChoirSingMs);
+}
 
 bool Choir::cooling(uint32_t now) const { return started_ && ageMs(now, lastStart_) < kCooldownMs; }
 

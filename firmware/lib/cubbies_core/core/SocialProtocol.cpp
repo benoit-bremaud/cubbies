@@ -52,10 +52,11 @@ SocialOutput SocialProtocol::tick(const SelfState& self) {
   expire(now);
   SocialOutput out = greet(now);
   const bool awake = self.sleep == SleepState::Awake;
-  out.pet = petHeard_ && awake;  // 05e rows 5, 6: dropped while not Awake, one flag per tick
   const ChainFire fire = chain_.tick(now, awake);
   out.chain = fire.react;
   out.choir = choir_.tick(now, awake, lowerMacs());
+  // 05e rows 5, 6, 11: dropped while not Awake or singing, one flag per tick
+  out.pet = petHeard_ && awake && !choir_.singing(now);
   if (fire.relay) {
     uint8_t frame[kFrameSize];
     encodeChain(fire.frame, frame);

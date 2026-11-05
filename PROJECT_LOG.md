@@ -21,7 +21,7 @@ human context: what was done, why, and by which PR.
   `SocialOutput::pet`, `MoodEngine::jealousy()`, `Reaction::Sulk` (golden `sulk`),
   `effects(MoodEffect::Sulk)`; `main.cpp` wiring.
 - Adversarial review round 1: Must 1 (S3 test passed for the wrong reason, fixed, mutant now
-  killed) · Should 5 (fixed) · Nice 6 (5 fixed). Gate: 326 native tests, both boards, benches
+  killed) · Should 5 (fixed) · Nice 6 (5 fixed; the 6th, a sulk mid-song, became 05e row 11 by owner decision, 430/500 vs 365). Verify round: gate open, 2 Nice fixed. Gate: 327 native tests, both boards, benches
   PASS, ERC 0, ruff, gitleaks, actionlint clean.
 
 ## 2026-10-23

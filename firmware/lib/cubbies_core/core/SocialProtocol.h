@@ -33,7 +33,7 @@ struct SocialOutput {
   uint8_t paletteIndex = 0;
   bool chain = false;  // a chain event fired here and the cube is Awake: react (social-group/05b)
   ChoirCue choir;      // sing this voice after this rest (social-group/05c)
-  bool pet = false;    // a valid PET was heard this tick and the cube is Awake (social-group/05e)
+  bool pet = false;    // a valid PET was heard this tick, the cube is Awake and not singing (05e)
 };
 
 // Drop counters keyed by reason, never by MAC (06 privacy note).
