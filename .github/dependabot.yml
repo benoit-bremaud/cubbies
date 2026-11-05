@@ -13,5 +13,10 @@ updates:
     # Supply chain: never propose a release younger than a week.
     cooldown:
       default-days: 7
+    # CodeQL's init and analyze must run the same version (upload-sarif kept in step): bump them in one PR.
+    groups:
+      codeql-action:
+        patterns:
+          - 'github/codeql-action*'
     commit-message:
       prefix: 'chore(deps)'
