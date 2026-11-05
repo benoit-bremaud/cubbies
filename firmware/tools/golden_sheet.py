@@ -9,7 +9,7 @@ from PIL import Image, ImageDraw
 
 names = ["curious", "happy", "bored", "tired", "annoyed", "closed", "blink-1", "blink-2", "blink-3", "blink-4",
          "touchdown", "surprise", "touch-to-surprise", "joy-1", "joy-2", "lookup",
-         "yawn-1", "yawn-2", "wake-1", "wake-2", "greet-1", "greet-2", "purr",
+         "yawn-1", "yawn-2", "wake-1", "wake-2", "greet-1", "greet-2", "sulk", "purr",
          "invitation-empty", "invitation-full", "ritual", "adoption-1", "adoption-2", "error"]
 scale, pad, cols = 4, 12, 4
 w, h = 96 * scale, 64 * scale

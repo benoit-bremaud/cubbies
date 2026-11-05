@@ -31,6 +31,8 @@ bool SocialProtocol::startChoir(const SelfState& self) {
   return true;
 }
 
+bool SocialProtocol::sendPet(const SelfState&) { return false; }
+
 SocialOutput SocialProtocol::tick(const SelfState& self) {
   const uint32_t now = clock_.nowMs();
   RxFrame f;

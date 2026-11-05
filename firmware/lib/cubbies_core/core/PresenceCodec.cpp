@@ -86,4 +86,7 @@ DecodeResult decodeChoir(const uint8_t* bytes, size_t len, ChoirStart& out) {
   return DecodeResult::Ok;
 }
 
+void encodePet(const Pet&, uint8_t[kFrameSize]) {}
+DecodeResult decodePet(const uint8_t*, size_t, Pet&) { return DecodeResult::Type; }
+
 }  // namespace cubbies

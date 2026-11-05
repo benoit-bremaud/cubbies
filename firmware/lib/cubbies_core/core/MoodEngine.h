@@ -16,7 +16,7 @@ namespace cubbies {
 // Released ends a medium press or a stroke: a gesture like the others (owner decision
 // 2026-10-15, so a medium press wakes a Bored or Tired mood).
 enum class Stimulus : uint8_t { Tap, DoubleTap, Stroke, Released, Voice, Clap, Loud, NewcomerSeen };
-enum class MoodEffect : uint8_t { None, Yawn, Grumpy };
+enum class MoodEffect : uint8_t { None, Yawn, Grumpy, Sulk };
 
 class MoodEngine {
  public:
@@ -36,6 +36,10 @@ class MoodEngine {
   // Collective sleep (social-group/05d) is evaluated first: a Bored cube whose drowsy neighbours
   // held T_contagion in calm enters Tired and returns its Yawn, without starting the refractory.
   MoodEffect contagion(const MoodTally& tally);
+  // Jealousy (social-group/05e): call when the Social protocol heard a PET this Awake tick.
+  // Sulk when calm ≥ kJealousCalmMs, out of the kJealousMs cooldown and within the budget; the
+  // mood, its timers, the calm and the G2 refractory are unchanged. restart() keeps the limits.
+  MoodEffect jealousy();
 
   // Durations (05a starting values, tuning, no ADR).
   static constexpr uint32_t kSettleMs = 10000;
@@ -47,6 +51,12 @@ class MoodEngine {
   // spreads its joy; the refractory kills two-cube ping-pong and caps forged-frame nuisance.
   static constexpr uint32_t kContagionMs = 6000;
   static constexpr uint32_t kRefractoryMs = 60000;
+  // social-group/05e: a cube touched in the last T_contagion is in use; the cooldown and the
+  // budget cap forged PET nuisance (ADR-0012).
+  static constexpr uint32_t kJealousCalmMs = kContagionMs;
+  static constexpr uint32_t kJealousMs = 60000;
+  static constexpr uint32_t kJealousWindowMs = 600000;
+  static constexpr uint8_t kJealousBudget = 4;
 
  private:
   MoodEffect enter(Mood m);

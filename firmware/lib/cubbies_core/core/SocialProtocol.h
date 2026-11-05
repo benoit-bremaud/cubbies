@@ -32,6 +32,7 @@ struct SocialOutput {
   uint8_t paletteIndex = 0;
   bool chain = false;  // a chain event fired here and the cube is Awake: react (social-group/05b)
   ChoirCue choir;      // sing this voice after this rest (social-group/05c)
+  bool pet = false;    // a valid PET was heard this tick and the cube is Awake (social-group/05e)
 };
 
 // Drop counters keyed by reason, never by MAC (06 privacy note).
@@ -67,6 +68,9 @@ class SocialProtocol {
   // Owner stroke (05c rows 1–3): broadcasts a CHOIR start when the cube is Awake, a neighbour is
   // present and the choir cooldown is over; the conductor's cue comes out of this tick().
   bool startChoir(const SelfState& self);
+  // Owner stroke that started no choir (05e S2–S4): broadcasts PET when the cube is Awake, a
+  // neighbour is present and the PET cooldown is over; returns whether a frame was sent.
+  bool sendPet(const SelfState& self);
 
   const SocialStats& stats() const { return stats_; }
   static constexpr uint8_t kCapacity = 16;
@@ -82,6 +86,7 @@ class SocialProtocol {
   static constexpr uint32_t kBudgetWindowMs = 600000;
   static constexpr uint8_t kBudget = 6;
   static constexpr uint8_t kMaxFramesPerTick = 4;
+  static constexpr uint32_t kPetCooldownMs = 10000;  // T_pet_tx (05e S3)
 
  private:
   void receive(const RxFrame& f);

@@ -83,6 +83,8 @@ MoodEffect MoodEngine::contagion(const MoodTally& tally) {
   return enter(target);
 }
 
+MoodEffect MoodEngine::jealousy() { return MoodEffect::None; }
+
 MoodEffect MoodEngine::tick() {
   const uint32_t now = clock_.nowMs();
   switch (mood_) {
