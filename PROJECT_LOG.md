@@ -13,8 +13,12 @@ human context: what was done, why, and by which PR.
   not run yet. G6 picked by MCDA (415/500 vs "social gaze" 410, bench 380, sound brick 380).
 - Signal by MCDA (cute effect and timing 35, simplicity 25, robustness 20, reuse 20): one-shot
   PET frame `0x04` 430/500 vs a PRESENCE "petted" bit 300 (0–6 s late) vs mood-byte inference 250.
-- Sulk = the existing Annoyed mood (grumpy beep), forgiven by a stroke; T_ignored 30 s,
-  T_jealous 60 s, T_pet_tx 10 s. REQ-F-22, B5, `diagrams/social-group/` 02e and 05e, PET bytes
+- Sulk = the existing Annoyed mood (grumpy beep), forgiven by a stroke; crescendo by MCDA
+  (450/500 vs per-mood 410): first PET a silent side glance, second within T_notice the sulk.
+  Adversarial round 1 (5 Must) led to D3 the jealous cube refuses the choir (440), D4 sulk starts
+  the G2 refractory and a just-petted cube is never pulled into Annoyed (410, G2 row 13), D5
+  ADR-0018 to supersede ADR-0012's "nudge only" clause, separate PR (450). T_ignored 30 s,
+  T_jealous 60 s, T_notice 60 s, T_pet_tx 10 s. REQ-F-22, B5, `diagrams/social-group/` 02e and 05e, PET bytes
   in social-presence/06, traceability and verification rows.
 - Fixed a duplicate ID: collective sleep was REQ-F-20 like the expansion port; it becomes
   REQ-F-21 (ADR-0016 keeps REQ-F-20 untouched).

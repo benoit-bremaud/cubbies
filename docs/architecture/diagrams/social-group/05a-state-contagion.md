@@ -66,6 +66,7 @@ stateDiagram-v2
 | 10 | candidate Tired | impossible (Tired never votes) |
 | 11 | cube not Awake | contagion not evaluated (the engine is paused); a wake restarts it with no candidate |
 | 12 | a pulled mood | is broadcast like any mood; refractory stops the echo |
+| 13 | candidate Annoyed, owner touch-down, gesture or call less than T_ignored (30 s) ago | no pull: a cube just petted never catches its neighbours' sulk (G6, [05e](05e-state-jealousy.md) row 17, issue #73) |
 
 Durations (tuning, no ADR): **T_contagion 6 s** (just above one presence period with jitter, and
 below T_settle 10 s so a petted Happy cube has time to spread), **T_refractory 60 s** (a cube is
