@@ -76,6 +76,7 @@ firmware/src/             adapters and main
 firmware/test/            native unit tests (Unity): one folder per test program, shared doubles
                           in test/support, golden images in test/golden
 hardware/electronics/     KiCad schematic (native) + PDF export, sim/ (ngspice netlists and plots)
+tools/                    repository-wide scripts (local SonarQube scan, sonar-project.properties at the root)
 hardware/case/            enclosure: FreeCAD Python script (source) + generated exports (CC BY-SA 4.0)
 ```
 

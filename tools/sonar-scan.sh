@@ -2,35 +2,44 @@
 # Measure Python coverage (sim scripts with the system python, the case script inside the
 # FreeCAD AppImage python in check-only mode, so no export is rewritten), write coverage.xml,
 # then run the local SonarQube scan. C/C++ is not analysed by the Community server.
+# Like run.sh, schematic_values.py regenerates schematic.lib from the schematic.
 # Usage: SONAR_TOKEN=$(cat ~/.config/sonarqube/analysis-token) sh tools/sonar-scan.sh
-# Needs uv, python3, freecadcmd (FreeCAD 1.1, python 3.11), kicad-cli, ngspice and sonar-scanner.
+# Needs uv, python3, kicad-cli 9, freecadcmd (FreeCAD 1.1, python 3.11) and sonar-scanner.
 set -eu
 cd "$(dirname "$0")/.."
 : "${SONAR_TOKEN:?set SONAR_TOKEN to the analysis token}"
+token=$SONAR_TOKEN
+unset SONAR_TOKEN  # only sonar-scanner gets it
 COVERAGE_VERSION=7.10.7
 FREECAD_PYTHON=3.11
 work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT
-root=$(pwd)
-export COVERAGE_FILE="$root/.coverage"
+CUBBIES_ROOT=$(pwd)
+CUBBIES_COV_SITE="$work/site"
+export COVERAGE_FILE="$CUBBIES_ROOT/.coverage" CUBBIES_ROOT CUBBIES_COV_SITE
 cov() { uvx --from "coverage==$COVERAGE_VERSION" coverage "$@"; }
 
 cov erase
 for script in schematic_values.py test_schematic_values.py test_crosscheck.py calc.py crosscheck.py; do
-  (cd hardware/electronics/sim && cov run -p --source=. "$script" > /dev/null)
+  (cd hardware/electronics/sim && cov run -p --source=. "$script" > "$work/$script.log" 2>&1) \
+    || { cat "$work/$script.log"; exit 1; }
 done
 
-uv pip install -q --python-version "$FREECAD_PYTHON" --target "$work/site" "coverage==$COVERAGE_VERSION"
-cat > "$work/case_cov.py" << PY
-import os, sys
-sys.path.insert(0, "$work/site")
+uv pip install -q --python-version "$FREECAD_PYTHON" --target "$CUBBIES_COV_SITE" "coverage==$COVERAGE_VERSION"
+# freecadcmd exits 0 on an uncaught exception, so the wrapper turns one into exit 1.
+cat > "$work/case_cov.py" << 'PY'
+import os, pathlib, sys, traceback
+sys.path.insert(0, os.environ["CUBBIES_COV_SITE"])
 import coverage
-script = "$root/hardware/case/cubbies_case.py"
-cov = coverage.Coverage(data_file="$root/.coverage", data_suffix=True, include=[script])
+script = os.path.join(os.environ["CUBBIES_ROOT"], "hardware", "case", "cubbies_case.py")
+cov = coverage.Coverage(data_file=os.environ["COVERAGE_FILE"], data_suffix=True, include=[script])
 os.environ["CUBBIES_CHECK_ONLY"] = "1"
 cov.start()
 try:
-    exec(compile(open(script).read(), script, "exec"), {"__name__": "cubbies_case", "__file__": script})
+    exec(compile(pathlib.Path(script).read_text(), script, "exec"), {"__name__": "cubbies_case", "__file__": script})
+except Exception:
+    traceback.print_exc()
+    sys.exit(1)
 finally:
     cov.stop()
     cov.save()
@@ -41,4 +50,4 @@ if tr '\r\t' '\n\n' < "$work/case.log" | grep -q '^FAIL'; then cat "$work/case.l
 cov combine -q
 cov xml -q -o coverage.xml
 cov report --skip-empty
-sonar-scanner  # reads SONAR_TOKEN from the environment
+SONAR_TOKEN=$token sonar-scanner
