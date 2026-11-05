@@ -77,6 +77,7 @@ firmware/test/            native unit tests (Unity): one folder per test program
                           in test/support, golden images in test/golden
 hardware/electronics/     KiCad schematic (native) + PDF export, sim/ (ngspice netlists and plots)
 hardware/case/            enclosure: FreeCAD Python script (source) + generated exports (CC BY-SA 4.0)
+tools/                    repository-wide scripts (local SonarQube scan)
 ```
 
 ## Toolchain

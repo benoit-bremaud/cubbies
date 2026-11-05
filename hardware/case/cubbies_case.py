@@ -354,11 +354,32 @@ def _fits(shape: Part.Shape, inner: Part.BoundBox) -> bool:
     return loose.isInside(shape.BoundBox)
 
 
+def solid(shape: Part.Shape, x: float, y: float, z: float) -> bool:
+    """True when the point lies inside the shape (or on its surface)."""
+    return shape.isInside(V(x, y, z), 1e-6, True)
+
+
+def walls_in_place(front: Part.Shape, rear: Part.Shape) -> bool:
+    """Solid at mid-wall, air just inside, on each face.
+
+    Probes sit in plain wall: below the eyes (front), above the rebate and notch (back),
+    clear of the mic holes (left), vents (right), XIAO rails (bottom) and dimple (top).
+    """
+    c, w = SIZE / 2, WALL / 2
+    back_z = (cover_rebate().BoundBox.ZMax + NOTCH_H + SIZE - WALL) / 2
+    probes = [
+        (front, (c, w, 6.0), (c, WALL + 0.1, 6.0)),
+        (rear, (6.0, SIZE - w, back_z), (6.0, SIZE - WALL - 0.1, back_z)),
+        (rear, (w, 20.0, 8.0), (WALL + 0.1, 20.0, 8.0)),
+        (rear, (SIZE - w, 20.0, 30.0), (SIZE - WALL - 0.1, 20.0, 30.0)),
+        (rear, (6.0, 20.0, w), (6.0, 20.0, WALL + 0.1)),
+        (rear, (6.0, 36.0, SIZE - w), (6.0, 36.0, SIZE - WALL - 0.1)),
+    ]
+    return all(solid(s, *p_in) and not solid(s, *p_out) for s, p_in, p_out in probes)
+
+
 def openings_in_place(front: Part.Shape, rear: Part.Shape) -> bool:
     """Every opening is air at its centre, and the vents stay on the flat back face."""
-
-    def solid(shape: Part.Shape, x: float, y: float, z: float) -> bool:
-        return shape.isInside(V(x, y, z), 1e-6, True)
 
     c, w = SIZE / 2, WALL / 2
     vents = [b.BoundBox for b in vent_slots()]
@@ -391,9 +412,6 @@ def run_checks(
         if not ok:
             failures.append(label)
 
-    def solid(shape: Part.Shape, x: float, y: float, z: float) -> bool:
-        return shape.isInside(V(x, y, z), 1e-6, True)
-
     parts = {"front": front, "rear": rear, "cover": cover}
     for name, part in parts.items():
         check(part.isValid() and part.Volume > 0, f"{name}: valid solid")
@@ -404,21 +422,9 @@ def run_checks(
         f"envelope {env.XLength:.2f} x {env.YLength:.2f} x {env.ZLength:.2f} = {SIZE} mm",
     )
 
-    # Wall: solid at mid-wall, air just inside, on each face. Probes sit in plain wall:
-    # below the eyes (front), above the rebate and notch (back), clear of the mic
-    # holes (left), vents (right), XIAO rails (bottom) and dimple (top).
-    c, w = SIZE / 2, WALL / 2
-    back_z = (cover_rebate().BoundBox.ZMax + NOTCH_H + SIZE - WALL) / 2
-    probes = [
-        (front, (c, w, 6.0), (c, WALL + 0.1, 6.0)),
-        (rear, (6.0, SIZE - w, back_z), (6.0, SIZE - WALL - 0.1, back_z)),
-        (rear, (w, 20.0, 8.0), (WALL + 0.1, 20.0, 8.0)),
-        (rear, (SIZE - w, 20.0, 30.0), (SIZE - WALL - 0.1, 20.0, 30.0)),
-        (rear, (6.0, 20.0, w), (6.0, 20.0, WALL + 0.1)),
-        (rear, (6.0, 36.0, SIZE - w), (6.0, 36.0, SIZE - WALL - 0.1)),
-    ]
+    c = SIZE / 2
     check(
-        all(solid(s, *p_in) and not solid(s, *p_out) for s, p_in, p_out in probes),
+        walls_in_place(front, rear),
         f"wall thickness {WALL} mm on all faces",
     )
 

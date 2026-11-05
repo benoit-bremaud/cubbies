@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import time
+
 from schematic_values import si_value
 
 
@@ -23,7 +25,7 @@ def test_si_value() -> None:
     }
     for text, expected in cases.items():
         assert abs(si_value(text) - expected) <= expected * 1e-9, text
-    for bad in ("1 uF", "abc", "10kk", "10kΩΩ", "1.5.5k"):
+    for bad in ("1 uF", "2.2 k", "abc", "10kk", "10kΩΩ", "1.5.5k"):
         try:
             si_value(bad)
         except ValueError:
@@ -31,6 +33,17 @@ def test_si_value() -> None:
         raise AssertionError(f"accepted {bad!r}")
 
 
+def test_si_value_linear_time() -> None:
+    """A long unreadable value fails fast: the parser regex must not backtrack (python:S8786)."""
+    start = time.perf_counter()
+    try:
+        si_value("1" * 20000 + "x")
+    except ValueError:
+        pass
+    assert time.perf_counter() - start < 0.5, "parser regex backtracks super-linearly"
+
+
 if __name__ == "__main__":
     test_si_value()
+    test_si_value_linear_time()
     print("schematic_values parser OK")

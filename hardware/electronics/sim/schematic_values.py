@@ -29,7 +29,7 @@ def si_value(text: str) -> float:
     The first word counts (the rest is a dielectric or a note). A spaced unit ('1 uF') or an
     unreadable value raises ValueError (main stops the script), so a bench never runs on a misread value.
     """
-    if re.match(r"[\d.]+\s", text):
+    if re.match(r"\d[\d.]*\s", text):
         raise ValueError(f"spaced unit, write it joined: {text!r}")
     m = re.fullmatch(r"(\d+(?:\.\d+)?)(?:([pnuµmkM])(\d*))?[FΩ]?", text.split()[0])
     if not m:

@@ -17,6 +17,30 @@ human context: what was done, why, and by which PR.
   (no mood change) stay outside it. Adversarial round 1: 4 Must (sums, false CHAIN/CHOIR claim,
   restated relay rule, "once per minute" claim) fixed.
 
+### SonarQube coverage measures the case script (issue #53 follow-up) — **PR #84**
+
+- #81 closed #53 while this branch was in review; owner chose (MCDA 420/500 vs a G6-SHA-only PR
+  300, closing 225) to keep this branch as a delta on top of #81.
+- Coverage tooling, option A by MCDA (395/500 vs case excluded 375, plus gcovr 205): the
+  owner's choice. `tools/sonar-scan.sh` replaces `hardware/electronics/sim/coverage.sh` and
+  measures the case script inside the FreeCAD python (check-only), so `cubbies_case.py` leaves
+  `sonar.coverage.exclusions`. The Community server has no C/C++ analyser, so no gcov report.
+- `walls_in_place` and a module-level `solid` also leave `run_checks` (on top of #81's
+  `coupon_ok`); the spaced-unit regex anchors on a digit; a linear-time parser test (red on the
+  old `fullmatch`, ~4.5 s on 20000 digits). Regenerated STLs and 3MF members byte-identical.
+- Adversarial review round 1: Must 1 (freecadcmd exits 0 on an exception; the wrapper exits 1)
+  · Should 3 (sim logs shown, CLAUDE.md layout, run.sh FAIL noise filed as #82) · Nice 5
+  (fixed; freecadcmd exit code on plain regeneration filed as #83). Round 2: Must 1 (stale
+  parallel coverage files merged; removed with rm) · Should 1 (`CASE-COV-OK` sentinel) · Nice 2.
+  Round 3: gate open. Round 4 (merge of main): Should 2 (branch coverage restored with
+  `--branch` on both sides as in #81; #82 kept although #81 found nothing to change, because the
+  negative-control line still reads as a failure in the gate output) · Nice 2 (stale
+  `coverage.xml` removed before measuring; this entry completed). Commit 2bfa8b3's subject
+  wrongly claims S8786.
+- Merge of main: `coverage.sh` deleted, `coverage` pinned to 7.17.1 as in #81.
+- Gate: SonarQube OK (new coverage 86.3 % with branches, 0 new violations), 18 case checks PASS, 328 native
+  tests, both boards, benches, ERC 0, ruff, gitleaks, actionlint.
+
 ### SonarQube gate green (issue #53) — **PR #81** (0586028)
 
 - Gate was red on main: new coverage 0 % (no Python report) and 2 issues. Fixed S3776
@@ -54,6 +78,8 @@ human context: what was done, why, and by which PR.
 - Codex P2 on PR #75: a long hold stopped refreshing the calm, so a held cube could sulk;
   fixed by 05e row 2b, `jealousy(padHeld)` fed with `holdMs() > 0`.
 - Owner request: a desktop fleet simulator, filed as #74 (roadmap T11), queued after G6.
+- Merged as PR #75 (`13aff3c`) with an owner SonarQube waiver (MCDA 450/500): the gate was red
+  only from pre-existing debt outside the diff, fixed next in #53.
 
 ## 2026-10-23
 

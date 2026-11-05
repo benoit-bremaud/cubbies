@@ -25,10 +25,11 @@ Thumbs.db
 CLAUDE.local.md
 .claude/worktrees/
 
-# SonarQube scanner work dir
+# SonarQube scan and coverage artefacts
 .scannerwork/
-hardware/electronics/sim/coverage.xml
-hardware/electronics/sim/.coverage
+coverage.xml
+.coverage
+.coverage.*
 
 # FreeCAD script run artefacts
 __pycache__/
