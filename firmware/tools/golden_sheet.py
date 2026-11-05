@@ -4,7 +4,8 @@
 Usage: golden_sheet.py [out.png]  (default: test/golden/sheet.png). Keep `names` in sync with
 the golden files written by test_native_eyes; missing files are skipped silently.
 """
-import os, sys
+import os
+import sys
 from PIL import Image, ImageDraw
 
 names = ["curious", "happy", "bored", "tired", "annoyed", "closed", "blink-1", "blink-2", "blink-3", "blink-4",
