@@ -220,7 +220,7 @@ void loop() {
   applySleep(sleepCycle.tick());
   if (sleepCycle.state() == SleepState::Awake) {
     applyMood(mood.contagion(seeded->social.moodTally()));  // after this tick's owner stimuli
-    if (social.pet) applyMood(mood.jealousy());  // social-group/05e rows 1-8
+    if (social.pet) applyMood(mood.jealousy());  // social-group/05e rows 1-8; row 11 in SocialOutput::pet
     applyMood(mood.tick());
   }
 

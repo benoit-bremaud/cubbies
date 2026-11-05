@@ -44,7 +44,7 @@ PET is never relayed: only the cubes in A's range hear it.
 ```mermaid
 stateDiagram-v2
   [*] --> Ready
-  Ready --> Sulking: PET heard, Awake, calm ≥ T_calm_jealous, budget left
+  Ready --> Sulking: PET heard, Awake, not singing (row 11), calm ≥ T_calm_jealous, budget left
   Sulking --> Cooldown: Sulk reaction played (eyes + grumble)
   Cooldown --> Ready: T_jealous elapsed since the sulk
   Ready --> Ready: PET heard but a guard fails (frame dropped, not queued)
@@ -65,7 +65,7 @@ stateDiagram-v2
 | 8 | sulk effect | does not break the calm, start the G2 refractory, or count as a stimulus for the idle timer |
 | 9 | malformed PET (palette out of range, reserved byte ≠ 0) | dropped by the codec (`dropRange`), no effect |
 | 10 | B restarts (wake) | cooldown and budget kept (they bound forged traffic across wakes) |
-| 11 | B has a choir start pending, or took part in one less than kChoirSingMs ago (longest lead + 10 s, the bound of 05c row 6) | nothing (owner amendment 2026-11-05: the group sings, nobody sulks) |
+| 11 | B started a choir voice less than kSingMs ago (a CHOIR drained in the same tick counts) (longest lead + 10 s, the bound of 05c row 6) | nothing (owner amendment 2026-11-05: the group sings, nobody sulks) |
 
 Durations and budgets: **T_calm_jealous 6 s** (= T_contagion, a cube held in the last 6 s is in
 use), **T_jealous 60 s**, **budget 4 sulks per 10 min** (ADR-0012 global budget, like the

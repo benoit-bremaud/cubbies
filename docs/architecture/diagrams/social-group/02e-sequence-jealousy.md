@@ -33,9 +33,9 @@ sequenceDiagram
     SA->>SB: PET {A's palette} (05e S2, never relayed)
   end
   MainB->>SB: tick(self)
-  SB-->>MainB: SocialOutput {pet = true} (B Awake)
+  SB-->>MainB: SocialOutput {pet = true} (B Awake, not singing a choir, 05e row 11)
   MainB->>MB: jealousy()
-  MB->>MB: calm ≥ T_calm_jealous? cooldown, budget? (05e rows 1–4)
+  MB->>MB: calm ≥ T_calm_jealous? cooldown, budget? (05e rows 1–4, 8, 10)
   alt rule 1 holds
     MB-->>MainB: MoodEffect::Sulk (mood unchanged)
     MainB->>Gate: grumble at the gate's volume, Sulk eyes

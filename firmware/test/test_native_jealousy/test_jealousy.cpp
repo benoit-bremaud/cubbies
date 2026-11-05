@@ -228,7 +228,7 @@ static void test_row6_row9_one_flag_per_tick_and_malformed_dropped() {
   TEST_ASSERT_EQUAL_UINT32(1, b.social.stats().dropRange);
 }
 
-// Row 11: a cube that sings a choir (pending or within kChoirSingMs of its start) raises no flag.
+// Row 11: a cube that sings a choir (within kSingMs of its start) raises no flag.
 static void test_row11_no_sulk_while_singing() {
   FakeClock clock(kT0);
   Air air;
@@ -238,8 +238,10 @@ static void test_row11_no_sulk_while_singing() {
   b.radio.inject(f, kFrameSize, mac(1));
   encodePet(Pet{3}, f);
   b.radio.inject(f, kFrameSize, mac(1));
-  TEST_ASSERT_TRUE(b.social.tick(b.self).choir.sing);  // the PET in the same drain is ignored
-  clock.advance(cubbies::Choir::kChoirSingMs - 1);
+  const SocialOutput first = b.social.tick(b.self);
+  TEST_ASSERT_TRUE(first.choir.sing);
+  TEST_ASSERT_FALSE(first.pet);  // the PET in the same drain is ignored
+  clock.advance(cubbies::Choir::kSingMs - 1);
   b.radio.inject(f, kFrameSize, mac(1));
   TEST_ASSERT_FALSE(b.social.tick(b.self).pet);
   clock.advance(1);
