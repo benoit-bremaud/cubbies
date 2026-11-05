@@ -1,9 +1,9 @@
 // Mood engine (05a): the five moods and what moves them. Fed with classified stimuli by the
 // Stimulus router, ticked on the injected clock, and pulled by the neighbours' tally
-// (social-group/05a). Returns only the side effects it owns (the
-// yawn of Tired, the grumpy beep on entering Annoyed); the generic reaction to each stimulus
-// (S3: surprise on a tap, purr on a stroke, …) is the router's. Paused by the Sleep cycle, which
-// calls restart() at every wake.
+// (social-group/05a). Returns only the side effects it owns (the yawn of Tired, the grumpy beep
+// on entering Annoyed, the jealous Sulk of social-group/05e); the generic reaction to each
+// stimulus (S3: surprise on a tap, purr on a stroke, …) is the router's. Paused by the Sleep
+// cycle, which calls restart() at every wake.
 #pragma once
 
 #include <cstdint>
@@ -16,7 +16,7 @@ namespace cubbies {
 // Released ends a medium press or a stroke: a gesture like the others (owner decision
 // 2026-10-15, so a medium press wakes a Bored or Tired mood).
 enum class Stimulus : uint8_t { Tap, DoubleTap, Stroke, Released, Voice, Clap, Loud, NewcomerSeen };
-enum class MoodEffect : uint8_t { None, Yawn, Grumpy };
+enum class MoodEffect : uint8_t { None, Yawn, Grumpy, Sulk };
 
 class MoodEngine {
  public:
@@ -36,6 +36,11 @@ class MoodEngine {
   // Collective sleep (social-group/05d) is evaluated first: a Bored cube whose drowsy neighbours
   // held T_contagion in calm enters Tired and returns its Yawn, without starting the refractory.
   MoodEffect contagion(const MoodTally& tally);
+  // Jealousy (social-group/05e): call when the Social protocol heard a PET this Awake tick.
+  // Sulk when calm ≥ kJealousCalmMs, out of the kJealousMs cooldown and within the budget; the
+  // mood, its timers, the calm and the G2 refractory are unchanged. restart() keeps the limits.
+  // `padHeld`: the owner touches the pad right now (row 2b), which no gesture reports after Stroke.
+  MoodEffect jealousy(bool padHeld);
 
   // Durations (05a starting values, tuning, no ADR).
   static constexpr uint32_t kSettleMs = 10000;
@@ -47,6 +52,12 @@ class MoodEngine {
   // spreads its joy; the refractory kills two-cube ping-pong and caps forged-frame nuisance.
   static constexpr uint32_t kContagionMs = 6000;
   static constexpr uint32_t kRefractoryMs = 60000;
+  // social-group/05e: a cube touched in the last T_contagion is in use; the cooldown and the
+  // budget cap forged PET nuisance (ADR-0012).
+  static constexpr uint32_t kJealousCalmMs = kContagionMs;
+  static constexpr uint32_t kJealousMs = 60000;
+  static constexpr uint32_t kJealousWindowMs = 600000;
+  static constexpr uint8_t kJealousBudget = 4;
 
  private:
   MoodEffect enter(Mood m);
@@ -65,6 +76,9 @@ class MoodEngine {
   uint32_t yawnSinceMs_ = 0;
   bool pulled_ = false;        // at least one pull happened (refractory applies)
   uint32_t lastPullMs_ = 0;
+  uint32_t sulks_[kJealousBudget] = {};  // ring of the last sulk times (05e rows 3, 4)
+  uint8_t sulkCount_ = 0;                // sulks recorded so far, saturates at kJealousBudget
+  uint8_t sulkHead_ = 0;                 // next ring slot, also the oldest once full
 };
 
 }  // namespace cubbies

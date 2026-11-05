@@ -85,6 +85,7 @@ static void test_reserved_types_are_dropped() {
   TEST_ASSERT_EQUAL(DecodeResult::Type, decodeWith(3, 0x00));
   TEST_ASSERT_EQUAL(DecodeResult::Type, decodeWith(3, 0x02));
   TEST_ASSERT_EQUAL(DecodeResult::Type, decodeWith(3, 0x03));
+  TEST_ASSERT_EQUAL(DecodeResult::Type, decodeWith(3, 0x04));
 }
 
 static void test_out_of_range_fields_are_dropped() {

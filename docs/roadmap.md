@@ -47,7 +47,7 @@ Within a tier, the order is the implementation order.
 | G3 | Chain reaction: one cube triggers, the others react one after another | A | G1 |
 | G4 | Synchronised choir: shared clock, multi-voice melody | B | G1, S4 |
 | G5 | Collective sleep: the first yawn spreads (design: social-group 05d, #59) | B | G2, S5 |
-| G6 | Jealousy: the owner pets another cube in range, mine sulks | B | G1, S3 |
+| G6 | Jealousy: the owner pets another cube in range, mine sulks (design: social-group 05e, #73) | B | G1, S3 |
 | G7 | Pass the ball: a tap sends a virtual object to a neighbour | C | G1, S3 |
 | G8 | Team poll: one cube asks, each answers by tap, all display the result | C | G7 |
 | G9 | Chinese whispers: each cube distorts the melody before passing it on | C | G3, S4 |
@@ -69,3 +69,4 @@ Within a tier, the order is the implementation order.
 | T8 | Native display adapter rendering the framebuffer to PNG; golden-image tests of every expression (verification plan) | A |
 | T9 | Calculations and ngspice simulations of the buzzer stage and display RESET filter, committed with plots | A |
 | T10 | Parametric FreeCAD script of the enclosure, generated STL/STEP, print trial (ADR-0010) | A |
+| T11 | Desktop fleet simulator: one or many cubes running the real lib over a loopback radio, owner inputs, range layout, clock speed (#74) | B |
