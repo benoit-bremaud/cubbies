@@ -31,9 +31,23 @@ bool SocialProtocol::startChoir(const SelfState& self) {
   return true;
 }
 
+bool SocialProtocol::sendPet(const SelfState& self) {
+  const uint32_t now = clock_.nowMs();
+  if (self.sleep != SleepState::Awake || presentCount() == 0) return false;  // 05e S4
+  // S3; after ~49.7 days without a PET the age may alias and drop one stroke (accepted, as Choir)
+  if (petSent_ && ageMs(now, lastPetMs_) < kPetCooldownMs) return false;
+  petSent_ = true;
+  lastPetMs_ = now;
+  uint8_t frame[kFrameSize];
+  encodePet(Pet{self.paletteIndex}, frame);
+  radio_.broadcast(frame, kFrameSize);
+  return true;
+}
+
 SocialOutput SocialProtocol::tick(const SelfState& self) {
   const uint32_t now = clock_.nowMs();
   RxFrame f;
+  petHeard_ = false;
   for (uint8_t i = 0; i < kMaxFramesPerTick && radio_.receive(f); ++i) receive(f);
   expire(now);
   SocialOutput out = greet(now);
@@ -41,6 +55,8 @@ SocialOutput SocialProtocol::tick(const SelfState& self) {
   const ChainFire fire = chain_.tick(now, awake);
   out.chain = fire.react;
   out.choir = choir_.tick(now, awake, lowerMacs());
+  // 05e rows 5, 6, 11: dropped while not Awake or singing, one flag per tick
+  out.pet = petHeard_ && awake && !choir_.singing(now);
   if (fire.relay) {
     uint8_t frame[kFrameSize];
     encodeChain(fire.frame, frame);
@@ -66,6 +82,14 @@ void SocialProtocol::receive(const RxFrame& f) {
     r = decodeChoir(f.bytes, f.len, c);
     if (r == DecodeResult::Ok) {
       choir_.hear(c, f.nowMs);
+      return;
+    }
+  }
+  if (r == DecodeResult::Type) {
+    Pet p{};
+    r = decodePet(f.bytes, f.len, p);
+    if (r == DecodeResult::Ok) {
+      petHeard_ = true;
       return;
     }
   }

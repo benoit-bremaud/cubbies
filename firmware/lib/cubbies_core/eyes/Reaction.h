@@ -18,6 +18,7 @@ enum class Reaction : uint8_t {
   Yawn,       // slow close then wide open (05a Bored → Tired "first yawn", Tired every T_yawn, 05b Asleep → Waking)
   Wake,       // progressive open and a stretch (05b Waking from Dozing)
   Greet,      // NewcomerSeen: glance one side then the other (05a, 02-presence, UC7)
+  Sulk,       // jealousy: annoyed lids, a glance away and down (social-group/05e)
 };
 
 }  // namespace cubbies

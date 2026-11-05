@@ -5,6 +5,29 @@ human context: what was done, why, and by which PR.
 
 ---
 
+## 2026-11-05
+
+### G6 jealousy (issue #73)
+
+- Dependabot PRs #67, #66, #50, #71 merged first (codeql-action grouped); G6 picked by MCDA
+  (415/500 vs #53 SonarQube 380, G12 clap wave 365, S10 340, S9 265).
+- PDR `social-group` (G6 part) validated by the owner: REQ-F-21 (REQ-F-20 is used twice on
+  main, follow-up), behaviour B5, `diagrams/social-group/` 05e rows and 02e sequence, PET type
+  0x04 in social-presence/06, traceability. Scored options: D1 new PET frame 405/500 (vs CHOIR
+  receipt 275, PRESENCE mood byte 265); D2 a stroke starts the choir when allowed, else PET
+  450/500; D3 transient sulk, mood unchanged, 445/500 (vs entering Annoyed 355). Calm 6 s,
+  cooldown 60 s, budget 4 per 10 min (ADR-0012), sender cooldown 10 s.
+- TDD (red commit first): `encodePet`/`decodePet`, `SocialProtocol::sendPet()` and
+  `SocialOutput::pet`, `MoodEngine::jealousy()`, `Reaction::Sulk` (golden `sulk`),
+  `effects(MoodEffect::Sulk)`; `main.cpp` wiring.
+- Adversarial review round 1: Must 1 (S3 test passed for the wrong reason, fixed, mutant now
+  killed) · Should 5 (fixed) · Nice 6 (5 fixed; the 6th, a sulk mid-song, became 05e row 11 by
+  owner decision, 430/500 vs 365). Verify rounds: 2 Nice fixed, then the row 11 diagrams fixed.
+  Gate: 327 native tests, both boards, benches PASS, ERC 0, ruff, gitleaks, actionlint clean.
+- Codex P2 on PR #75: a long hold stopped refreshing the calm, so a held cube could sulk;
+  fixed by 05e row 2b, `jealousy(padHeld)` fed with `holdMs() > 0`.
+- Owner request: a desktop fleet simulator, filed as #74 (roadmap T11), queued after G6.
+
 ## 2026-10-23
 
 ### Voice and AI research note (issue #61) — **PR #62**

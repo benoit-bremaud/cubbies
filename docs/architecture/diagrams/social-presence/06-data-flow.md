@@ -19,7 +19,7 @@ tag.)
 |--------|------|-------|----------------|-------|
 | 0 | 2 | magic | `0x43 0x42` ("CB") | filters unrelated ESP-NOW traffic on the channel |
 | 2 | 1 | version | `1` | any other value → drop |
-| 3 | 1 | type | `0x01` PRESENCE, `0x02` CHAIN (G3), `0x03` CHOIR (G4) | other values → drop (`dropType`) |
+| 3 | 1 | type | `0x01` PRESENCE, `0x02` CHAIN (G3), `0x03` CHOIR (G4), `0x04` PET (G6) | other values → drop (`dropType`) |
 | 4 | 1 | palette index | `0 .. paletteSize-1` | out of range → drop |
 | 5 | 1 | mood | `0 .. 5` per the table in 05a (5 = asleep) | out of range → drop |
 | 6 | 1 | flags | bit0 adopted, others `0` | unknown bits set → drop |
@@ -56,6 +56,17 @@ receive callback's timestamp (wrap-safe `uint32` add, compared as `(int32)(start
 CHOIR is never relayed, so a choir costs exactly one frame; forged frames make a cube sing at
 most once per 60 s (05c rows 7, 9). Protocol version stays `1`; a pre-G4 cube drops CHOIR as
 `dropType`.
+
+For **type `0x04` PET** (G6, [social-group/05e](../social-group/05e-state-jealousy.md)) they are:
+
+| Offset | Size | Field | Allowed values | Notes |
+|--------|------|-------|----------------|-------|
+| 4 | 1 | petted palette index | `0 .. paletteSize-1` | out of range → drop |
+| 5 | 3 | reserved | `0` | must be zero |
+
+PET is sent only by a stroke that did not start a choir, at most once per 10 s per cube, and is
+never relayed; a receiver sulks at most once per 60 s and four times per 10 min (05e), so forged
+frames are capped like CHOIR. Protocol version stays `1`; a pre-G6 cube drops PET as `dropType`.
 
 Total 8 bytes, far below the 250-byte ESP-NOW payload limit. The sender MAC is **not** in the
 payload: it is taken from the receive callback metadata, which the radio stack fills in from the

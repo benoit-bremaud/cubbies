@@ -84,6 +84,7 @@ uint32_t EyesRenderer::reactionDurationMs(Reaction reaction) {
     case Reaction::Yawn:      return 1200;
     case Reaction::Wake:      return 800;
     case Reaction::Greet:     return 400;
+    case Reaction::Sulk:      return 900;
   }
   return 0;
 }
@@ -223,6 +224,11 @@ void EyesRenderer::applyReaction(Shape& s, uint32_t now) const {
       s.dx = p < 128 ? kMaxLook : -kMaxLook;
       break;
     }
+    case Reaction::Sulk:       // annoyed lids, a glance away and down (social-group/05e)
+      s.lids = lidsForMood(Mood::Annoyed);
+      s.dx = -kMaxLook;
+      s.dy = kMaxLook / 2;
+      break;
   }
   const uint32_t t = reactionTl_.elapsed(now);
   if (fromTouch_ && t < kTouchBlendMs) {  // blend the size from the touch-down one

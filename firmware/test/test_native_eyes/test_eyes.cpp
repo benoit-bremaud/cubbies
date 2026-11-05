@@ -710,6 +710,7 @@ static void test_golden_lookup() { goldenReactionAt(Reaction::LookUp, "lookup", 
 static void test_golden_yawn() { goldenReaction(Reaction::Yawn, "yawn", 400, 1000); }  // closing, wide
 static void test_golden_wake() { goldenReaction(Reaction::Wake, "wake", 200, 680); }   // opening, stretch
 static void test_golden_greet() { goldenReaction(Reaction::Greet, "greet", 120, 280); } // left, right
+static void test_golden_sulk() { goldenReactionAt(Reaction::Sulk, "sulk", 400); }  // social-group/05e
 static void test_golden_purr() {
   Rig r = goldenRig(Mood::Happy);
   r.eyes.tick();
@@ -794,6 +795,7 @@ int main() {
   RUN_TEST(test_golden_yawn);
   RUN_TEST(test_golden_wake);
   RUN_TEST(test_golden_greet);
+  RUN_TEST(test_golden_sulk);
   RUN_TEST(test_golden_purr);
   RUN_TEST(test_golden_invitation);
   RUN_TEST(test_golden_ritual);

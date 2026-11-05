@@ -33,6 +33,11 @@ ChoirCue Choir::tick(uint32_t now, bool awake, uint8_t rank) {
   return ChoirCue{true, static_cast<uint8_t>(rank % kVoices), static_cast<uint32_t>(rest)};  // rows 4, 10
 }
 
+bool Choir::singing(uint32_t now) const {
+  // After ~2^32 ms without a choir the age may alias and drop one window of PETs (accepted, as cooling)
+  return started_ && ageMs(now, lastStart_) < kSingMs;
+}
+
 bool Choir::cooling(uint32_t now) const { return started_ && ageMs(now, lastStart_) < kCooldownMs; }
 
 }  // namespace cubbies

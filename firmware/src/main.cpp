@@ -205,7 +205,7 @@ void loop() {
   const SelfState self{identity.paletteIndex, identity.adopted, sleepCycle.state(), sleepCycle.wakeOrigin(),
                        mood.mood()};
   if (g == Gesture::DoubleTap) seeded->social.startChain(self);  // social-group/05b rows 1-3
-  if (g == Gesture::Stroke) seeded->social.startChoir(self);     // social-group/05c rows 1-3
+  if (g == Gesture::Stroke && !seeded->social.startChoir(self)) seeded->social.sendPet(self);  // 05c, 05e S1-S2
   const SocialOutput social = seeded->social.tick(self);
   if (social.chain) applyEyesAndSound(routeChain(sleepCycle.state()));  // 05b row 5
   static_assert(Choir::kVoices == kChoirVoices, "one SoundId per choir voice");
@@ -220,6 +220,7 @@ void loop() {
   applySleep(sleepCycle.tick());
   if (sleepCycle.state() == SleepState::Awake) {
     applyMood(mood.contagion(seeded->social.moodTally()));  // after this tick's owner stimuli
+    if (social.pet) applyMood(mood.jealousy(gestures.holdMs() > 0));  // 05e rows 1-8, 2b, 11
     applyMood(mood.tick());
   }
 
