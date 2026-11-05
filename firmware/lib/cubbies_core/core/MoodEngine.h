@@ -1,9 +1,9 @@
 // Mood engine (05a): the five moods and what moves them. Fed with classified stimuli by the
 // Stimulus router, ticked on the injected clock, and pulled by the neighbours' tally
-// (social-group/05a). Returns only the side effects it owns (the
-// yawn of Tired, the grumpy beep on entering Annoyed, the jealous Sulk of social-group/05e); the generic reaction to each stimulus
-// (S3: surprise on a tap, purr on a stroke, …) is the router's. Paused by the Sleep cycle, which
-// calls restart() at every wake.
+// (social-group/05a). Returns only the side effects it owns (the yawn of Tired, the grumpy beep
+// on entering Annoyed, the jealous Sulk of social-group/05e); the generic reaction to each
+// stimulus (S3: surprise on a tap, purr on a stroke, …) is the router's. Paused by the Sleep
+// cycle, which calls restart() at every wake.
 #pragma once
 
 #include <cstdint>

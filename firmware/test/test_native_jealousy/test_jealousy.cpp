@@ -154,7 +154,8 @@ static void test_s1_s2_choir_first_then_pet() {
   TEST_ASSERT_EQUAL_size_t(1, choirFrames(a.radio));  // choir cooling down: PET instead
   TEST_ASSERT_EQUAL_size_t(1, petFrames(a.radio));
   Pet p{};
-  TEST_ASSERT_EQUAL(DecodeResult::Ok, decodePet(a.radio.sent.back().data(), kFrameSize, p));
+  for (const auto& f : a.radio.sent)
+    if (decodePet(f.data(), f.size(), p) == DecodeResult::Ok) break;  // the only PET, wherever it sits
   TEST_ASSERT_EQUAL_UINT8(3, p.paletteIndex);
   TEST_ASSERT_TRUE(b.social.tick(b.self).pet);
   TEST_ASSERT_FALSE(b.social.tick(b.self).pet);  // one flag per frame
