@@ -69,3 +69,4 @@ Within a tier, the order is the implementation order.
 | T8 | Native display adapter rendering the framebuffer to PNG; golden-image tests of every expression (verification plan) | A |
 | T9 | Calculations and ngspice simulations of the buzzer stage and display RESET filter, committed with plots | A |
 | T10 | Parametric FreeCAD script of the enclosure, generated STL/STEP, print trial (ADR-0010) | A |
+| T11 | Desktop fleet simulator: one or many cubes running the real lib over a loopback radio, owner inputs, range layout, clock speed (#74) | B |
