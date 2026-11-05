@@ -111,6 +111,9 @@ class SocialProtocol {
   uint8_t greetCount_ = 0;            // greetings recorded so far, saturates at kBudget
   uint8_t greetHead_ = 0;             // next ring slot, also the oldest once full
   uint32_t nextBroadcast_ = 0;
+  uint32_t lastPetMs_ = 0;  // last PET sent (05e S3)
+  bool petSent_ = false;
+  bool petHeard_ = false;   // a valid PET was drained this tick
   bool started_ = false;
 };
 

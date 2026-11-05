@@ -87,6 +87,8 @@ Route effects(MoodEffect e) {
       return withSound(withReaction({}, Reaction::Yawn), SoundId::Yawn);
     case MoodEffect::Grumpy:
       return withSound({}, SoundId::Grumpy);
+    case MoodEffect::Sulk:  // social-group/05e: placeholder grumble, sound design later
+      return withSound(withReaction({}, Reaction::Sulk), SoundId::Grumpy);
     case MoodEffect::None:
       break;
   }

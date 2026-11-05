@@ -31,15 +31,27 @@ bool SocialProtocol::startChoir(const SelfState& self) {
   return true;
 }
 
-bool SocialProtocol::sendPet(const SelfState&) { return false; }
+bool SocialProtocol::sendPet(const SelfState& self) {
+  const uint32_t now = clock_.nowMs();
+  if (self.sleep != SleepState::Awake || presentCount() == 0) return false;  // 05e S4
+  if (petSent_ && ageMs(now, lastPetMs_) < kPetCooldownMs) return false;    // S3
+  petSent_ = true;
+  lastPetMs_ = now;
+  uint8_t frame[kFrameSize];
+  encodePet(Pet{self.paletteIndex}, frame);
+  radio_.broadcast(frame, kFrameSize);
+  return true;
+}
 
 SocialOutput SocialProtocol::tick(const SelfState& self) {
   const uint32_t now = clock_.nowMs();
   RxFrame f;
+  petHeard_ = false;
   for (uint8_t i = 0; i < kMaxFramesPerTick && radio_.receive(f); ++i) receive(f);
   expire(now);
   SocialOutput out = greet(now);
   const bool awake = self.sleep == SleepState::Awake;
+  out.pet = petHeard_ && awake;  // 05e rows 5, 6: dropped while not Awake, one flag per tick
   const ChainFire fire = chain_.tick(now, awake);
   out.chain = fire.react;
   out.choir = choir_.tick(now, awake, lowerMacs());
@@ -68,6 +80,14 @@ void SocialProtocol::receive(const RxFrame& f) {
     r = decodeChoir(f.bytes, f.len, c);
     if (r == DecodeResult::Ok) {
       choir_.hear(c, f.nowMs);
+      return;
+    }
+  }
+  if (r == DecodeResult::Type) {
+    Pet p{};
+    r = decodePet(f.bytes, f.len, p);
+    if (r == DecodeResult::Ok) {
+      petHeard_ = true;
       return;
     }
   }

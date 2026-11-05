@@ -83,7 +83,23 @@ MoodEffect MoodEngine::contagion(const MoodTally& tally) {
   return enter(target);
 }
 
-MoodEffect MoodEngine::jealousy() { return MoodEffect::None; }
+MoodEffect MoodEngine::jealousy() {
+  const uint32_t now = clock_.nowMs();
+  if (ageMs(now, lastLoudMs_) < kJealousCalmMs) return MoodEffect::None;  // 05e row 2
+  if (sulkCount_ > 0) {
+    const uint8_t last = static_cast<uint8_t>((sulkHead_ + kJealousBudget - 1) % kJealousBudget);
+    const uint32_t sinceLast = ageMs(now, sulks_[last]);
+    // Every recorded sulk is out of the window: forget them before they can alias (2^32 ms).
+    if (sinceLast > kJealousWindowMs) sulkCount_ = 0;
+    else if (sinceLast < kJealousMs) return MoodEffect::None;  // row 3 (and row 6 within a tick)
+  }
+  // Full ring: sulkHead_ is the oldest of the last kJealousBudget sulks (row 4, strict).
+  if (sulkCount_ == kJealousBudget && ageMs(now, sulks_[sulkHead_]) <= kJealousWindowMs) return MoodEffect::None;
+  sulks_[sulkHead_] = now;
+  sulkHead_ = static_cast<uint8_t>((sulkHead_ + 1) % kJealousBudget);
+  if (sulkCount_ < kJealousBudget) ++sulkCount_;
+  return MoodEffect::Sulk;  // rows 1, 7, 8: no timer, calm or refractory touched
+}
 
 MoodEffect MoodEngine::tick() {
   const uint32_t now = clock_.nowMs();

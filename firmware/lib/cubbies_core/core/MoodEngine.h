@@ -75,6 +75,9 @@ class MoodEngine {
   uint32_t yawnSinceMs_ = 0;
   bool pulled_ = false;        // at least one pull happened (refractory applies)
   uint32_t lastPullMs_ = 0;
+  uint32_t sulks_[kJealousBudget] = {};  // ring of the last sulk times (05e rows 3, 4)
+  uint8_t sulkCount_ = 0;                // sulks recorded so far, saturates at kJealousBudget
+  uint8_t sulkHead_ = 0;                 // next ring slot, also the oldest once full
 };
 
 }  // namespace cubbies
