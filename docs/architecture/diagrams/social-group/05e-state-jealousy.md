@@ -17,7 +17,8 @@
 > allows, otherwise it sends PET 450/500, against both frames with PET ignored during a choir 350
 > and sulking after the song 320. D3 effect (effect 30, owner safety 25, simplicity 25,
 > robustness 20): a transient sulk, mood unchanged, 445/500, against entering Annoyed 355 (it
-> would spread through G2, beyond "eyes and beep").
+> would spread through G2, beyond "eyes and beep"). Row 11 added after the adversarial review
+> (same criteria as D3): no sulk while singing 430/500, against D2 to the letter 365.
 
 ## Context
 
@@ -64,6 +65,7 @@ stateDiagram-v2
 | 8 | sulk effect | does not break the calm, start the G2 refractory, or count as a stimulus for the idle timer |
 | 9 | malformed PET (palette out of range, reserved byte ≠ 0) | dropped by the codec (`dropRange`), no effect |
 | 10 | B restarts (wake) | cooldown and budget kept (they bound forged traffic across wakes) |
+| 11 | B has a choir start pending, or took part in one less than kChoirSingMs ago (longest lead + 10 s, the bound of 05c row 6) | nothing (owner amendment 2026-11-05: the group sings, nobody sulks) |
 
 Durations and budgets: **T_calm_jealous 6 s** (= T_contagion, a cube held in the last 6 s is in
 use), **T_jealous 60 s**, **budget 4 sulks per 10 min** (ADR-0012 global budget, like the

@@ -6,6 +6,7 @@
 
 #include "FakeClock.h"
 #include "LoopbackRadio.h"
+#include "core/Choir.h"
 #include "core/Identity.h"
 #include "core/MoodEngine.h"
 #include "core/PresenceCodec.h"
@@ -227,6 +228,25 @@ static void test_row6_row9_one_flag_per_tick_and_malformed_dropped() {
   TEST_ASSERT_EQUAL_UINT32(1, b.social.stats().dropRange);
 }
 
+// Row 11: a cube that sings a choir (pending or within kChoirSingMs of its start) raises no flag.
+static void test_row11_no_sulk_while_singing() {
+  FakeClock clock(kT0);
+  Air air;
+  Cube b(air, 2, clock, 6);
+  uint8_t f[kFrameSize];
+  cubbies::encodeChoir(cubbies::ChoirStart{3, 0, cubbies::Choir::kLead}, f);
+  b.radio.inject(f, kFrameSize, mac(1));
+  encodePet(Pet{3}, f);
+  b.radio.inject(f, kFrameSize, mac(1));
+  TEST_ASSERT_TRUE(b.social.tick(b.self).choir.sing);  // the PET in the same drain is ignored
+  clock.advance(cubbies::Choir::kChoirSingMs - 1);
+  b.radio.inject(f, kFrameSize, mac(1));
+  TEST_ASSERT_FALSE(b.social.tick(b.self).pet);
+  clock.advance(1);
+  b.radio.inject(f, kFrameSize, mac(1));
+  TEST_ASSERT_TRUE(b.social.tick(b.self).pet);
+}
+
 // — Receiver rules on the Mood engine (05e rows 1–4, 6–8, 10) —
 
 namespace {
@@ -410,6 +430,7 @@ int main() {
   RUN_TEST(test_s4_not_awake_or_alone_sends_nothing);
   RUN_TEST(test_row5_pet_while_not_awake_is_dropped);
   RUN_TEST(test_row6_row9_one_flag_per_tick_and_malformed_dropped);
+  RUN_TEST(test_row11_no_sulk_while_singing);
   RUN_TEST(test_row1_row7_calm_cube_sulks_mood_unchanged);
   RUN_TEST(test_row7_sulk_in_any_mood);
   RUN_TEST(test_row2_cube_in_use_is_not_jealous);

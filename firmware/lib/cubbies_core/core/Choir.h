@@ -28,12 +28,16 @@ class Choir {
   void hear(const ChoirStart& c, uint32_t rxMs);
   // Emits the pending start once (rows 4, 5, 8, 10); `rank` = present neighbours with a lower MAC.
   ChoirCue tick(uint32_t now, bool awake, uint8_t rank);
+  // A start is pending or began less than kChoirSingMs ago: the cube sings, it never sulks
+  // (social-group/05e row 11).
+  bool singing(uint32_t now) const;
 
   // Tuning values (05c).
   static constexpr uint8_t kLead = 50;  // × 10 ms on the air
   static constexpr uint32_t kLeadMs = kLead * kChoirLeadUnitMs;
   static constexpr uint32_t kCooldownMs = 60000;
   static constexpr uint8_t kVoices = 3;
+  static constexpr uint32_t kChoirSingMs = kMaxChoirLead * kChoirLeadUnitMs + 10000;  // longest rest + a voice
   static_assert(kCooldownMs > kMaxChoirLead * kChoirLeadUnitMs + 10000,  // any voice is far under 10 s
                 "the cooldown must outlast the longest rest plus a voice (row 6)");
 
