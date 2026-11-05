@@ -31,7 +31,7 @@ def si_value(text: str) -> float:
     """
     if re.match(r"[\d.]+\s", text):
         raise ValueError(f"spaced unit, write it joined: {text!r}")
-    m = re.fullmatch(r"(\d+(?:\.\d+)?)([pnuµmkM]?)(\d*)[FΩ]?", text.split()[0])
+    m = re.fullmatch(r"(\d+(?:\.\d+)?)(?:([pnuµmkM])(\d*))?[FΩ]?", text.split()[0])
     if not m:
         raise ValueError(f"unreadable value: {text!r}")
     whole, prefix, decimals = m.groups()

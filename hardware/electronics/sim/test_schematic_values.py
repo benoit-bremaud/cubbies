@@ -16,10 +16,14 @@ def test_si_value() -> None:
         "1µF": 1e-6,
         "100n": 1e-7,
         "1M": 1e6,
+        "100p": 1e-10,
+        "10kΩ": 1e4,
+        "4.7µF": 4.7e-6,
+        "1.5k": 1500,
     }
     for text, expected in cases.items():
         assert abs(si_value(text) - expected) <= expected * 1e-9, text
-    for bad in ("1 uF", "abc", "10kk"):
+    for bad in ("1 uF", "abc", "10kk", "10kΩΩ", "1.5.5k"):
         try:
             si_value(bad)
         except ValueError:
