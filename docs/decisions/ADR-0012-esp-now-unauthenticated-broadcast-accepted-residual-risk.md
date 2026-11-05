@@ -1,7 +1,7 @@
 # ADR-0012: Security — unauthenticated ESP-NOW broadcast accepted as a bounded residual risk in V1
 
 **Status:** Accepted — 2026-10-14 — Amends ADR-0005 (security consequence only; the transport
-decision stands)
+decision stands); amended by ADR-0018 (bounded one-shot social events)
 
 ## Context
 
