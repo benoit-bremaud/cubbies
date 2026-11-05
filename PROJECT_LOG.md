@@ -18,6 +18,10 @@ human context: what was done, why, and by which PR.
 - Coverage tooling by MCDA, option A 395/500 (vs B case excluded 375, C plus gcovr 205):
   `tools/sonar-scan.sh` + `sonar-project.properties`; the case script is measured inside the
   FreeCAD python. The Community server has no C/C++ analyser, so no gcov report.
+- Adversarial review round 1: Must 1 (freecadcmd exits 0 on an exception, so a crashing case
+  script let the scan run; the wrapper now exits 1) · Should 3 (sim logs shown on failure,
+  CLAUDE.md layout, run.sh FAIL noise filed as #82) · Nice 5 (fixed; freecadcmd exit code on
+  plain regeneration filed as #83). Commit 2bfa8b3 says it clears S8786; cd1f250 does.
 - Local gate on the branch: OK (new coverage 87.6 %, 0 new violations).
 
 ### G6 jealousy (issue #73)
