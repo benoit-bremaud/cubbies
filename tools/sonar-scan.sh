@@ -19,9 +19,9 @@ CUBBIES_COV_SITE="$work/site"
 export COVERAGE_FILE="$CUBBIES_ROOT/.coverage" CUBBIES_ROOT CUBBIES_COV_SITE
 cov() { uvx --from "coverage==$COVERAGE_VERSION" coverage "$@"; }
 
-rm -f "$CUBBIES_ROOT/.coverage" "$CUBBIES_ROOT"/.coverage.*  # coverage erase keeps parallel files
+rm -f coverage.xml "$CUBBIES_ROOT/.coverage" "$CUBBIES_ROOT"/.coverage.*  # coverage erase keeps parallel files
 for script in schematic_values.py test_schematic_values.py test_crosscheck.py calc.py crosscheck.py; do
-  (cd hardware/electronics/sim && cov run -p --source=. "$script" > "$work/$script.log" 2>&1) \
+  (cd hardware/electronics/sim && cov run -p --branch --source=. "$script" > "$work/$script.log" 2>&1) \
     || { cat "$work/$script.log"; exit 1; }
 done
 
@@ -32,7 +32,7 @@ import os, pathlib, sys, traceback
 sys.path.insert(0, os.environ["CUBBIES_COV_SITE"])
 import coverage
 script = os.path.join(os.environ["CUBBIES_ROOT"], "hardware", "case", "cubbies_case.py")
-cov = coverage.Coverage(data_file=os.environ["COVERAGE_FILE"], data_suffix=True, include=[script])
+cov = coverage.Coverage(data_file=os.environ["COVERAGE_FILE"], data_suffix=True, include=[script], branch=True)
 os.environ["CUBBIES_CHECK_ONLY"] = "1"
 cov.start()
 try:

@@ -32,7 +32,14 @@ human context: what was done, why, and by which PR.
   · Should 3 (sim logs shown, CLAUDE.md layout, run.sh FAIL noise filed as #82) · Nice 5
   (fixed; freecadcmd exit code on plain regeneration filed as #83). Round 2: Must 1 (stale
   parallel coverage files merged; removed with rm) · Should 1 (`CASE-COV-OK` sentinel) · Nice 2.
-  Round 3: gate open. Commit 2bfa8b3's subject wrongly claims S8786.
+  Round 3: gate open. Round 4 (merge of main): Should 2 (branch coverage restored with
+  `--branch` on both sides as in #81; #82 kept although #81 found nothing to change, because the
+  negative-control line still reads as a failure in the gate output) · Nice 2 (stale
+  `coverage.xml` removed before measuring; this entry completed). Commit 2bfa8b3's subject
+  wrongly claims S8786.
+- Merge of main: `coverage.sh` deleted, `coverage` pinned to 7.17.1 as in #81.
+- Gate: SonarQube OK (new coverage 86.3 % with branches, 0 new violations), 18 case checks PASS, 328 native
+  tests, both boards, benches, ERC 0, ruff, gitleaks, actionlint.
 
 ### SonarQube gate green (issue #53) — **PR #81** (0586028)
 
