@@ -7,7 +7,17 @@ human context: what was done, why, and by which PR.
 
 ## 2026-11-05
 
-### SonarQube gate green (issue #53) — **PR pending**
+### ADR-0018 bounded one-shot social events (issue #73) — **PR pending**
+
+- Owner decision D5 of the G6a study (PR #76): a single frame may change the mood through a
+  one-shot social event under seven bounds (allowlist, present sender with matching index,
+  cooldown ≥ 60 s, Awake only, ADR-0012 effect envelope, a stroke overrides, no G2 echo).
+  Re-scored in the ADR after review (risk 4 for A): 410/500 vs per-PDR argument 340, held signal
+  305. Amends only ADR-0012's "nudge only" consequence; G2/G5 keep their holds; CHAIN and CHOIR
+  (no mood change) stay outside it. Adversarial round 1: 4 Must (sums, false CHAIN/CHOIR claim,
+  restated relay rule, "once per minute" claim) fixed.
+
+### SonarQube gate green (issue #53) — **PR #81** (0586028)
 
 - Gate was red on main: new coverage 0 % (no Python report) and 2 issues. Fixed S3776
   (`run_checks` complexity 16 → `coupon_ok` extracted; the 18 FreeCAD checks still PASS) and
