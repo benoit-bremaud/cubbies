@@ -34,8 +34,8 @@ sequenceDiagram
   end
   MainB->>SB: tick(self)
   SB-->>MainB: SocialOutput {pet = true} (B Awake, not singing a choir, 05e row 11)
-  MainB->>MB: jealousy()
-  MB->>MB: calm ≥ T_calm_jealous? cooldown, budget? (05e rows 1–4, 8, 10)
+  MainB->>MB: jealousy(padHeld)
+  MB->>MB: pad held? calm ≥ T_calm_jealous? cooldown, budget? (05e rows 1–4, 8, 10)
   alt rule 1 holds
     MB-->>MainB: MoodEffect::Sulk (mood unchanged)
     MainB->>Gate: grumble at the gate's volume, Sulk eyes
@@ -47,7 +47,7 @@ sequenceDiagram
 ## Notes
 
 - **Wiring**: `main.cpp` calls `sendPet()` after a `startChoir()` that sent nothing, and
-  `mood.jealousy()` when the tick's `SocialOutput::pet` is set; `effects(MoodEffect::Sulk)` maps
+  `mood.jealousy(gestures.holdMs() > 0)` when the tick's `SocialOutput::pet` is set; `effects(MoodEffect::Sulk)` maps
   it to the Sulk reaction and the grumble.
 - **Dependency direction** unchanged: the Social protocol and the Mood engine stay unaware of
   each other; `main.cpp` passes the flag.

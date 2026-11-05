@@ -39,7 +39,8 @@ class MoodEngine {
   // Jealousy (social-group/05e): call when the Social protocol heard a PET this Awake tick.
   // Sulk when calm ≥ kJealousCalmMs, out of the kJealousMs cooldown and within the budget; the
   // mood, its timers, the calm and the G2 refractory are unchanged. restart() keeps the limits.
-  MoodEffect jealousy();
+  // `padHeld`: the owner touches the pad right now (row 2b), which no gesture reports after Stroke.
+  MoodEffect jealousy(bool padHeld);
 
   // Durations (05a starting values, tuning, no ADR).
   static constexpr uint32_t kSettleMs = 10000;

@@ -270,7 +270,7 @@ static void test_row1_row7_calm_cube_sulks_mood_unchanged() {
   Rig r;
   r.idle(E::kJealousCalmMs);
   r.engine.stimulus(Stimulus::NewcomerSeen);  // not a calm break
-  TEST_ASSERT_EQUAL(MoodEffect::Sulk, r.engine.jealousy());
+  TEST_ASSERT_EQUAL(MoodEffect::Sulk, r.engine.jealousy(false));
   TEST_ASSERT_EQUAL(Mood::Curious, r.engine.mood());
 }
 
@@ -279,13 +279,13 @@ static void test_row7_sulk_in_any_mood() {
   Rig h;
   h.engine.stimulus(Stimulus::Tap);  // Curious → Happy
   h.clock.advance(E::kJealousCalmMs);
-  TEST_ASSERT_EQUAL(MoodEffect::Sulk, h.engine.jealousy());
+  TEST_ASSERT_EQUAL(MoodEffect::Sulk, h.engine.jealousy(false));
   TEST_ASSERT_EQUAL(Mood::Happy, h.engine.mood());
   Rig r;
   r.engine.stimulus(Stimulus::Loud);  // Curious → Annoyed
   TEST_ASSERT_EQUAL(Mood::Annoyed, r.engine.mood());
   r.clock.advance(E::kJealousCalmMs);
-  TEST_ASSERT_EQUAL(MoodEffect::Sulk, r.engine.jealousy());
+  TEST_ASSERT_EQUAL(MoodEffect::Sulk, r.engine.jealousy(false));
   TEST_ASSERT_EQUAL(Mood::Annoyed, r.engine.mood());
 }
 
@@ -296,30 +296,38 @@ static void test_row2_cube_in_use_is_not_jealous() {
   r.clock.advance(E::kJealousCalmMs - 1000);
   r.engine.stimulus(Stimulus::Tap);
   r.clock.advance(E::kJealousCalmMs - 1);
-  TEST_ASSERT_EQUAL(MoodEffect::None, r.engine.jealousy());
+  TEST_ASSERT_EQUAL(MoodEffect::None, r.engine.jealousy(false));
   for (const Stimulus s : {Stimulus::Voice, Stimulus::Loud}) {
     r.clock.advance(E::kJealousCalmMs);
     r.engine.stimulus(s);
     r.clock.advance(E::kJealousCalmMs - 1);
-    TEST_ASSERT_EQUAL(MoodEffect::None, r.engine.jealousy());
+    TEST_ASSERT_EQUAL(MoodEffect::None, r.engine.jealousy(false));
   }
   r.clock.advance(E::kJealousCalmMs);
   r.engine.touchDown();
   r.clock.advance(E::kJealousCalmMs - 1);
-  TEST_ASSERT_EQUAL(MoodEffect::None, r.engine.jealousy());
+  TEST_ASSERT_EQUAL(MoodEffect::None, r.engine.jealousy(false));
   r.clock.advance(1);
-  TEST_ASSERT_EQUAL(MoodEffect::Sulk, r.engine.jealousy());  // a fresh PET once calm again
+  TEST_ASSERT_EQUAL(MoodEffect::Sulk, r.engine.jealousy(false));  // a fresh PET once calm again
+}
+
+// Row 2b: a pad held right now blocks the sulk however long the calm has lasted.
+static void test_row2b_held_pad_is_not_jealous() {
+  Rig r;
+  r.idle(E::kJealousCalmMs * 10);
+  TEST_ASSERT_EQUAL(MoodEffect::None, r.engine.jealousy(true));
+  TEST_ASSERT_EQUAL(MoodEffect::Sulk, r.engine.jealousy(false));  // the blocked PET used no budget
 }
 
 // Row 3: within T_jealous of the last sulk, nothing; at T_jealous, again.
 static void test_row3_cooldown() {
   Rig r;
   r.idle(E::kJealousCalmMs);
-  TEST_ASSERT_EQUAL(MoodEffect::Sulk, r.engine.jealousy());
+  TEST_ASSERT_EQUAL(MoodEffect::Sulk, r.engine.jealousy(false));
   r.clock.advance(E::kJealousMs - 1);
-  TEST_ASSERT_EQUAL(MoodEffect::None, r.engine.jealousy());
+  TEST_ASSERT_EQUAL(MoodEffect::None, r.engine.jealousy(false));
   r.clock.advance(1);
-  TEST_ASSERT_EQUAL(MoodEffect::Sulk, r.engine.jealousy());
+  TEST_ASSERT_EQUAL(MoodEffect::Sulk, r.engine.jealousy(false));
 }
 
 // Row 4: at most kJealousBudget sulks per kJealousWindowMs (ADR-0012), then free again.
@@ -327,29 +335,29 @@ static void test_row4_global_budget() {
   Rig r;
   r.idle(E::kJealousCalmMs);
   for (uint8_t i = 0; i < E::kJealousBudget; ++i) {
-    TEST_ASSERT_EQUAL(MoodEffect::Sulk, r.engine.jealousy());
+    TEST_ASSERT_EQUAL(MoodEffect::Sulk, r.engine.jealousy(false));
     r.clock.advance(E::kJealousMs);
   }
-  TEST_ASSERT_EQUAL(MoodEffect::None, r.engine.jealousy());  // 4 in the last 4 min
+  TEST_ASSERT_EQUAL(MoodEffect::None, r.engine.jealousy(false));  // 4 in the last 4 min
   r.clock.advance(E::kJealousWindowMs - E::kJealousBudget * E::kJealousMs);
-  TEST_ASSERT_EQUAL(MoodEffect::None, r.engine.jealousy());  // the first is exactly window old
+  TEST_ASSERT_EQUAL(MoodEffect::None, r.engine.jealousy(false));  // the first is exactly window old
   r.clock.advance(1);
-  TEST_ASSERT_EQUAL(MoodEffect::Sulk, r.engine.jealousy());
+  TEST_ASSERT_EQUAL(MoodEffect::Sulk, r.engine.jealousy(false));
 }
 
 // Row 6 (engine side): a second jealousy() in the same tick never sulks twice.
 static void test_row6_at_most_one_sulk() {
   Rig r;
   r.idle(E::kJealousCalmMs);
-  TEST_ASSERT_EQUAL(MoodEffect::Sulk, r.engine.jealousy());
-  TEST_ASSERT_EQUAL(MoodEffect::None, r.engine.jealousy());
+  TEST_ASSERT_EQUAL(MoodEffect::Sulk, r.engine.jealousy(false));
+  TEST_ASSERT_EQUAL(MoodEffect::None, r.engine.jealousy(false));
 }
 
 // Row 8: the sulk does not break the calm, start the G2 refractory, or feed the idle timer.
 static void test_row8_sulk_leaves_calm_refractory_and_idle_untouched() {
   Rig r;
   r.idle(E::kBoredMs - E::kContagionMs);
-  TEST_ASSERT_EQUAL(MoodEffect::Sulk, r.engine.jealousy());
+  TEST_ASSERT_EQUAL(MoodEffect::Sulk, r.engine.jealousy(false));
   r.idle(E::kContagionMs);
   TEST_ASSERT_EQUAL(Mood::Bored, r.engine.mood());  // the idle timer ran on
   MoodTally t;
@@ -372,7 +380,7 @@ static void test_row8_sulk_does_not_break_the_calm() {
   r.engine.contagion(t);  // the hold starts now
   r.clock.advance(E::kContagionMs - kTick);
   TEST_ASSERT_EQUAL(MoodEffect::None, r.engine.contagion(t));
-  TEST_ASSERT_EQUAL(MoodEffect::Sulk, r.engine.jealousy());
+  TEST_ASSERT_EQUAL(MoodEffect::Sulk, r.engine.jealousy(false));
   r.clock.advance(kTick);
   r.engine.contagion(t);
   TEST_ASSERT_EQUAL(Mood::Happy, r.engine.mood());
@@ -383,21 +391,21 @@ static void test_budget_forgotten_after_a_long_quiet_spell() {
   Rig r;
   r.idle(E::kJealousCalmMs);
   for (uint8_t i = 0; i < E::kJealousBudget; ++i) {
-    TEST_ASSERT_EQUAL(MoodEffect::Sulk, r.engine.jealousy());
+    TEST_ASSERT_EQUAL(MoodEffect::Sulk, r.engine.jealousy(false));
     r.clock.advance(E::kJealousMs);
   }
   r.clock.advance(0xFFFFFFFFu - 2 * E::kJealousMs);  // last sulk ≈ 2^32 − 60 s ago
-  TEST_ASSERT_EQUAL(MoodEffect::Sulk, r.engine.jealousy());
+  TEST_ASSERT_EQUAL(MoodEffect::Sulk, r.engine.jealousy(false));
 }
 
 // Row 10: a wake (restart) keeps the cooldown and the budget.
 static void test_row10_restart_keeps_cooldown() {
   Rig r;
   r.idle(E::kJealousCalmMs);
-  TEST_ASSERT_EQUAL(MoodEffect::Sulk, r.engine.jealousy());
+  TEST_ASSERT_EQUAL(MoodEffect::Sulk, r.engine.jealousy(false));
   r.engine.restart();
   r.clock.advance(E::kJealousCalmMs);
-  TEST_ASSERT_EQUAL(MoodEffect::None, r.engine.jealousy());
+  TEST_ASSERT_EQUAL(MoodEffect::None, r.engine.jealousy(false));
 }
 
 // Clock wrap: the cooldown and the budget stay correct across 2^32 ms.
@@ -405,11 +413,11 @@ static void test_cooldown_across_the_clock_wrap() {
   FakeClock clock(0xFFFFFFFFu - E::kJealousCalmMs - 10);
   MoodEngine engine(clock);
   clock.advance(E::kJealousCalmMs);
-  TEST_ASSERT_EQUAL(MoodEffect::Sulk, engine.jealousy());
+  TEST_ASSERT_EQUAL(MoodEffect::Sulk, engine.jealousy(false));
   clock.advance(E::kJealousMs - 1);
-  TEST_ASSERT_EQUAL(MoodEffect::None, engine.jealousy());
+  TEST_ASSERT_EQUAL(MoodEffect::None, engine.jealousy(false));
   clock.advance(1);
-  TEST_ASSERT_EQUAL(MoodEffect::Sulk, engine.jealousy());
+  TEST_ASSERT_EQUAL(MoodEffect::Sulk, engine.jealousy(false));
 }
 
 // 02e: the Sulk effect maps to the Sulk eyes and the grumble through the Sound gate.
@@ -436,6 +444,7 @@ int main() {
   RUN_TEST(test_row1_row7_calm_cube_sulks_mood_unchanged);
   RUN_TEST(test_row7_sulk_in_any_mood);
   RUN_TEST(test_row2_cube_in_use_is_not_jealous);
+  RUN_TEST(test_row2b_held_pad_is_not_jealous);
   RUN_TEST(test_row3_cooldown);
   RUN_TEST(test_row4_global_budget);
   RUN_TEST(test_row6_at_most_one_sulk);

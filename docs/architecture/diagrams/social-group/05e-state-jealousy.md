@@ -44,7 +44,7 @@ PET is never relayed: only the cubes in A's range hear it.
 ```mermaid
 stateDiagram-v2
   [*] --> Ready
-  Ready --> Sulking: PET heard, Awake, not singing (row 11), calm ≥ T_calm_jealous, budget left
+  Ready --> Sulking: PET heard, Awake, not singing (row 11), pad not held, calm ≥ T_calm_jealous, budget left
   Sulking --> Cooldown: Sulk reaction played (eyes + grumble)
   Cooldown --> Ready: T_jealous elapsed since the sulk
   Ready --> Ready: PET heard but a guard fails (frame dropped, not queued)
@@ -57,6 +57,7 @@ stateDiagram-v2
 |---|-----------------------------------------------|--------|
 | 1 | B Awake, calm ≥ T_calm_jealous, out of cooldown, budget left | `MoodEffect::Sulk`: Sulk eyes and the grumble through the Sound gate; mood unchanged; cooldown and budget entry from now |
 | 2 | B Awake, own gesture, touch-down or sound within T_calm_jealous | nothing (the owner is with B, B is not jealous); the PET is not kept |
+| 2b | B's pad held right now, however long (a stroke emits no gesture after its Stroke) | nothing (Codex review on PR #75: a held cube is in use) |
 | 3 | within T_jealous of the last sulk | nothing |
 | 4 | kJealousBudget sulks already in the last kJealousWindow | nothing |
 | 5 | B Dozing, Waking or Asleep | nothing (the engine is paused; never wakes, never sounds) |
