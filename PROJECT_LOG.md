@@ -7,6 +7,23 @@ human context: what was done, why, and by which PR.
 
 ## 2026-11-05
 
+### SonarQube gate green (issue #53) — **PR pending**
+
+- Gate was red on main: new coverage 0 % (no Python report) and 2 issues. Fixed S3776
+  (`run_checks` complexity 16 → `coupon_ok` extracted; the 18 FreeCAD checks still PASS) and
+  S8786 (the `si_value` regex backtracked between `\d+` and `\d*`; decimals now only after a
+  prefix).
+- `sonar-project.properties` and `hardware/electronics/sim/coverage.sh`: coverage of the test
+  scripts plus the real bench scripts, 96.1 %; `cubbies_case.py` (FreeCAD only, prints its own
+  18 PASS lines) and `golden_sheet.py` (manual review tool) excluded from coverage. `coverage` pinned
+  to 7.17.1. Local scan on the rebased head: gate OK (new coverage 96.1 %, 0 issues; the
+  local SonarQube analyses Python only). Gate: 328 native tests, benches PASS, ruff, gitleaks.
+- Adversarial review round 1: Must 1 (stale base, PROJECT_LOG conflict with #75, fixed by
+  rebase) · Should 2 (unpinned coverage, stale coverage.xml on failure: fixed) · Nice 2 (regex
+  cases added to the test, script failure output shown: fixed).
+- The "FAIL C-0015" line that `run.sh` prints comes from the negative control in
+  `test_crosscheck.py`; `run.sh` exits 0 correctly, nothing to change.
+
 ### G6 jealousy (issue #73)
 
 - Dependabot PRs #67, #66, #50, #71 merged first (codeql-action grouped); G6 picked by MCDA
