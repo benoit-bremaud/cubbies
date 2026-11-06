@@ -121,7 +121,9 @@ T_calm_jealous, pad not held, outside T_jealous of the last step-2 reaction, not
 voice. The outcome for a cube already Noticed depends on the guard that fails: rows 2 and 2b
 (the owner is there) and row 5 (not Awake) return it to Indifferent; row 4 (budget) and row 11
 (singing: `pet` is not set, so the engine is not called) leave it Noticed until T_notice
-elapses.
+elapses. A calm broken only by a G2 pull or a caught yawn (no owner attention) blocks the PET
+but also leaves it Noticed (owner 2026-11-06, issue #90: keep 430/500 against drop 390, weights
+fidelity 35, simplicity 25, crescendo continuity 20, testability 20).
 
 The engine evaluates the Noticed timeouts lazily, at the next PET: no tick is needed to leave
 Noticed, and nothing is shown when it does.
