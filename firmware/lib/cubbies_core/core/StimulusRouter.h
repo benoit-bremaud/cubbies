@@ -37,7 +37,8 @@ Route route(SoundClass s, SleepState sleep);
 Route routeNewcomer(SleepState sleep);
 Route routeChain(SleepState sleep);  // social-group/05b row 5: Joy eyes and sound, mood unchanged
 
-Route effects(MoodEffect e);   // yawn, grumpy beep (05a), jealous sulk (social-group/05e)
+Route effects(MoodEffect e);   // yawn, grumpy beep (05a)
+Route effects(JealousReaction r);  // the jealousy repertoire: eyes, step-2 sound (social-group/05e)
 Route effects(SleepEffect e);  // lids, wake animation, wake-up melody (05b); brightness is read
                                // from SleepCycle::brightness()
 

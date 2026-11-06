@@ -55,12 +55,14 @@ SoundGate gate(clock_, audio);
 struct Seeded {
   Prng eyesPrng;
   Prng socialPrng;
+  JealousyRepertoire repertoire;  // owns Prng stream 3 (social-group/05e)
   EyesRenderer eyes;  // holds the 12 KB framebuffer: never on the loop stack
   SocialProtocol social;
 
-  Seeded(uint64_t eyesSeed, uint64_t socialSeed, const Mac& self)
+  Seeded(uint64_t eyesSeed, uint64_t socialSeed, uint64_t jealousySeed, const Mac& self)
       : eyesPrng(eyesSeed, 1),
         socialPrng(socialSeed, 2),
+        repertoire(jealousySeed),
         eyes(clock_, eyesPrng, display),
         social(clock_, radio, socialPrng, self) {}
 };
@@ -165,7 +167,7 @@ void setup() {
     mac = Mac{};
     Serial.println("mac: read failed");
   }
-  seeded = new Seeded(randomSeed64(), randomSeed64(), mac);
+  seeded = new Seeded(randomSeed64(), randomSeed64(), randomSeed64(), mac);
 
   touch.begin();
   if (!storage.begin()) Serial.println("nvs: open failed, MAC colour only");
@@ -220,7 +222,8 @@ void loop() {
   applySleep(sleepCycle.tick());
   if (sleepCycle.state() == SleepState::Awake) {
     applyMood(mood.contagion(seeded->social.moodTally()));  // after this tick's owner stimuli
-    if (social.pet) applyMood(mood.jealousy(gestures.holdMs() > 0));  // 05e rows 1-8, 2b, 11
+    if (social.pet)  // 05e rows 1-12b, 11
+      applyEyesAndSound(effects(mood.jealousy(gestures.holdMs() > 0, social.petContext, seeded->repertoire)));
     applyMood(mood.tick());
   }
 

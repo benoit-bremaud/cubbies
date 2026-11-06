@@ -7,8 +7,9 @@ MoodEngine::MoodEngine(IClock& clock) : clock_(clock) { restart(); }
 void MoodEngine::restart() {
   const uint32_t now = clock_.nowMs();
   mood_ = Mood::Curious;
-  enteredMs_ = lastAnyMs_ = lastLoudMs_ = lastYawnMs_ = now;
+  enteredMs_ = lastAnyMs_ = lastLoudMs_ = lastOwnerMs_ = lastYawnMs_ = now;
   holding_ = yawnHolding_ = false;  // a wake starts with no candidate; the refractory period is kept
+  noticed_ = false;                 // 05e rows 5, 10: the jealousy cooldown and ring are kept
 }
 
 MoodEffect MoodEngine::enter(Mood m) {
@@ -24,7 +25,7 @@ MoodEffect MoodEngine::enter(Mood m) {
 MoodEffect MoodEngine::stimulus(Stimulus s) {
   const uint32_t now = clock_.nowMs();
   lastAnyMs_ = now;
-  if (s != Stimulus::NewcomerSeen) lastLoudMs_ = now;  // gestures and sounds break the calm
+  if (s != Stimulus::NewcomerSeen) lastLoudMs_ = lastOwnerMs_ = now;  // gestures and sounds break the calm
 
   switch (mood_) {
     case Mood::Curious:
@@ -83,22 +84,66 @@ MoodEffect MoodEngine::contagion(const MoodTally& tally) {
   return enter(target);
 }
 
-MoodEffect MoodEngine::jealousy(bool padHeld) {
+uint8_t MoodEngine::recentStep2(uint32_t now, uint32_t windowMs) const {
+  uint8_t n = 0;
+  for (uint8_t i = 1; i <= step2Count_; ++i)  // the newest step2Count_ slots, behind the head
+    if (ageMs(now, step2Ms_[(step2Head_ + kJealousBudget - i) % kJealousBudget]) <= windowMs) ++n;
+  return n;
+}
+
+// Every recorded step 2 is out of the longest window (T_weary): forget them before they can
+// alias (2^32 ms). The budget still reads the entries against kJealousWindowMs (row 16b).
+void MoodEngine::forgetStaleRing(uint32_t now) {
+  if (step2Count_ == 0) return;
+  const uint8_t last = static_cast<uint8_t>((step2Head_ + kJealousBudget - 1) % kJealousBudget);
+  if (ageMs(now, step2Ms_[last]) > kWearyMs) step2Count_ = 0;
+}
+
+bool MoodEngine::jealousyBlocked(uint32_t now) {
+  forgetStaleRing(now);
+  if (step2Count_ == 0) return false;
+  const uint8_t last = static_cast<uint8_t>((step2Head_ + kJealousBudget - 1) % kJealousBudget);
+  return ageMs(now, step2Ms_[last]) < kJealousMs;  // row 3
+}
+
+JealousContexts MoodEngine::contexts(const PetContext& pet) const {
   const uint32_t now = clock_.nowMs();
-  if (padHeld || ageMs(now, lastLoudMs_) < kJealousCalmMs) return MoodEffect::None;  // 05e rows 2, 2b
-  if (sulkCount_ > 0) {
-    const uint8_t last = static_cast<uint8_t>((sulkHead_ + kJealousBudget - 1) % kJealousBudget);
-    const uint32_t sinceLast = ageMs(now, sulks_[last]);
-    // Every recorded sulk is out of the window: forget them before they can alias (2^32 ms).
-    if (sinceLast > kJealousWindowMs) sulkCount_ = 0;
-    else if (sinceLast < kJealousMs) return MoodEffect::None;  // row 3 (and row 6 within a tick)
+  JealousContexts c;
+  c.bored = mood_ == Mood::Bored;
+  c.crowd = pet.neighbours >= 2;
+  c.newcomer = pet.strokedAgeMs < kFriendMs;
+  c.friend_ = !c.newcomer;
+  c.neglected = ageMs(now, lastOwnerMs_) >= kLonelyMs;
+  // The ring is cleared past T_weary by forgetStaleRing(); an uncleared stale entry never counts.
+  c.weary = recentStep2(now, kWearyMs) >= kWearyCount;
+  return c;
+}
+
+JealousReaction MoodEngine::jealousy(bool padHeld, const PetContext& pet, JealousyRepertoire& repertoire) {
+  const uint32_t now = clock_.nowMs();
+  if (padHeld || ageMs(now, lastLoudMs_) < kJealousCalmMs) {  // rows 2, 2b
+    // The owner is there: the notice is dropped; a calm broken only by a pull or a yawn keeps it.
+    if (padHeld || ageMs(now, lastOwnerMs_) < kJealousCalmMs) noticed_ = false;
+    return JealousReaction::None;
   }
-  // Full ring: sulkHead_ is the oldest of the last kJealousBudget sulks (row 4, strict).
-  if (sulkCount_ == kJealousBudget && ageMs(now, sulks_[sulkHead_]) <= kJealousWindowMs) return MoodEffect::None;
-  sulks_[sulkHead_] = now;
-  sulkHead_ = static_cast<uint8_t>((sulkHead_ + 1) % kJealousBudget);
-  if (sulkCount_ < kJealousBudget) ++sulkCount_;
-  return MoodEffect::Sulk;  // rows 1, 7, 8: no timer, calm or refractory touched
+  if (jealousyBlocked(now)) return JealousReaction::None;  // row 3: Noticed is not entered either
+  if (noticed_ && noticeMs_ == now) return JealousReaction::None;  // row 6: one step per tick
+  const bool stillNoticed = noticed_ && ageMs(now, noticeMs_) < kNoticeMs &&  // row 12
+                            ageMs(now, lastOwnerMs_) > ageMs(now, noticeMs_);  // row 12b
+  if (!stillNoticed) {  // row 1: no cooldown or budget entry
+    noticed_ = true;
+    noticeMs_ = now;
+    return repertoire.draw(JealousStep::Notice, contexts(pet));
+  }
+  // Row 4: full ring, step2Head_ is the oldest of the last kJealousBudget (strict window).
+  if (step2Count_ == kJealousBudget && ageMs(now, step2Ms_[step2Head_]) <= kJealousWindowMs)
+    return JealousReaction::None;  // stays Noticed until T_notice elapses
+  const JealousContexts c = contexts(pet);  // Weary before this step 2 is recorded
+  step2Ms_[step2Head_] = now;
+  step2Head_ = static_cast<uint8_t>((step2Head_ + 1) % kJealousBudget);
+  if (step2Count_ < kJealousBudget) ++step2Count_;
+  noticed_ = false;
+  return repertoire.draw(JealousStep::Jealous, c);  // rows 1b, 7, 8: no timer, calm or refractory touched
 }
 
 MoodEffect MoodEngine::tick() {

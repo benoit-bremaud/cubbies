@@ -6,7 +6,7 @@
 > **Rules**: [05e-state-jealousy.md](05e-state-jealousy.md) — **Sequence**: [02e-sequence-jealousy.md](02e-sequence-jealousy.md)
 > **Requirement**: REQ-F-21
 
-> **Status**: proposed for issue #85, with 05e.
+> **Status**: validated with the G6a PDR (issues #85, #88); implemented in issue #90.
 
 ## Context
 

@@ -814,8 +814,8 @@ static void test_row18_frequencies_follow_the_weights() {
       if (w.reaction[k] == r) ++hits[k];
   }
   for (uint8_t k = 0; k < w.count; ++k) {
-    const double share = static_cast<double>(w.weight[k]) / w.total();
-    TEST_ASSERT_DOUBLE_WITHIN(0.02, share, static_cast<double>(hits[k]) / kDraws);
+    // 2 percentage points of kDraws, in integers (Unity double precision is off).
+    TEST_ASSERT_UINT32_WITHIN(kDraws / 50, w.weight[k] * kDraws / w.total(), hits[k]);
   }
 }
 

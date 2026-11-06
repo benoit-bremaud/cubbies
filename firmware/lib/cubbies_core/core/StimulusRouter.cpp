@@ -87,9 +87,33 @@ Route effects(MoodEffect e) {
       return withSound(withReaction({}, Reaction::Yawn), SoundId::Yawn);
     case MoodEffect::Grumpy:
       return withSound({}, SoundId::Grumpy);
-    case MoodEffect::Sulk:  // social-group/05e: placeholder grumble, sound design later
-      return withSound(withReaction({}, Reaction::Sulk), SoundId::Grumpy);
     case MoodEffect::None:
+      break;
+  }
+  return {};
+}
+
+Route effects(JealousReaction r) {
+  // social-group/05e Repertoire: step 1 is silent; the step-2 sounds are rank-2 placeholders
+  // until the sound brick.
+  switch (r) {
+    case JealousReaction::SideGlance:
+      return withReaction({}, Reaction::SideGlance);
+    case JealousReaction::Stare:
+      return withReaction({}, Reaction::Stare);
+    case JealousReaction::TurnAway:
+      return withReaction({}, Reaction::TurnAway);
+    case JealousReaction::Pout:
+      return withSound(withReaction({}, Reaction::Pout), SoundId::Hmpf);
+    case JealousReaction::PuppyEyes:
+      return withSound(withReaction({}, Reaction::PuppyEyes), SoundId::Whimper);
+    case JealousReaction::MeToo:
+      return withSound(withReaction({}, Reaction::MeToo), SoundId::Chirp);
+    case JealousReaction::FakeSleep:
+      return withReaction({}, Reaction::FakeSleep);
+    case JealousReaction::Sulk:
+      return withSound(withReaction({}, Reaction::Sulk), SoundId::Grumpy);
+    case JealousReaction::None:
       break;
   }
   return {};
