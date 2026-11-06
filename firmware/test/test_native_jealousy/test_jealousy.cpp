@@ -638,6 +638,21 @@ static void test_row16b_weary_reads_the_ring_over_30_min() {
   TEST_ASSERT_FALSE(r.engine.contexts(r.ctx).weary);
 }
 
+// Codex review on PR #92: the ring is forgotten by tick() past T_weary, so after a full 2^32 ms
+// clock cycle the old step-2 entries cannot alias back to recent and make the cube Weary.
+static void test_weary_ring_forgotten_before_the_wrap() {
+  Rig r;
+  for (int i = 0; i < 3; ++i) {
+    r.pair();
+    r.clock.advance(E::kJealousMs);
+  }
+  TEST_ASSERT_TRUE(r.engine.contexts(r.ctx).weary);
+  r.clock.advance(E::kWearyMs);
+  r.engine.tick();  // an Awake tick past T_weary
+  r.clock.advance(0xFFFFFFFFu - E::kWearyMs - E::kJealousMs);  // ages alias back to ≈ recent
+  TEST_ASSERT_FALSE(r.engine.contexts(r.ctx).weary);
+}
+
 // Contexts: Bored, Crowd, Newcomer / Friend, Neglected from the engine's own state.
 static void test_contexts_from_the_engine() {
   Rig r;
@@ -983,6 +998,7 @@ int main() {
   RUN_TEST(test_row10_restart_keeps_cooldown_and_resets_owner_time);
   RUN_TEST(test_row12_row12b_stale_notice_restarts_at_step1);
   RUN_TEST(test_row16b_weary_reads_the_ring_over_30_min);
+  RUN_TEST(test_weary_ring_forgotten_before_the_wrap);
   RUN_TEST(test_contexts_from_the_engine);
   RUN_TEST(test_row19_failed_guard_draws_nothing);
   RUN_TEST(test_engine_draws_with_its_contexts);
