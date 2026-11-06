@@ -1,5 +1,6 @@
-// Jealousy (social-group/05e): the PET codec (06), the sender rules S1–S4 over LoopbackRadio, one
-// test per row of the receiver table on the Mood engine, and the Sulk effect mapping (02e).
+// Jealousy (social-group/05e, G6 and G6a): the PET codec (06), the sender rules S1–S4 over
+// LoopbackRadio, the input (petContext, presentSince), one test per row of the receiver table on
+// the Mood engine and the JealousyRepertoire, and the effects mapping (02e).
 #include <unity.h>
 
 #include <initializer_list>
@@ -8,6 +9,7 @@
 #include "LoopbackRadio.h"
 #include "core/Choir.h"
 #include "core/Identity.h"
+#include "core/JealousyRepertoire.h"
 #include "core/MoodEngine.h"
 #include "core/PresenceCodec.h"
 #include "core/SocialProtocol.h"
@@ -18,12 +20,14 @@ using cubbies::decodePet;
 using cubbies::effects;
 using cubbies::encodePet;
 using cubbies::encodePresence;
+using cubbies::EntryState;
 using cubbies::kFrameSize;
 using cubbies::Mac;
 using cubbies::Mood;
 using cubbies::MoodEffect;
 using cubbies::MoodEngine;
 using cubbies::MoodTally;
+using cubbies::Neighbour;
 using cubbies::Pet;
 using cubbies::Presence;
 using cubbies::Prng;
@@ -249,129 +253,329 @@ static void test_row11_no_sulk_while_singing() {
   TEST_ASSERT_TRUE(b.social.tick(b.self).pet);
 }
 
-// — Receiver rules on the Mood engine (05e rows 1–4, 6–8, 10) —
+// — The input (05e): petContext from the first PET, presentSince (rows 6, 20–20e, 21) —
 
 namespace {
+void injectPet(Cube& cube, uint8_t from) {
+  uint8_t f[kFrameSize];
+  encodePet(Pet{3}, f);
+  cube.radio.inject(f, kFrameSize, mac(from));
+}
+
+const Neighbour& entry(const Cube& cube, uint8_t last) {
+  for (uint8_t i = 0; i < SocialProtocol::kCapacity; ++i)
+    if (cube.social.neighbour(i).state != EntryState::Free && cube.social.neighbour(i).mac == mac(last))
+      return cube.social.neighbour(i);
+  TEST_FAIL_MESSAGE("no entry for that MAC");
+  return cube.social.neighbour(0);
+}
+}  // namespace
+
+// Input: neighbours counts the present entries, strokedAgeMs is the sender's presence age; row 6:
+// with two PETs in one tick, the context comes from the first one drained.
+static void test_pet_context_from_the_first_pet() {
+  FakeClock clock(kT0);
+  Air air;
+  Cube b(air, 2, clock, 6);
+  announce(b, 1);
+  clock.advance(4000);
+  announce(b, 3);
+  clock.advance(1000);
+  injectPet(b, 1);
+  injectPet(b, 3);
+  const SocialOutput out = b.social.tick(b.self);
+  TEST_ASSERT_TRUE(out.pet);
+  TEST_ASSERT_EQUAL_UINT8(2, out.petContext.neighbours);
+  TEST_ASSERT_EQUAL_UINT32(5000, out.petContext.strokedAgeMs);
+  injectPet(b, 3);
+  injectPet(b, 1);
+  TEST_ASSERT_EQUAL_UINT32(1000, b.social.tick(b.self).petContext.strokedAgeMs);
+}
+
+// Row 20e: a sender with no present entry is a newcomer (age 0); neighbours as counted.
+static void test_row20e_unknown_sender_is_a_newcomer() {
+  FakeClock clock(kT0);
+  Air air;
+  Cube b(air, 2, clock, 6);
+  announce(b, 1);
+  clock.advance(3000);
+  injectPet(b, 9);
+  const SocialOutput out = b.social.tick(b.self);
+  TEST_ASSERT_TRUE(out.pet);
+  TEST_ASSERT_EQUAL_UINT8(1, out.petContext.neighbours);
+  TEST_ASSERT_EQUAL_UINT32(0, out.petContext.strokedAgeMs);
+  clock.advance(SocialProtocol::kTtlMs + 1);
+  announce(b, 3);  // 1 is Absent now, its MAC still in the table
+  injectPet(b, 1);
+  const SocialOutput absent = b.social.tick(b.self);
+  TEST_ASSERT_EQUAL_UINT8(1, absent.petContext.neighbours);
+  TEST_ASSERT_EQUAL_UINT32(0, absent.petContext.strokedAgeMs);
+}
+
+// Row 20: a new MAC is stored with presentSince = now, including one back after its entry was freed.
+static void test_row20_new_mac_present_since_now() {
+  FakeClock clock(kT0);
+  Air air;
+  Cube b(air, 2, clock, 6);
+  announce(b, 1);
+  TEST_ASSERT_EQUAL_UINT32(kT0, entry(b, 1).presentSince);
+  clock.advance(SocialProtocol::kTtlMs + 1);
+  b.social.tick(b.self);  // Absent
+  clock.advance(SocialProtocol::kRegreetMs + 1);
+  b.social.tick(b.self);  // freed past T_regreet
+  announce(b, 1);
+  TEST_ASSERT_EQUAL_UINT32(clock.nowMs(), entry(b, 1).presentSince);
+}
+
+// Row 20b: back from Absent within T_regreet, presentSince is kept.
+static void test_row20b_back_within_regreet_keeps_present_since() {
+  FakeClock clock(kT0);
+  Air air;
+  Cube b(air, 2, clock, 6);
+  announce(b, 1);
+  clock.advance(SocialProtocol::kTtlMs + 1);
+  b.social.tick(b.self);
+  TEST_ASSERT_EQUAL(EntryState::Absent, entry(b, 1).state);
+  clock.advance(60000);
+  announce(b, 1);
+  TEST_ASSERT_EQUAL_UINT32(kT0, entry(b, 1).presentSince);
+}
+
+// Row 20c: back from Absent after more than T_regreet (greeted again), presentSince = now.
+static void test_row20c_back_after_regreet_resets_present_since() {
+  FakeClock clock(kT0);
+  Air air;
+  Cube b(air, 2, clock, 6);
+  announce(b, 1);
+  clock.advance(SocialProtocol::kTtlMs + 1);
+  b.social.tick(b.self);  // Absent, lastSeen = kT0
+  clock.advance(SocialProtocol::kRegreetMs);  // the frame arrives before expire() can free it
+  announce(b, 1);
+  TEST_ASSERT_EQUAL_UINT32(clock.nowMs(), entry(b, 1).presentSince);
+}
+
+// Row 20d: a refresh at age ≥ T_friend pins presentSince to now − T_friend (no wrap).
+static void test_row20d_present_since_is_bounded() {
+  FakeClock clock(kT0);
+  Air air;
+  Cube b(air, 2, clock, 6);
+  announce(b, 1);
+  while (clock.nowMs() - kT0 < cubbies::kFriendMs + 10000) {
+    clock.advance(SocialProtocol::kPresenceMs);
+    announce(b, 1);
+  }
+  TEST_ASSERT_EQUAL_UINT32(clock.nowMs() - cubbies::kFriendMs, entry(b, 1).presentSince);
+  clock.advance(1000);
+  injectPet(b, 1);
+  TEST_ASSERT_EQUAL_UINT32(cubbies::kFriendMs + 1000, b.social.tick(b.self).petContext.strokedAgeMs);
+}
+
+// Row 21: a PET, accepted or dropped, is never relayed (the protocol has no storage port: nothing
+// can reach NVS) and the drop counters are keyed by reason only.
+static void test_row21_pet_never_relayed() {
+  FakeClock clock(kT0);
+  Air air;
+  Cube b(air, 2, clock, 6);
+  announce(b, 1);
+  const size_t before = b.radio.sent.size();
+  injectPet(b, 1);
+  uint8_t bad[kFrameSize];
+  encodePet(Pet{3}, bad);
+  bad[5] = 1;
+  b.radio.inject(bad, kFrameSize, mac(1));
+  b.social.tick(b.self);
+  TEST_ASSERT_EQUAL_size_t(0, petFrames(b.radio));
+  TEST_ASSERT_LESS_OR_EQUAL_size_t(before + 1, b.radio.sent.size());  // a presence beacon at most
+}
+
+// — Receiver machine on the Mood engine (05e rows 1–12b, 16b, 19) —
+
+namespace {
+using cubbies::JealousReaction;
+using cubbies::JealousStep;
+using cubbies::JealousyRepertoire;
+using cubbies::PetContext;
+using JR = JealousReaction;
+
+constexpr uint32_t kSecond = 1000;
+
+bool isStep1(JR r) { return r == JR::SideGlance || r == JR::Stare || r == JR::TurnAway; }
+bool isStep2(JR r) {
+  return r == JR::Pout || r == JR::PuppyEyes || r == JR::MeToo || r == JR::FakeSleep || r == JR::Sulk;
+}
+
 struct Rig {
-  Rig() : clock(kT0), engine(clock) {}
+  Rig() : clock(kT0), engine(clock), rep(42) { clock.advance(E::kJealousCalmMs); }
   FakeClock clock;
   MoodEngine engine;
+  JealousyRepertoire rep;
+  PetContext ctx{1, cubbies::kFriendMs};
+  JR pet(bool held = false) { return engine.jealousy(held, ctx, rep); }
   void idle(uint32_t ms) {
     for (uint32_t s = 0; s < ms; s += kTick) {
       clock.advance(kTick);
       engine.tick();
     }
   }
+  // A notice then, 15 s later, a step 2 (rows 1, 1b); returns the step-2 reaction.
+  JR pair() {
+    TEST_ASSERT_TRUE(isStep1(pet()));
+    clock.advance(15 * kSecond);
+    const JR r = pet();
+    TEST_ASSERT_TRUE(isStep2(r));
+    return r;
+  }
 };
 }  // namespace
 
-// Row 1: calm and out of cooldown, a PET makes the cube sulk; the mood is unchanged (row 7).
-static void test_row1_row7_calm_cube_sulks_mood_unchanged() {
+// Row 1: a calm cube notices (a step-1 reaction), mood unchanged, no cooldown or budget entry.
+static void test_row1_first_pet_is_noticed() {
   Rig r;
-  r.idle(E::kJealousCalmMs);
-  r.engine.stimulus(Stimulus::NewcomerSeen);  // not a calm break
-  TEST_ASSERT_EQUAL(MoodEffect::Sulk, r.engine.jealousy(false));
+  TEST_ASSERT_TRUE(isStep1(r.pet()));
+  TEST_ASSERT_TRUE(r.engine.noticed());
   TEST_ASSERT_EQUAL(Mood::Curious, r.engine.mood());
+  r.clock.advance(kSecond);
+  TEST_ASSERT_TRUE(isStep2(r.pet()));  // the notice started no cooldown
 }
 
-// Row 7: the sulk plays the same in Annoyed and Happy, and leaves the mood as it was.
-static void test_row7_sulk_in_any_mood() {
-  Rig h;
-  h.engine.stimulus(Stimulus::Tap);  // Curious → Happy
-  h.clock.advance(E::kJealousCalmMs);
-  TEST_ASSERT_EQUAL(MoodEffect::Sulk, h.engine.jealousy(false));
-  TEST_ASSERT_EQUAL(Mood::Happy, h.engine.mood());
+// Row 1b: a second PET within T_notice draws a step-2 reaction and returns to Indifferent; the
+// cooldown and the budget entry run from it.
+static void test_row1b_second_pet_within_notice_is_jealous() {
   Rig r;
-  r.engine.stimulus(Stimulus::Loud);  // Curious → Annoyed
-  TEST_ASSERT_EQUAL(Mood::Annoyed, r.engine.mood());
-  r.clock.advance(E::kJealousCalmMs);
-  TEST_ASSERT_EQUAL(MoodEffect::Sulk, r.engine.jealousy(false));
-  TEST_ASSERT_EQUAL(Mood::Annoyed, r.engine.mood());
+  r.pair();
+  TEST_ASSERT_FALSE(r.engine.noticed());
+  TEST_ASSERT_EQUAL(Mood::Curious, r.engine.mood());
+  r.clock.advance(E::kJealousMs - 1);
+  TEST_ASSERT_EQUAL(JR::None, r.pet());
+  r.clock.advance(1);
+  TEST_ASSERT_TRUE(isStep1(r.pet()));  // back to Indifferent: a new notice
 }
 
-// Row 2: a gesture, a touch-down or a sound within T_calm_jealous — nothing, and the PET is not kept.
-static void test_row2_cube_in_use_is_not_jealous() {
-  Rig r;
-  r.idle(E::kJealousCalmMs);
-  r.clock.advance(E::kJealousCalmMs - 1000);
-  r.engine.stimulus(Stimulus::Tap);
-  r.clock.advance(E::kJealousCalmMs - 1);
-  TEST_ASSERT_EQUAL(MoodEffect::None, r.engine.jealousy(false));
-  for (const Stimulus s : {Stimulus::Voice, Stimulus::Loud}) {
-    r.clock.advance(E::kJealousCalmMs);
+// Row 2: owner attention within T_calm_jealous — nothing; a Noticed cube returns to Indifferent.
+static void test_row2_owner_attention_drops_the_notice() {
+  for (const Stimulus s : {Stimulus::Tap, Stimulus::Voice, Stimulus::Loud}) {
+    Rig r;
+    TEST_ASSERT_TRUE(isStep1(r.pet()));
+    r.clock.advance(kSecond);
     r.engine.stimulus(s);
     r.clock.advance(E::kJealousCalmMs - 1);
-    TEST_ASSERT_EQUAL(MoodEffect::None, r.engine.jealousy(false));
+    TEST_ASSERT_EQUAL(JR::None, r.pet());
+    TEST_ASSERT_FALSE(r.engine.noticed());
+    r.clock.advance(1);
+    TEST_ASSERT_TRUE(isStep1(r.pet()));  // a new notice, not a step 2
   }
-  r.clock.advance(E::kJealousCalmMs);
-  r.engine.touchDown();
-  r.clock.advance(E::kJealousCalmMs - 1);
-  TEST_ASSERT_EQUAL(MoodEffect::None, r.engine.jealousy(false));
-  r.clock.advance(1);
-  TEST_ASSERT_EQUAL(MoodEffect::Sulk, r.engine.jealousy(false));  // a fresh PET once calm again
+  Rig t;
+  TEST_ASSERT_TRUE(isStep1(t.pet()));
+  t.clock.advance(kSecond);
+  t.engine.touchDown();
+  t.clock.advance(E::kJealousCalmMs - 1);
+  TEST_ASSERT_EQUAL(JR::None, t.pet());
+  TEST_ASSERT_FALSE(t.engine.noticed());
+  t.clock.advance(1);
+  TEST_ASSERT_TRUE(isStep1(t.pet()));
 }
 
-// Row 2b: a pad held right now blocks the sulk however long the calm has lasted.
-static void test_row2b_held_pad_is_not_jealous() {
+// Row 2b: a pad held right now — nothing, however long the calm; a Noticed cube returns to
+// Indifferent.
+static void test_row2b_held_pad_drops_the_notice() {
   Rig r;
-  r.idle(E::kJealousCalmMs * 10);
-  TEST_ASSERT_EQUAL(MoodEffect::None, r.engine.jealousy(true));
-  TEST_ASSERT_EQUAL(MoodEffect::Sulk, r.engine.jealousy(false));  // the blocked PET used no budget
+  r.clock.advance(10 * E::kJealousCalmMs);
+  TEST_ASSERT_EQUAL(JR::None, r.pet(true));
+  TEST_ASSERT_TRUE(isStep1(r.pet()));
+  r.clock.advance(kSecond);
+  TEST_ASSERT_EQUAL(JR::None, r.pet(true));
+  TEST_ASSERT_FALSE(r.engine.noticed());
 }
 
-// Row 3: within T_jealous of the last sulk, nothing; at T_jealous, again.
-static void test_row3_cooldown() {
+// Row 3: within T_jealous of the last step-2 reaction, nothing, and Noticed is not entered.
+static void test_row3_cooldown_blocks_the_notice() {
   Rig r;
-  r.idle(E::kJealousCalmMs);
-  TEST_ASSERT_EQUAL(MoodEffect::Sulk, r.engine.jealousy(false));
-  r.clock.advance(E::kJealousMs - 1);
-  TEST_ASSERT_EQUAL(MoodEffect::None, r.engine.jealousy(false));
-  r.clock.advance(1);
-  TEST_ASSERT_EQUAL(MoodEffect::Sulk, r.engine.jealousy(false));
+  r.pair();
+  r.clock.advance(30 * kSecond);
+  TEST_ASSERT_EQUAL(JR::None, r.pet());
+  TEST_ASSERT_FALSE(r.engine.noticed());
 }
 
-// Row 4: at most kJealousBudget sulks per kJealousWindowMs (ADR-0012), then free again.
-static void test_row4_global_budget() {
+// Row 4: kJealousBudget step-2 reactions in the window — a Noticed cube stays Noticed until
+// T_notice elapses, then a new step 1.
+static void test_row4_budget_keeps_the_notice() {
   Rig r;
-  r.idle(E::kJealousCalmMs);
   for (uint8_t i = 0; i < E::kJealousBudget; ++i) {
-    TEST_ASSERT_EQUAL(MoodEffect::Sulk, r.engine.jealousy(false));
+    r.pair();
     r.clock.advance(E::kJealousMs);
   }
-  TEST_ASSERT_EQUAL(MoodEffect::None, r.engine.jealousy(false));  // 4 in the last 4 min
-  r.clock.advance(E::kJealousWindowMs - E::kJealousBudget * E::kJealousMs);
-  TEST_ASSERT_EQUAL(MoodEffect::None, r.engine.jealousy(false));  // the first is exactly window old
-  r.clock.advance(1);
-  TEST_ASSERT_EQUAL(MoodEffect::Sulk, r.engine.jealousy(false));
+  TEST_ASSERT_TRUE(isStep1(r.pet()));  // a notice costs no budget
+  r.clock.advance(15 * kSecond);
+  TEST_ASSERT_EQUAL(JR::None, r.pet());  // 4 step-2 reactions in the last 5 min
+  TEST_ASSERT_TRUE(r.engine.noticed());
+  r.clock.advance(E::kNoticeMs - 15 * kSecond);
+  TEST_ASSERT_TRUE(isStep1(r.pet()));
 }
 
-// Row 6 (engine side): a second jealousy() in the same tick never sulks twice.
-static void test_row6_at_most_one_sulk() {
+// Row 4 across the wrap: a full budget older than every window is forgotten, never aliased.
+static void test_budget_forgotten_after_a_long_quiet_spell() {
   Rig r;
-  r.idle(E::kJealousCalmMs);
-  TEST_ASSERT_EQUAL(MoodEffect::Sulk, r.engine.jealousy(false));
-  TEST_ASSERT_EQUAL(MoodEffect::None, r.engine.jealousy(false));
+  for (uint8_t i = 0; i < E::kJealousBudget; ++i) {
+    r.pair();
+    r.clock.advance(E::kJealousMs);
+  }
+  r.clock.advance(0xFFFFFFFFu - 2 * E::kJealousMs);  // last step 2 ≈ 2^32 − 60 s ago
+  r.pair();
 }
 
-// Row 8: the sulk does not break the calm, start the G2 refractory, or feed the idle timer.
-static void test_row8_sulk_leaves_calm_refractory_and_idle_untouched() {
+// Row 5: a restart (every wake) drops Noticed.
+static void test_row5_restart_drops_the_notice() {
   Rig r;
-  r.idle(E::kBoredMs - E::kContagionMs);
-  TEST_ASSERT_EQUAL(MoodEffect::Sulk, r.engine.jealousy(false));
-  r.idle(E::kContagionMs);
+  TEST_ASSERT_TRUE(isStep1(r.pet()));
+  r.engine.restart();
+  TEST_ASSERT_FALSE(r.engine.noticed());
+  r.clock.advance(E::kJealousCalmMs);
+  TEST_ASSERT_TRUE(isStep1(r.pet()));
+}
+
+// Row 6: a second call in the same tick never takes a second step.
+static void test_row6_at_most_one_step_per_tick() {
+  Rig r;
+  TEST_ASSERT_TRUE(isStep1(r.pet()));
+  TEST_ASSERT_EQUAL(JR::None, r.pet());
+  r.clock.advance(kSecond);
+  TEST_ASSERT_TRUE(isStep2(r.pet()));
+  TEST_ASSERT_EQUAL(JR::None, r.pet());
+}
+
+// Row 7: the reaction plays in every mood and leaves the mood as it was.
+static void test_row7_any_mood_unchanged() {
+  for (const Stimulus s : {Stimulus::Tap, Stimulus::Loud}) {
+    Rig r;
+    r.engine.stimulus(s);  // Happy, Annoyed
+    const Mood m = r.engine.mood();
+    r.clock.advance(E::kJealousCalmMs);
+    r.pair();
+    TEST_ASSERT_EQUAL(m, r.engine.mood());
+  }
+  Rig b;
+  b.idle(E::kBoredMs);
+  TEST_ASSERT_EQUAL(Mood::Bored, b.engine.mood());
+  b.pair();
+  TEST_ASSERT_EQUAL(Mood::Bored, b.engine.mood());
+}
+
+// Row 8: no reaction feeds the idle timer or moves lastOwnerMs_ (Neglected still holds).
+static void test_row8_reaction_leaves_owner_time_and_idle_untouched() {
+  Rig r;
+  r.idle(E::kBoredMs - E::kJealousCalmMs - 20 * kSecond);
+  r.pair();
+  r.clock.advance(5 * kSecond);
+  r.idle(kTick);
   TEST_ASSERT_EQUAL(Mood::Bored, r.engine.mood());  // the idle timer ran on
-  MoodTally t;
-  t.votes[static_cast<uint8_t>(Mood::Happy)] = 1;
-  r.engine.contagion(t);  // the hold starts now
-  r.clock.advance(E::kContagionMs - kTick);
-  r.engine.contagion(t);
-  r.clock.advance(E::kJealousMs);  // out of the cooldown, the hold still running
-  r.engine.contagion(t);
-  TEST_ASSERT_EQUAL(Mood::Happy, r.engine.mood());  // first pull: no refractory, calm held
+  r.clock.advance(E::kLonelyMs);
+  r.pair();
+  TEST_ASSERT_TRUE(r.engine.contexts(r.ctx).neglected);
 }
 
-// Row 8 (calm): a sulk in the middle of a G2 hold does not delay the pull.
-static void test_row8_sulk_does_not_break_the_calm() {
+// Row 8 (calm): a reaction in the middle of a G2 hold does not delay the pull or start the
+// refractory.
+static void test_row8_reaction_does_not_break_the_calm() {
   Rig r;
   r.idle(E::kBoredMs);
   TEST_ASSERT_EQUAL(Mood::Bored, r.engine.mood());
@@ -380,54 +584,385 @@ static void test_row8_sulk_does_not_break_the_calm() {
   r.engine.contagion(t);  // the hold starts now
   r.clock.advance(E::kContagionMs - kTick);
   TEST_ASSERT_EQUAL(MoodEffect::None, r.engine.contagion(t));
-  TEST_ASSERT_EQUAL(MoodEffect::Sulk, r.engine.jealousy(false));
+  TEST_ASSERT_TRUE(isStep1(r.pet()));
   r.clock.advance(kTick);
   r.engine.contagion(t);
   TEST_ASSERT_EQUAL(Mood::Happy, r.engine.mood());
 }
 
-// Row 4 across the wrap: a full budget older than the window is forgotten, never aliased.
-static void test_budget_forgotten_after_a_long_quiet_spell() {
+// Row 10: a wake drops Noticed (row 5), sets lastOwnerMs_ to now and keeps the cooldown.
+static void test_row10_restart_keeps_cooldown_and_resets_owner_time() {
   Rig r;
-  r.idle(E::kJealousCalmMs);
-  for (uint8_t i = 0; i < E::kJealousBudget; ++i) {
-    TEST_ASSERT_EQUAL(MoodEffect::Sulk, r.engine.jealousy(false));
+  r.clock.advance(E::kLonelyMs);
+  TEST_ASSERT_TRUE(r.engine.contexts(r.ctx).neglected);
+  r.pair();
+  r.engine.restart();
+  TEST_ASSERT_FALSE(r.engine.contexts(r.ctx).neglected);
+  r.clock.advance(E::kJealousCalmMs);
+  TEST_ASSERT_EQUAL(JR::None, r.pet());
+}
+
+// Rows 12, 12b: a PET T_notice or more after the notice, or after owner attention since the
+// notice, starts a new step 1.
+static void test_row12_row12b_stale_notice_restarts_at_step1() {
+  Rig r;
+  TEST_ASSERT_TRUE(isStep1(r.pet()));
+  r.clock.advance(E::kNoticeMs - 1);
+  TEST_ASSERT_TRUE(isStep2(r.pet()));
+  r.clock.advance(E::kJealousMs);
+  TEST_ASSERT_TRUE(isStep1(r.pet()));
+  r.clock.advance(E::kNoticeMs);
+  TEST_ASSERT_TRUE(isStep1(r.pet()));  // row 12
+  r.clock.advance(kSecond);
+  r.engine.stimulus(Stimulus::Voice);
+  r.clock.advance(E::kJealousCalmMs + kSecond);
+  TEST_ASSERT_TRUE(isStep1(r.pet()));  // row 12b
+  r.clock.advance(kSecond);
+  TEST_ASSERT_TRUE(isStep2(r.pet()));
+}
+
+// Row 16b: three step-2 reactions in the last 30 min, the last one 11 min ago: Weary (the ring is
+// not cleared after 10 min); two are not enough; past T_weary it is gone.
+static void test_row16b_weary_reads_the_ring_over_30_min() {
+  Rig r;
+  r.pair();
+  r.clock.advance(E::kJealousMs);
+  r.pair();
+  TEST_ASSERT_FALSE(r.engine.contexts(r.ctx).weary);
+  r.clock.advance(E::kJealousMs);
+  r.pair();
+  r.clock.advance(11 * 60 * kSecond);
+  TEST_ASSERT_TRUE(isStep1(r.pet()));  // jealousy() runs the ring maintenance: kept past 10 min
+  TEST_ASSERT_TRUE(r.engine.contexts(r.ctx).weary);
+  r.clock.advance(E::kWearyMs);
+  TEST_ASSERT_FALSE(r.engine.contexts(r.ctx).weary);
+}
+
+// Codex review on PR #92: the ring is forgotten by tick() past T_weary, so after a full 2^32 ms
+// clock cycle the old step-2 entries cannot alias back to recent and make the cube Weary.
+static void test_weary_ring_forgotten_before_the_wrap() {
+  Rig r;
+  for (int i = 0; i < 3; ++i) {
+    r.pair();
     r.clock.advance(E::kJealousMs);
   }
-  r.clock.advance(0xFFFFFFFFu - 2 * E::kJealousMs);  // last sulk ≈ 2^32 − 60 s ago
-  TEST_ASSERT_EQUAL(MoodEffect::Sulk, r.engine.jealousy(false));
+  TEST_ASSERT_TRUE(r.engine.contexts(r.ctx).weary);
+  r.clock.advance(E::kWearyMs);
+  r.engine.tick();  // an Awake tick past T_weary
+  r.clock.advance(0xFFFFFFFFu - E::kWearyMs - E::kJealousMs + 1);  // newest age = 2^32 ≡ 0
+  TEST_ASSERT_FALSE(r.engine.contexts(r.ctx).weary);
 }
 
-// Row 10: a wake (restart) keeps the cooldown and the budget.
-static void test_row10_restart_keeps_cooldown() {
+// Contexts: Bored, Crowd, Newcomer / Friend, Neglected from the engine's own state.
+static void test_contexts_from_the_engine() {
   Rig r;
-  r.idle(E::kJealousCalmMs);
-  TEST_ASSERT_EQUAL(MoodEffect::Sulk, r.engine.jealousy(false));
-  r.engine.restart();
-  r.clock.advance(E::kJealousCalmMs);
-  TEST_ASSERT_EQUAL(MoodEffect::None, r.engine.jealousy(false));
+  auto c = r.engine.contexts(PetContext{1, cubbies::kFriendMs});
+  TEST_ASSERT_TRUE(c.friend_);
+  TEST_ASSERT_FALSE(c.newcomer || c.crowd || c.bored || c.neglected || c.weary);
+  c = r.engine.contexts(PetContext{2, cubbies::kFriendMs - 1});
+  TEST_ASSERT_TRUE(c.crowd && c.newcomer);
+  TEST_ASSERT_FALSE(c.friend_);
+  r.clock.advance(E::kLonelyMs - E::kJealousCalmMs - 1);
+  TEST_ASSERT_FALSE(r.engine.contexts(r.ctx).neglected);
+  r.clock.advance(1);
+  TEST_ASSERT_TRUE(r.engine.contexts(r.ctx).neglected);
+  r.engine.stimulus(Stimulus::NewcomerSeen);  // not owner attention
+  TEST_ASSERT_TRUE(r.engine.contexts(r.ctx).neglected);
+  r.idle(E::kBoredMs);
+  TEST_ASSERT_TRUE(r.engine.contexts(r.ctx).bored);
 }
 
-// Clock wrap: the cooldown and the budget stay correct across 2^32 ms.
-static void test_cooldown_across_the_clock_wrap() {
+// Row 19: a guard or the budget fails, no draw: the Prng sequence does not move.
+static void test_row19_failed_guard_draws_nothing() {
+  Rig r;
+  JealousyRepertoire twin(42);
+  TEST_ASSERT_EQUAL(JR::None, r.pet(true));  // row 2b
+  r.engine.touchDown();
+  TEST_ASSERT_EQUAL(JR::None, r.pet());  // row 2
+  r.clock.advance(E::kJealousCalmMs);
+  const JR a = r.pet();
+  TEST_ASSERT_EQUAL(twin.draw(JealousStep::Notice, r.engine.contexts(r.ctx)), a);
+}
+
+// Rows 1, 1b, D7: the engine draws with the contexts it computed (a twin repertoire replays them).
+static void test_engine_draws_with_its_contexts() {
+  Rig r;
+  r.ctx = PetContext{2, 0};  // Crowd + Newcomer
+  JealousyRepertoire twin(42);
+  for (int i = 0; i < 12; ++i) {
+    const auto c1 = r.engine.contexts(r.ctx);
+    TEST_ASSERT_EQUAL(twin.draw(JealousStep::Notice, c1), r.pet());
+    r.clock.advance(15 * kSecond);
+    const auto c2 = r.engine.contexts(r.ctx);  // before the step-2 record
+    TEST_ASSERT_EQUAL(twin.draw(JealousStep::Jealous, c2), r.pet());
+    r.clock.advance(151 * kSecond);  // under the 4 / 10 min budget
+  }
+}
+
+// Row 19 (budget): a step 2 refused by the budget draws nothing either.
+static void test_row19_budget_failure_draws_nothing() {
+  Rig a;
+  Rig b;
+  for (Rig* r : {&a, &b}) {
+    for (uint8_t i = 0; i < E::kJealousBudget; ++i) {
+      r->pair();
+      r->clock.advance(E::kJealousMs);
+    }
+    TEST_ASSERT_TRUE(isStep1(r->pet()));
+    r->clock.advance(15 * kSecond);
+  }
+  TEST_ASSERT_EQUAL(JR::None, a.pet());  // refused by the budget, only on a
+  for (Rig* r : {&a, &b}) r->clock.advance(E::kNoticeMs);
+  TEST_ASSERT_EQUAL(b.pet(), a.pet());
+}
+
+// Owner attention is not the calm (05e Contexts): a G2 pull blocks jealousy (calm guard) but is
+// not owner attention: Neglected still holds and a notice is kept.
+static void test_pull_breaks_the_calm_not_owner_attention() {
+  Rig r;
+  r.idle(E::kLonelyMs);
+  TEST_ASSERT_EQUAL(Mood::Bored, r.engine.mood());
+  MoodTally t;
+  t.votes[static_cast<uint8_t>(Mood::Happy)] = 1;
+  r.engine.contagion(t);  // the hold starts now
+  TEST_ASSERT_TRUE(isStep1(r.pet()));
+  r.clock.advance(E::kContagionMs);
+  r.engine.contagion(t);
+  TEST_ASSERT_EQUAL(Mood::Happy, r.engine.mood());  // pulled: the calm restarts
+  TEST_ASSERT_TRUE(r.engine.contexts(r.ctx).neglected);
+  r.clock.advance(E::kJealousCalmMs - 1);
+  TEST_ASSERT_EQUAL(JR::None, r.pet());
+  TEST_ASSERT_TRUE(r.engine.noticed());
+  r.clock.advance(1);
+  TEST_ASSERT_TRUE(isStep2(r.pet()));
+}
+
+// Same for a caught yawn (05d): it breaks the calm, is not owner attention and keeps the notice.
+static void test_caught_yawn_breaks_the_calm_not_owner_attention() {
+  Rig r;
+  r.idle(E::kLonelyMs);
+  TEST_ASSERT_EQUAL(Mood::Bored, r.engine.mood());
+  MoodTally t;
+  t.drowsy = 1;
+  r.engine.contagion(t);  // the yawn hold starts now
+  TEST_ASSERT_TRUE(isStep1(r.pet()));
+  r.clock.advance(E::kContagionMs);
+  TEST_ASSERT_EQUAL(MoodEffect::Yawn, r.engine.contagion(t));
+  TEST_ASSERT_TRUE(r.engine.contexts(r.ctx).neglected);
+  r.clock.advance(E::kJealousCalmMs - 1);
+  TEST_ASSERT_EQUAL(JR::None, r.pet());
+  TEST_ASSERT_TRUE(r.engine.noticed());
+  r.clock.advance(1);
+  TEST_ASSERT_TRUE(isStep2(r.pet()));
+}
+
+// Clock wrap: the crescendo and the cooldown stay correct across 2^32 ms.
+static void test_crescendo_across_the_clock_wrap() {
   FakeClock clock(0xFFFFFFFFu - E::kJealousCalmMs - 10);
   MoodEngine engine(clock);
+  JealousyRepertoire rep(1);
+  const PetContext ctx{1, 0};
   clock.advance(E::kJealousCalmMs);
-  TEST_ASSERT_EQUAL(MoodEffect::Sulk, engine.jealousy(false));
+  TEST_ASSERT_TRUE(isStep1(engine.jealousy(false, ctx, rep)));
+  clock.advance(20 * kSecond);  // across the wrap
+  TEST_ASSERT_TRUE(isStep2(engine.jealousy(false, ctx, rep)));
   clock.advance(E::kJealousMs - 1);
-  TEST_ASSERT_EQUAL(MoodEffect::None, engine.jealousy(false));
+  TEST_ASSERT_EQUAL(JR::None, engine.jealousy(false, ctx, rep));
   clock.advance(1);
-  TEST_ASSERT_EQUAL(MoodEffect::Sulk, engine.jealousy(false));
+  TEST_ASSERT_TRUE(isStep1(engine.jealousy(false, ctx, rep)));
 }
 
-// 02e: the Sulk effect maps to the Sulk eyes and the grumble through the Sound gate.
-static void test_sulk_effect_maps_to_eyes_and_grumble() {
-  const cubbies::Route r = effects(MoodEffect::Sulk);
-  TEST_ASSERT_TRUE(r.react);
-  TEST_ASSERT_EQUAL(Reaction::Sulk, r.reaction);
-  TEST_ASSERT_TRUE(r.sound);
-  TEST_ASSERT_EQUAL(SoundId::Grumpy, r.soundId);
-  TEST_ASSERT_FALSE(r.toMood);
+// — Repertoire: weights and draw (05e rows 14–18, worked example) —
+
+namespace {
+using cubbies::JealousContexts;
+using cubbies::JealousWeights;
+
+void assertWeights(JealousStep step, const JealousContexts& c, JR last, std::initializer_list<uint8_t> expected) {
+  const JealousWeights w = cubbies::jealousWeights(step, c, last);
+  TEST_ASSERT_EQUAL_UINT8(expected.size(), w.count);
+  uint8_t i = 0;
+  for (const uint8_t e : expected) TEST_ASSERT_EQUAL_UINT8(e, w.weight[i++]);
+}
+
+JealousContexts only(bool JealousContexts::*flag) {
+  JealousContexts c;
+  c.*flag = true;
+  return c;
+}
+
+constexpr JealousStep kS1 = JealousStep::Notice;
+constexpr JealousStep kS2 = JealousStep::Jealous;
+}  // namespace
+
+// The repertoire order of the 05e table, at each step.
+static void test_weights_follow_the_table_order() {
+  const JealousWeights s1 = cubbies::jealousWeights(kS1, {}, JR::None);
+  const JR one[] = {JR::SideGlance, JR::Stare, JR::TurnAway};
+  for (uint8_t i = 0; i < 3; ++i) TEST_ASSERT_EQUAL(one[i], s1.reaction[i]);
+  const JealousWeights s2 = cubbies::jealousWeights(kS2, {}, JR::None);
+  const JR two[] = {JR::Pout, JR::PuppyEyes, JR::MeToo, JR::FakeSleep, JR::Sulk};
+  for (uint8_t i = 0; i < 5; ++i) TEST_ASSERT_EQUAL(two[i], s2.reaction[i]);
+}
+
+// Row 15: exact vectors on combined contexts.
+static void test_row15_combined_contexts() {
+  JealousContexts cf;
+  cf.crowd = cf.friend_ = true;
+  assertWeights(kS1, cf, JR::None, {5, 4, 2});
+  JealousContexts cfn = cf;
+  cfn.neglected = true;
+  assertWeights(kS2, cfn, JR::None, {5, 4, 5, 1, 0});
+  JealousContexts wn;
+  wn.weary = wn.newcomer = true;
+  assertWeights(kS2, wn, JR::None, {3, 2, 2, 5, 0});
+}
+
+// Row 16: each context alone applies its modifiers; Weary sets Sulk to 0.
+static void test_row16_each_context_alone() {
+  assertWeights(kS1, {}, JR::None, {3, 2, 2});
+  assertWeights(kS2, {}, JR::None, {3, 2, 2, 1, 2});
+  assertWeights(kS1, only(&JealousContexts::bored), JR::None, {3, 2, 3});
+  assertWeights(kS2, only(&JealousContexts::bored), JR::None, {3, 5, 2, 1, 2});
+  assertWeights(kS1, only(&JealousContexts::crowd), JR::None, {3, 4, 2});
+  assertWeights(kS2, only(&JealousContexts::crowd), JR::None, {3, 2, 5, 1, 2});
+  assertWeights(kS1, only(&JealousContexts::newcomer), JR::None, {3, 2, 4});
+  assertWeights(kS2, only(&JealousContexts::newcomer), JR::None, {3, 2, 2, 1, 4});
+  assertWeights(kS1, only(&JealousContexts::friend_), JR::None, {5, 2, 2});
+  assertWeights(kS2, only(&JealousContexts::friend_), JR::None, {5, 2, 2, 1, 0});
+  assertWeights(kS1, only(&JealousContexts::neglected), JR::None, {3, 2, 2});
+  assertWeights(kS2, only(&JealousContexts::neglected), JR::None, {3, 4, 2, 1, 2});
+  assertWeights(kS1, only(&JealousContexts::weary), JR::None, {5, 2, 2});
+  assertWeights(kS2, only(&JealousContexts::weary), JR::None, {3, 2, 2, 5, 0});
+}
+
+// Row 16: a synthetic table whose modifier exceeds its base weight yields 0, not a negative weight.
+static void test_row16_modifiers_clamp_at_zero() {
+  cubbies::JealousRow rows[] = {{JR::Pout, 1, {-3, 0, 0, 0, 0, 0}}, {JR::Sulk, 2, {0, 0, 0, 0, 0, 0}}};
+  const cubbies::JealousTable table{rows, 2};
+  const JealousWeights w = cubbies::jealousWeights(table, only(&JealousContexts::bored), JR::None);
+  TEST_ASSERT_EQUAL_UINT8(0, w.weight[0]);
+  TEST_ASSERT_EQUAL_UINT8(2, w.weight[1]);
+}
+
+// Row 17 (weights side): the last reaction drawn at the step gets weight 0.
+static void test_no_repeat_zeroes_the_last() {
+  assertWeights(kS1, {}, JR::SideGlance, {0, 2, 2});
+  assertWeights(kS2, {}, JR::Pout, {0, 2, 2, 1, 2});
+}
+
+// Row 14: the draw replays the reference sequence for (seed, contexts), each step with its own
+// no-repeat memory, computed here by hand from the base weights and the draw rule.
+static void test_row14_draw_replays_the_reference() {
+  const uint8_t base1[] = {3, 2, 2};
+  const JR order1[] = {JR::SideGlance, JR::Stare, JR::TurnAway};
+  const uint8_t base2[] = {3, 2, 2, 1, 2};
+  const JR order2[] = {JR::Pout, JR::PuppyEyes, JR::MeToo, JR::FakeSleep, JR::Sulk};
+  // Bored + Friend from the 05e table: step 1 TurnAway +1, SideGlance +2; step 2 PuppyEyes +3,
+  // Pout +2, Sulk −2.
+  const uint8_t ctx1[] = {5, 2, 3};
+  const uint8_t ctx2[] = {5, 5, 2, 1, 0};
+  JealousContexts bf;
+  bf.bored = bf.friend_ = true;
+  JealousyRepertoire rep(7);
+  Prng ref(7, JealousyRepertoire::kStream);
+  JR last1 = JR::None;
+  JR last2 = JR::None;
+  auto expected = [&ref](const uint8_t* base, const JR* order, uint8_t n, JR& last) {
+    uint8_t w[5];
+    uint32_t total = 0;
+    for (uint8_t i = 0; i < n; ++i) {
+      w[i] = order[i] == last ? 0 : base[i];
+      total += w[i];
+    }
+    uint32_t pick = ref.uniform(total);
+    for (uint8_t i = 0; i < n; ++i) {
+      if (pick < w[i]) return last = order[i];
+      pick -= w[i];
+    }
+    return JR::None;
+  };
+  for (int i = 0; i < 50; ++i) {
+    TEST_ASSERT_EQUAL(expected(base1, order1, 3, last1), rep.draw(kS1, {}));
+    TEST_ASSERT_EQUAL(expected(base2, order2, 5, last2), rep.draw(kS2, {}));
+    TEST_ASSERT_EQUAL(expected(ctx1, order1, 3, last1), rep.draw(kS1, bf));
+    TEST_ASSERT_EQUAL(expected(ctx2, order2, 5, last2), rep.draw(kS2, bf));
+  }
+}
+
+// Row 17: the same step drawn twice in a row never gives the same reaction.
+static void test_row17_never_twice_in_a_row() {
+  JealousyRepertoire rep(99);
+  JealousContexts weary;
+  weary.weary = true;
+  for (const JealousStep step : {kS1, kS2}) {
+    JR prev = JR::None;
+    for (int i = 0; i < 500; ++i) {
+      const JR r = rep.draw(step, weary);
+      TEST_ASSERT_TRUE(r != JR::None && r != prev);
+      prev = r;
+    }
+  }
+}
+
+// Row 18: 10 000 draws on one context, no-repeat off: each share within 2 points of its weight.
+static void test_row18_frequencies_follow_the_weights() {
+  JealousContexts c;
+  c.crowd = true;
+  const JealousWeights w = cubbies::jealousWeights(kS2, c, JR::None);
+  Prng prng(2026, JealousyRepertoire::kStream);
+  uint32_t hits[5] = {};
+  constexpr uint32_t kDraws = 10000;
+  for (uint32_t i = 0; i < kDraws; ++i) {
+    const JR r = cubbies::drawWeighted(w, prng);
+    for (uint8_t k = 0; k < w.count; ++k)
+      if (w.reaction[k] == r) ++hits[k];
+  }
+  for (uint8_t k = 0; k < w.count; ++k) {
+    // 2 percentage points of kDraws, in integers (Unity double precision is off).
+    TEST_ASSERT_UINT32_WITHIN(kDraws / 50, w.weight[k] * kDraws / w.total(), hits[k]);
+  }
+}
+
+// Worked example: Crowd + Friend + Weary after a MeToo → Pout 5, PuppyEyes 2, MeToo 0,
+// FakeSleep 5, Sulk 0.
+static void test_worked_example_weary_weights() {
+  JealousContexts c;
+  c.crowd = c.friend_ = c.weary = true;
+  assertWeights(kS2, c, JR::MeToo, {5, 2, 0, 5, 0});
+}
+
+// — Effects (02e): each reaction maps to its eyes, step-2 sounds rank 2 through the Sound gate —
+
+static void test_effects_map_each_reaction() {
+  TEST_ASSERT_FALSE(effects(JR::None).react);
+  TEST_ASSERT_FALSE(effects(JR::None).sound);
+  const struct {
+    JR in;
+    Reaction eyes;
+    bool sound;
+    SoundId id;
+  } rows[] = {
+      {JR::SideGlance, Reaction::SideGlance, false, SoundId::Surprise},
+      {JR::Stare, Reaction::Stare, false, SoundId::Surprise},
+      {JR::TurnAway, Reaction::TurnAway, false, SoundId::Surprise},
+      {JR::Pout, Reaction::Pout, true, SoundId::Hmpf},
+      {JR::PuppyEyes, Reaction::PuppyEyes, true, SoundId::Whimper},
+      {JR::MeToo, Reaction::MeToo, true, SoundId::Chirp},
+      {JR::FakeSleep, Reaction::FakeSleep, false, SoundId::Surprise},
+      {JR::Sulk, Reaction::Sulk, true, SoundId::Grumpy},
+  };
+  for (const auto& row : rows) {
+    const cubbies::Route r = effects(row.in);
+    TEST_ASSERT_TRUE(r.react);
+    TEST_ASSERT_EQUAL(row.eyes, r.reaction);
+    TEST_ASSERT_EQUAL(row.sound, r.sound);
+    if (row.sound) {
+      TEST_ASSERT_EQUAL(row.id, r.soundId);
+      TEST_ASSERT_EQUAL_UINT8(2, cubbies::SoundGate::rank(r.soundId));
+    }
+    TEST_ASSERT_FALSE(r.toMood);
+  }
 }
 
 int main() {
@@ -441,18 +976,45 @@ int main() {
   RUN_TEST(test_row5_pet_while_not_awake_is_dropped);
   RUN_TEST(test_row6_row9_one_flag_per_tick_and_malformed_dropped);
   RUN_TEST(test_row11_no_sulk_while_singing);
-  RUN_TEST(test_row1_row7_calm_cube_sulks_mood_unchanged);
-  RUN_TEST(test_row7_sulk_in_any_mood);
-  RUN_TEST(test_row2_cube_in_use_is_not_jealous);
-  RUN_TEST(test_row2b_held_pad_is_not_jealous);
-  RUN_TEST(test_row3_cooldown);
-  RUN_TEST(test_row4_global_budget);
-  RUN_TEST(test_row6_at_most_one_sulk);
-  RUN_TEST(test_row8_sulk_leaves_calm_refractory_and_idle_untouched);
-  RUN_TEST(test_row8_sulk_does_not_break_the_calm);
+  RUN_TEST(test_pet_context_from_the_first_pet);
+  RUN_TEST(test_row20e_unknown_sender_is_a_newcomer);
+  RUN_TEST(test_row20_new_mac_present_since_now);
+  RUN_TEST(test_row20b_back_within_regreet_keeps_present_since);
+  RUN_TEST(test_row20c_back_after_regreet_resets_present_since);
+  RUN_TEST(test_row20d_present_since_is_bounded);
+  RUN_TEST(test_row21_pet_never_relayed);
+  RUN_TEST(test_row1_first_pet_is_noticed);
+  RUN_TEST(test_row1b_second_pet_within_notice_is_jealous);
+  RUN_TEST(test_row2_owner_attention_drops_the_notice);
+  RUN_TEST(test_row2b_held_pad_drops_the_notice);
+  RUN_TEST(test_row3_cooldown_blocks_the_notice);
+  RUN_TEST(test_row4_budget_keeps_the_notice);
   RUN_TEST(test_budget_forgotten_after_a_long_quiet_spell);
-  RUN_TEST(test_row10_restart_keeps_cooldown);
-  RUN_TEST(test_cooldown_across_the_clock_wrap);
-  RUN_TEST(test_sulk_effect_maps_to_eyes_and_grumble);
+  RUN_TEST(test_row5_restart_drops_the_notice);
+  RUN_TEST(test_row6_at_most_one_step_per_tick);
+  RUN_TEST(test_row7_any_mood_unchanged);
+  RUN_TEST(test_row8_reaction_leaves_owner_time_and_idle_untouched);
+  RUN_TEST(test_row8_reaction_does_not_break_the_calm);
+  RUN_TEST(test_row10_restart_keeps_cooldown_and_resets_owner_time);
+  RUN_TEST(test_row12_row12b_stale_notice_restarts_at_step1);
+  RUN_TEST(test_row16b_weary_reads_the_ring_over_30_min);
+  RUN_TEST(test_weary_ring_forgotten_before_the_wrap);
+  RUN_TEST(test_contexts_from_the_engine);
+  RUN_TEST(test_row19_failed_guard_draws_nothing);
+  RUN_TEST(test_engine_draws_with_its_contexts);
+  RUN_TEST(test_row19_budget_failure_draws_nothing);
+  RUN_TEST(test_pull_breaks_the_calm_not_owner_attention);
+  RUN_TEST(test_caught_yawn_breaks_the_calm_not_owner_attention);
+  RUN_TEST(test_crescendo_across_the_clock_wrap);
+  RUN_TEST(test_weights_follow_the_table_order);
+  RUN_TEST(test_row15_combined_contexts);
+  RUN_TEST(test_row16_each_context_alone);
+  RUN_TEST(test_row16_modifiers_clamp_at_zero);
+  RUN_TEST(test_no_repeat_zeroes_the_last);
+  RUN_TEST(test_row14_draw_replays_the_reference);
+  RUN_TEST(test_row17_never_twice_in_a_row);
+  RUN_TEST(test_row18_frequencies_follow_the_weights);
+  RUN_TEST(test_worked_example_weary_weights);
+  RUN_TEST(test_effects_map_each_reaction);
   return UNITY_END();
 }

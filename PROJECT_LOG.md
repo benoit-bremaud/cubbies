@@ -7,7 +7,25 @@ human context: what was done, why, and by which PR.
 
 ## 2026-11-06
 
-### G6a face sheet of the seven jealousy reactions (issue #88) — **PR pending**
+### G6a jealousy repertoire (issue #90) — **PR pending**
+
+- The G6 single Sulk becomes the 05e two-step crescendo: the first PET under the guards is
+  noticed (a silent step-1 reaction, no cooldown or budget entry), a second one within T_notice
+  (60 s) with no owner attention since draws a step-2 reaction under the G6 cooldown and budget.
+  The mood is unchanged (D3'); `MoodEffect::Sulk` is gone, `jealousy()` returns a
+  `JealousReaction`.
+- `JealousyRepertoire` (lib) holds the 05e weight tables, the no-repeat memory per step and its
+  own `Prng(seed, 3)`, built in `Seeded` after Wi-Fi (ADR-0013). The engine computes the
+  contexts (Bored, Crowd, Newcomer / Friend, Neglected from a new `lastOwnerMs_`, Weary from the
+  step-2 ring now kept up to 30 min).
+- Input: `PetContext` in `core/Mood.h`, filled by the Social protocol from the first PET of the
+  tick; `Neighbour::presentSince` (set on store and re-greet, kept within T_regreet, bounded at
+  T_friend so it never wraps).
+- `effects(JealousReaction)` in the Stimulus router; three rank-2 placeholder sounds (Hmpf,
+  Whimper, Chirp) through the Sound gate; `main.cpp` only applies the route.
+- TDD: every 05e row as a failing native test first (6afcb7c), then the code.
+
+### G6a face sheet of the seven jealousy reactions (issue #88) — **PR #89** (244d887)
 
 - Seven new `Reaction` values in the eyes renderer, 3 s each (T_react, 05e Repertoire): step 1
   SideGlance, Stare, TurnAway (look offsets, silent), step 2 Pout, PuppyEyes, MeToo, FakeSleep.

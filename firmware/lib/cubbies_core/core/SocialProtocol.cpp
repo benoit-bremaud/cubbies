@@ -57,6 +57,7 @@ SocialOutput SocialProtocol::tick(const SelfState& self) {
   out.choir = choir_.tick(now, awake, lowerMacs());
   // 05e rows 5, 6, 11: dropped while not Awake or singing, one flag per tick
   out.pet = petHeard_ && awake && !choir_.singing(now);
+  if (out.pet) out.petContext = petContext(now);
   if (fire.relay) {
     uint8_t frame[kFrameSize];
     encodeChain(fire.frame, frame);
@@ -89,6 +90,7 @@ void SocialProtocol::receive(const RxFrame& f) {
     Pet p{};
     r = decodePet(f.bytes, f.len, p);
     if (r == DecodeResult::Ok) {
+      if (!petHeard_) petSender_ = f.mac;
       petHeard_ = true;
       return;
     }
@@ -105,8 +107,12 @@ void SocialProtocol::receive(const RxFrame& f) {
   }
   if (slot->state == EntryState::Free) {
     slot->mac = f.mac;
+    slot->presentSince = f.nowMs;  // 05e row 20
   } else if (slot->state == EntryState::Absent && ageMs(f.nowMs, slot->lastSeen) > kRegreetMs) {
     slot->greeted = false;
+    slot->presentSince = f.nowMs;  // row 20c: greeted again as new
+  } else if (ageMs(f.nowMs, slot->presentSince) >= kFriendMs) {
+    slot->presentSince = f.nowMs - kFriendMs;  // row 20d: the age never wraps
   }
   slot->state = slot->greeted ? EntryState::Greeted : EntryState::Waiting;
   slot->paletteIndex = p.paletteIndex;
@@ -141,6 +147,16 @@ uint8_t SocialProtocol::presentCount() const {
   for (const Neighbour& e : table_)
     if (present(e.state)) ++n;
   return n;
+}
+
+// 05e input: the present entries and how long the first PET's sender has been present (0 when
+// it has no present entry, row 20e).
+PetContext SocialProtocol::petContext(uint32_t now) const {
+  PetContext c;
+  c.neighbours = presentCount();
+  for (const Neighbour& e : table_)
+    if (present(e.state) && e.mac == petSender_) c.strokedAgeMs = ageMs(now, e.presentSince);
+  return c;
 }
 
 // Present neighbours with a lower MAC than this cube: its choir voice (social-group/05c row 10).

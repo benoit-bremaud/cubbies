@@ -33,7 +33,8 @@ struct Rig {
 const SoundId kAll[] = {SoundId::Surprise, SoundId::Joy,    SoundId::Purr,      SoundId::Hello,
                         SoundId::Yawn,     SoundId::Grumpy, SoundId::WakeMelody,
                         SoundId::RitualChime, SoundId::RitualTick, SoundId::Adoption,
-                        SoundId::ChoirLow, SoundId::ChoirMid, SoundId::ChoirHigh};
+                        SoundId::ChoirLow, SoundId::ChoirMid, SoundId::ChoirHigh,
+                        SoundId::Hmpf, SoundId::Whimper, SoundId::Chirp};
 }  // namespace
 
 void setUp() {}

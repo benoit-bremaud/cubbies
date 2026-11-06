@@ -9,7 +9,7 @@
 > **Rules**: [05e-state-jealousy.md](05e-state-jealousy.md) — **Classes**: [04-class-jealousy.md](04-class-jealousy.md) — **Base**: [02c-sequence-choir.md](02c-sequence-choir.md)
 
 > **Status**: G6 design choices validated by the owner 2026-11-05 (issue #73); G6a additions
-> (context, repertoire draw) proposed for issue #85, see 05e.
+> (context, repertoire draw) validated with the G6a PDR (issues #85, #88), implemented in #90; see 05e.
 
 ## Context
 

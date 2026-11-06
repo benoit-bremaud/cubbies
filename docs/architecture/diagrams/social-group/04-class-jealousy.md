@@ -6,7 +6,7 @@
 > **Rules**: [05e-state-jealousy.md](05e-state-jealousy.md) — **Sequence**: [02e-sequence-jealousy.md](02e-sequence-jealousy.md)
 > **Requirement**: REQ-F-21
 
-> **Status**: proposed for issue #85, with 05e.
+> **Status**: validated with the G6a PDR (issues #85, #88); implemented in issue #90.
 
 ## Context
 
@@ -45,12 +45,28 @@ classDiagram
     FakeSleep
     Sulk
   }
+  class JealousStep {
+    <<enumeration>>
+    Notice
+    Jealous
+  }
+  class JealousWeights {
+    <<value>>
+    +uint8_t count
+    +JealousReaction reaction[5]
+    +uint8_t weight[5]
+    +total() uint32_t
+  }
   class JealousyRepertoire {
     -Prng prng_
-    -JealousReaction lastStep1_
-    -JealousReaction lastStep2_
-    +weights(step, contexts, last) array
-    +draw(step, contexts) JealousReaction
+    -JealousReaction last_[2]
+    +draw(JealousStep, JealousContexts) JealousReaction
+  }
+  class WeightFunctions {
+    <<free functions, JealousyRepertoire.h>>
+    +jealousTable(JealousStep) JealousTable
+    +jealousWeights(step or table, contexts, last) JealousWeights
+    +drawWeighted(JealousWeights, Prng&) JealousReaction
   }
   class MoodEngine {
     -uint32_t lastOwnerMs_
@@ -58,6 +74,7 @@ classDiagram
     -bool noticed_
     -ring step2Ms_[4]
     +jealousy(padHeld, PetContext, JealousyRepertoire&) JealousReaction
+    +contexts(PetContext) JealousContexts
   }
   class SocialOutput {
     +bool pet
@@ -74,12 +91,19 @@ classDiagram
   MoodEngine ..> JealousContexts : computes
   MoodEngine ..> JealousyRepertoire : draws through (passed per call)
   JealousyRepertoire ..> JealousContexts
+  JealousyRepertoire ..> WeightFunctions : draws through
+  WeightFunctions ..> JealousWeights : returns
+  WeightFunctions ..> JealousStep
   JealousyRepertoire ..> JealousReaction : returns
   MoodEngine ..> JealousReaction : returns
   SocialOutput ..> Neighbour : petContext from presentSince
 ```
 
 ## Notes
+
+- **Weights**: the weight tables (`JealousRow`, `JealousTable`) and the draw rule are free
+  functions next to the class, so the frequency test (05e row 18) draws with no-repeat off and
+  the clamp test (row 16) runs on a synthetic table.
 
 - **Dependency direction**: `PetContext` lives in `core/Mood.h`, so `MoodEngine` never includes
   `SocialProtocol.h`; the Social protocol fills it from `Neighbour::presentSince` and its table.

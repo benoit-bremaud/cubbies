@@ -14,8 +14,9 @@ namespace cubbies {
 
 enum class SoundId : uint8_t { Surprise, Joy, Purr, Hello, Yawn, Grumpy, WakeMelody,
                                RitualChime, RitualTick, Adoption,  // ritual sounds: identity/05b
-                               ChoirLow, ChoirMid, ChoirHigh };    // choir voices: social-group/05c
-constexpr uint8_t kSoundCount = 13;
+                               ChoirLow, ChoirMid, ChoirHigh,      // choir voices: social-group/05c
+                               Hmpf, Whimper, Chirp };             // jealousy step 2: social-group/05e
+constexpr uint8_t kSoundCount = 16;
 
 constexpr uint8_t kChoirVoices =
     static_cast<uint8_t>(SoundId::ChoirHigh) - static_cast<uint8_t>(SoundId::ChoirLow) + 1;

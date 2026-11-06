@@ -34,6 +34,7 @@ struct SocialOutput {
   bool chain = false;  // a chain event fired here and the cube is Awake: react (social-group/05b)
   ChoirCue choir;      // sing this voice after this rest (social-group/05c)
   bool pet = false;    // a valid PET was heard this tick, the cube is Awake and not singing (05e)
+  PetContext petContext;  // from the first PET drained this tick (05e input)
 };
 
 // Drop counters keyed by reason, never by MAC (06 privacy note).
@@ -55,6 +56,7 @@ struct Neighbour {
   uint8_t mood = 0;
   uint32_t lastSeen = 0;
   bool greeted = false;  // kept while Absent (05a)
+  uint32_t presentSince = 0;  // stored or greeted again as new; within kFriendMs of now (05a, 05e)
 };
 
 class SocialProtocol {
@@ -93,6 +95,7 @@ class SocialProtocol {
   void receive(const RxFrame& f);
   void count(DecodeResult r);
   uint8_t presentCount() const;
+  PetContext petContext(uint32_t now) const;
   uint8_t rank(const Mac& sender) const;
   uint8_t lowerMacs() const;
   Neighbour* findSlot(const Mac& mac, uint32_t now);
@@ -115,6 +118,7 @@ class SocialProtocol {
   uint32_t lastPetMs_ = 0;  // last PET sent (05e S3)
   bool petSent_ = false;
   bool petHeard_ = false;   // a valid PET was drained this tick
+  Mac petSender_{};         // the sender of the first one (05e row 6)
   bool started_ = false;
 };
 

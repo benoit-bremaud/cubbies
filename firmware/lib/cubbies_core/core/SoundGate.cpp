@@ -19,6 +19,10 @@ constexpr Note kAdoption[] = {{784, 100}, {1047, 100}, {1319, 100}, {1568, 100},
 constexpr Note kChoirLow[] = {{262, 600}, {349, 600}, {392, 600}, {262, 600}};
 constexpr Note kChoirMid[] = {{659, 300}, {784, 300}, {880, 300}, {784, 300}, {659, 300}, {587, 300}, {523, 600}};
 constexpr Note kChoirHigh[] = {{1047, 300}, {1175, 300}, {1319, 300}, {1175, 300}, {1047, 300}, {988, 300}, {1047, 600}};
+// Jealousy step-2 placeholders (social-group/05e), rank 2 like the grumble, until the sound brick.
+constexpr Note kHmpf[] = {{330, 60}, {247, 140}};
+constexpr Note kWhimper[] = {{880, 120}, {784, 120}, {698, 200}};
+constexpr Note kChirp[] = {{1175, 60}, {1568, 60}, {2093, 80}};
 
 struct Sound {
   const Note* notes;
@@ -37,6 +41,7 @@ constexpr Sound kSounds[] = {
     sound(kYawn, 1),     sound(kGrumpy, 2), sound(kWakeMelody, 3),
     sound(kRitualChime, 0), sound(kRitualTick, 0), sound(kAdoption, 0),
     sound(kChoirLow, 3),    sound(kChoirMid, 3),   sound(kChoirHigh, 3),
+    sound(kHmpf, 2),        sound(kWhimper, 2),    sound(kChirp, 2),
 };
 
 static_assert(sizeof(kSounds) / sizeof(kSounds[0]) == kSoundCount,
