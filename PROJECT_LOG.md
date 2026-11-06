@@ -5,9 +5,34 @@ human context: what was done, why, and by which PR.
 
 ---
 
+## 2026-11-06
+
+### G6a jealousy repertoire PDR (issue #85) — **PR pending**
+
+- PR #76 (G6a design written before G6 merged) superseded: owner chose a fresh branch from main
+  porting only its reusable parts (MCDA 415/500 vs merging main into #76 255; adversarial check:
+  about 40 % of its 05e survived, the rest contradicted G6's validated D2/D3, REQ-F-22 clashed
+  with REQ-F-21, and a clean merge hid a duplicate B5). Issue #73 being closed by #75, the work
+  moved to the new issue #85.
+- Owner decision D3' (2026-11-05): D3 kept, every reaction leaves the mood unchanged, 440/500 vs
+  an Annoyed top step under ADR-0018 330 and Annoyed only when Neglected 300; the Annoyed step
+  goes to G6b, so G6a does not depend on ADR-0018 (still Proposed). #76's G2 echo guard is
+  dropped with it (nothing spreads when the mood never changes).
+- 05e: a silent step-1 glance (SideGlance, Stare, TurnAway), then within T_notice 60 s a step-2
+  reaction (Pout, PuppyEyes, MeToo, FakeSleep, Sulk) drawn from context weights (Bored, Crowd,
+  Newcomer, Friend, Neglected, Weary) by a `JealousyRepertoire` owning `Prng` stream 3; G6 sender
+  rules, guards, T_calm_jealous 6 s, cooldown 60 s and budget 4 per 10 min kept and charged to
+  step 2 only. REQ-F-21 and B5 amended in place; roadmap gains G6a and G6b.
+- Adversarial review: round 1 Must 5 Should 13 (owner attention after the notice, Sulk keeps
+  its 900 ms, engine-computed Weary and Neglected, draw rule, wrap-safe `presentSince` rows in
+  social-presence/05a, lib `effects(JealousReaction)`, new class view 04-class-jealousy, ADR-0018
+  Context and Consequences retargeted from PR #76 to G6b, misdated log heading) fixed; round 2
+  Must 1 (02e Mermaid parse error) and the Weary ring clearing fixed. The G6a PDR passes only
+  once the face sheet PR is accepted.
+
 ## 2026-11-05
 
-### ADR-0018 bounded one-shot social events (issue #73) — **PR pending**
+### ADR-0018 bounded one-shot social events (issue #73) — **PR #77** (8177cde)
 
 - Owner decision D5 of the G6a study (PR #76): a single frame may change the mood through a
   one-shot social event under seven bounds (allowlist, present sender with matching index,
@@ -17,7 +42,7 @@ human context: what was done, why, and by which PR.
   (no mood change) stay outside it. Adversarial round 1: 4 Must (sums, false CHAIN/CHOIR claim,
   restated relay rule, "once per minute" claim) fixed.
 
-### SonarQube coverage measures the case script (issue #53 follow-up) — **PR #84**
+### SonarQube coverage measures the case script (issue #53 follow-up) — **PR #84** (93c5651)
 
 - #81 closed #53 while this branch was in review; owner chose (MCDA 420/500 vs a G6-SHA-only PR
   300, closing 225) to keep this branch as a delta on top of #81.
