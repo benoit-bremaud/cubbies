@@ -35,8 +35,8 @@ class EyesRenderer {
   void setBrightness(Brightness level);  // forwarded to the port; the policy is the sleep cycle's
   // Gaze offset in pixels, clamped to ±kMaxLook.
   void setLook(int8_t dx, int8_t dy);
-  // Idle glances drive setLook(); disable while something else owns the gaze (reactions,
-  // deterministic frames in tests).
+  // Idle glances drive setLook(); they are held while a timed reaction plays (a due glance
+  // fires once it ends). Disable for deterministic frames in tests.
   void setIdleGlances(bool enabled);
   void closeEyes();   // sleep: lids close over kLidMoveMs and stay closed; no blinks while closed
   void openEyes();
@@ -87,7 +87,7 @@ class EyesRenderer {
   struct Lids {        // fraction 0..255 of the eye height covered from each side
     uint8_t top;
     uint8_t bottom;
-    int8_t topSlant;   // positive = inner corner lower (annoyed)
+    int8_t topSlant;   // positive = inner corner lower (annoyed), negative = outer corner lower (puppy)
     Arc arc;
   };
   // What one frame draws, after the three layers are resolved.
@@ -98,7 +98,8 @@ class EyesRenderer {
     int dx;            // extra gaze offset added to lookX_/lookY_
     int dy;
     uint8_t openness;  // 255 open .. 0 closed
-    bool winkLeft;     // left eye drawn closed (adoption)
+    bool winkLeft;     // left eye drawn closed (adoption, fake sleep)
+    bool highlight;    // a black glint in the upper outer quarter (puppy eyes)
   };
   enum class IdentityFrame : uint8_t { None, Invitation, Ritual, Adoption, Error };
 

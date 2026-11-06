@@ -23,6 +23,22 @@ constexpr uint32_t kTouchBlendMs = 80;         // Surprise / Joy grow from the t
 constexpr int kInvitationShrink = 8;           // room for the gauge
 constexpr int kSmileDepthPercent = 45;         // arc depth at the centre, % of the open height
 constexpr int kSmileClosedDepthPercent = 60;   // deeper when nearly shut (purr)
+// G6a jealousy repertoire (social-group/05e).
+constexpr uint32_t kJealousReactionMs = 3000;  // T_react
+constexpr uint32_t kSideSlideMs = 280;         // SideGlance / TurnAway slide, reached on the sixth tick
+constexpr uint32_t kStareBlinksFromMs = 2400;  // Stare: three blinks in the last 600 ms
+constexpr uint32_t kStareBlinkMs = 200;        // one fast blink: half, closed, half, open (40 ms ticks)
+constexpr uint8_t kSideGlanceTop = 40;         // top lids slightly lowered
+constexpr int kStareGrowH = 2;
+constexpr int kPoutNarrowW = 4;
+constexpr int kPoutSlant = 30;                 // inner corners a little low
+constexpr int kPuppyGrow = 4;
+constexpr int kPuppySlant = -50;               // outer corners lower
+constexpr int kMeTooHops = 4;
+constexpr int kMeTooHopHeight = 5;             // pixels
+constexpr uint8_t kPeekFromPhase = 102;        // FakeSleep: peek between 40 % and 70 %
+constexpr uint8_t kPeekToPhase = 178;
+constexpr uint8_t kPeekOpenness = 110;         // half open
 
 int clampInt(int v, int lo, int hi) { return v < lo ? lo : (v > hi ? hi : v); }
 static_assert(EyesRenderer::kEyeW > 1, "the annoyed wedge divides by kEyeW - 1");
@@ -85,6 +101,13 @@ uint32_t EyesRenderer::reactionDurationMs(Reaction reaction) {
     case Reaction::Wake:      return 800;
     case Reaction::Greet:     return 400;
     case Reaction::Sulk:      return 900;
+    case Reaction::SideGlance:
+    case Reaction::Stare:
+    case Reaction::TurnAway:
+    case Reaction::Pout:
+    case Reaction::PuppyEyes:
+    case Reaction::MeToo:
+    case Reaction::FakeSleep: return kJealousReactionMs;
   }
   return 0;
 }
@@ -173,7 +196,7 @@ uint8_t EyesRenderer::currentOpenness(uint32_t now) const {
 }
 
 EyesRenderer::Shape EyesRenderer::moodShape(uint32_t now) const {
-  return Shape{lidsForMood(mood_), kEyeW, kEyeH, 0, 0, currentOpenness(now), false};
+  return Shape{lidsForMood(mood_), kEyeW, kEyeH, 0, 0, currentOpenness(now), false, false};
 }
 
 // Purr openness ceiling: ramp 255 -> kPurrOpenness, hold, then release from where it was.
@@ -229,6 +252,52 @@ void EyesRenderer::applyReaction(Shape& s, uint32_t now) const {
       s.dx = -kMaxLook;
       s.dy = kMaxLook / 2;
       break;
+    case Reaction::SideGlance:  // slide to the side of the last glance and hold
+    case Reaction::TurnAway: {  // largest offset, the other side
+      const int side = (lookX_ < 0) == (reaction_ == Reaction::SideGlance) ? -1 : 1;
+      const uint32_t t = reactionTl_.elapsed(now) + kTickMs;  // already moving on the first tick
+      const int target = side * kMaxLook - lookX_;  // the total gaze reaches ±kMaxLook
+      s.dx = t < kSideSlideMs ? target * static_cast<int>(t) / static_cast<int>(kSideSlideMs) : target;
+      s.dy = -lookY_;
+      if (reaction_ == Reaction::SideGlance) s.lids = {kSideGlanceTop, 0, 0, Arc::None};  // a look askance
+      break;
+    }
+    case Reaction::Stare: {     // held side look, blink suspended, then three fast blinks
+      s.dx = (lookX_ < 0 ? -kMaxLook : kMaxLook) / 2;
+      s.lids = open;
+      s.h += kStareGrowH;
+      s.openness = eyesOpen_ && lidsSettled_ ? 255 : s.openness;  // no blink while staring
+      const uint32_t t = reactionTl_.elapsed(now);
+      if (t >= kStareBlinksFromMs) {
+        const uint32_t u = (t - kStareBlinksFromMs) % kStareBlinkMs;
+        if (u < kTickMs || (u >= 2 * kTickMs && u < 3 * kTickMs)) s.openness /= 2;
+        else if (u < 2 * kTickMs) s.openness = 0;
+      }
+      break;
+    }
+    case Reaction::Pout:        // lower lids raised, eyes narrowed
+      s.lids = {50, 90, kPoutSlant, Arc::None};
+      s.w -= kPoutNarrowW;
+      break;
+    case Reaction::PuppyEyes:   // big eyes, a glint, lids tilted down outside
+      s.w += kPuppyGrow; s.h += kPuppyGrow;
+      s.lids = {0, 0, kPuppySlant, Arc::None};
+      s.highlight = true;
+      break;
+    case Reaction::MeToo: {     // hops
+      const uint8_t b = bump(static_cast<uint8_t>((p * kMeTooHops) & 0xFF));
+      s.dy = -1 - (b * (kMeTooHopHeight - 1)) / 255;  // never back at rest while hopping
+      break;
+    }
+    case Reaction::FakeSleep:   // shut; the right eye half-opens and peeks sideways
+      if (p >= kPeekFromPhase && p < kPeekToPhase) {
+        if (s.openness > kPeekOpenness) s.openness = kPeekOpenness;
+        s.winkLeft = true;
+        s.dx = kMaxLook;
+      } else {
+        s.openness = 0;
+      }
+      break;
   }
   const uint32_t t = reactionTl_.elapsed(now);
   if (fromTouch_ && t < kTouchBlendMs) {  // blend the size from the touch-down one
@@ -271,14 +340,19 @@ void EyesRenderer::drawEye(int cx, int cy, const Shape& s, bool left, Rgb565 col
       frame_.fillCircle(cx, top + open - depthCentre + radius, radius, kBlack);
     }
   }
-  // Annoyed: a black wedge over the top lid, lower on the inner side.
+  // A black wedge over the top lid: lower on the inner side (annoyed) or the outer side (puppy).
   if (s.lids.topSlant != 0 && openness > 128) {
-    const int wedge = (h * s.lids.topSlant) / 255;
+    const bool innerLow = s.lids.topSlant > 0;
+    const int wedge = (h * (innerLow ? s.lids.topSlant : -s.lids.topSlant)) / 255;
     for (int i = 0; i < w; ++i) {
       const int inner = left ? (w - 1 - i) : i;  // 0 at the outer corner, w-1 at the inner corner
-      const int cut = (wedge * inner) / (w - 1);
+      const int cut = (wedge * (innerLow ? inner : w - 1 - inner)) / (w - 1);
       if (cut > 0) frame_.fillRect(x0 + i, top, 1, cut, kBlack);
     }
+  }
+  if (s.highlight && open > 12) {  // glint in the upper outer quarter
+    const int gx = left ? x0 + w / 4 : x0 + w - 1 - w / 4;
+    frame_.fillCircle(gx, top + open / 4 + 2, 3, kBlack);
   }
 }
 
@@ -389,10 +463,14 @@ void EyesRenderer::tick() {
     blink_.start(now, kBlinkTotalMs);
     blinking_ = true;
   }
-  // Idle glances
-  if (idleGlances_ && isDue(now, nextGlanceMs_)) {
-    setLook(static_cast<int8_t>(static_cast<int>(prng_.uniform(2 * kMaxLook + 1)) - kMaxLook),
-            static_cast<int8_t>(static_cast<int>(prng_.uniform(kMaxLook + 1)) - kMaxLook / 2));
+  // Idle glances: held while a timed reaction plays (05e); a held TouchDown or Purr keeps them,
+  // so a long press or stroke never freezes the frame (FS1).
+  const bool timedReaction = reacting_ && reactionDurationMs(reaction_) > 0;
+  if (idleGlances_ && !timedReaction && isDue(now, nextGlanceMs_)) {
+    int x = static_cast<int>(prng_.uniform(2 * kMaxLook + 1)) - kMaxLook;
+    const int y = static_cast<int>(prng_.uniform(kMaxLook + 1)) - kMaxLook / 2;
+    if (x == lookX_ && y == lookY_) x += x < kMaxLook ? 1 : -1;  // a glance always moves the gaze
+    setLook(static_cast<int8_t>(x), static_cast<int8_t>(y));
     scheduleGlance();
   }
   const uint32_t driftStep = ageMs(now, driftStartMs_) / kDriftPeriodMs;

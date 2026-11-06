@@ -367,7 +367,9 @@ static void test_reaction_overlay_ends_and_restores_the_mood_frame() {
 // play() lands right after a tick, and the tick at t0 + d already shows the mood frame again.
 static void test_every_timed_reaction_changes_the_frame_for_its_duration() {
   const Reaction timed[] = {Reaction::Surprise, Reaction::Joy, Reaction::LookUp, Reaction::Yawn,
-                            Reaction::Wake, Reaction::Greet};
+                            Reaction::Wake, Reaction::Greet, Reaction::SideGlance, Reaction::Stare,
+                            Reaction::TurnAway, Reaction::Pout, Reaction::PuppyEyes, Reaction::MeToo,
+                            Reaction::FakeSleep};
   for (Reaction re : timed) {
     Rig r = goldenRig(Mood::Curious);
     r.eyes.tick();
@@ -677,6 +679,126 @@ static void test_adoption_and_error_animations_end_on_their_own() {
   TEST_ASSERT_TRUE(framesEqual(plain, r.display.last));
 }
 
+// social-group/05e Repertoire: every G6a reaction lasts T_react = 3 s; the G6 Sulk keeps 900 ms.
+static void test_jealousy_reactions_last_three_seconds_and_sulk_keeps_900_ms() {
+  const Reaction g6a[] = {Reaction::SideGlance, Reaction::Stare, Reaction::TurnAway, Reaction::Pout,
+                          Reaction::PuppyEyes, Reaction::MeToo, Reaction::FakeSleep};
+  for (Reaction re : g6a) TEST_ASSERT_EQUAL_UINT32(3000, EyesRenderer::reactionDurationMs(re));
+  TEST_ASSERT_EQUAL_UINT32(900, EyesRenderer::reactionDurationMs(Reaction::Sulk));
+}
+
+// 05e Stare: blink suspended while the eyes stare, then three fast blinks before the end.
+static void test_stare_suspends_the_blink_then_blinks_three_times_fast() {
+  Rig r = goldenRig(Mood::Curious);
+  r.eyes.tick();
+  const int open = litPixels(r.display.last);
+  r.eyes.blinkNow();  // a blink in progress is cut: the stare holds the eyes open
+  r.clock.advance(kTickMs);
+  r.eyes.tick();
+  r.eyes.play(Reaction::Stare);
+  int closings = 0, closedTicks = 0;
+  uint32_t firstClosedMs = 0;
+  bool closed = false;
+  for (uint32_t t = kTickMs; t <= EyesRenderer::reactionDurationMs(Reaction::Stare); t += kTickMs) {
+    r.clock.advance(kTickMs);
+    r.eyes.tick();
+    const bool now = litPixels(r.display.last) < open / kClosedDivisor;
+    if (now && !closed && closings++ == 0) firstClosedMs = t;
+    if (now) ++closedTicks;
+    closed = now;
+  }
+  TEST_ASSERT_EQUAL_INT(3, closings);
+  TEST_ASSERT_EQUAL_INT(3, closedTicks);                     // fast: one closed tick per blink
+  TEST_ASSERT_GREATER_OR_EQUAL_UINT32(2400, firstClosedMs);  // held open until the last 600 ms
+}
+
+// 05e: the renderer holds the idle glances while a timed reaction plays; a due glance waits for its end.
+static void test_idle_glances_are_held_while_a_reaction_plays() {
+  // Pout keeps the gaze, so a glance firing mid-reaction would move it. Replayed once, the
+  // reaction covers 5.76 s > kGlanceMaxMs, so a glance falls due while it plays.
+  constexpr uint32_t kReplayMs = 2880;  // on the 40 ms tick grid
+  static_assert(kReplayMs % kTickMs == 0 && 2 * kReplayMs > EyesRenderer::kGlanceMaxMs,
+                "a glance must fall due during the test");
+  Rig r;
+  r.eyes.setColour(kCyan);
+  r.eyes.setMood(Mood::Curious);
+  Rig still = goldenRig(Mood::Curious);  // same seed, glances off: the reference gaze
+  for (Rig* rig : {&r, &still}) {
+    rig->eyes.tick();
+    rig->eyes.play(Reaction::Pout);
+  }
+  r.run(kTickMs);
+  const Framebuffer held = r.display.last;
+  still.run(kTickMs);
+  for (uint32_t t = 2 * kTickMs; t < 2 * kReplayMs; t += kTickMs) {
+    if (t == kReplayMs) { r.eyes.play(Reaction::Pout); still.eyes.play(Reaction::Pout); }
+    r.clock.advance(kTickMs);
+    r.eyes.tick();
+    still.clock.advance(kTickMs);
+    still.eyes.tick();
+    TEST_ASSERT_TRUE_MESSAGE(framesEqual(held, r.display.last), "the gaze moved during a reaction");
+  }
+  // The reaction ends: the overdue glance fires, so the gaze differs from the reference rig.
+  const uint32_t rest = EyesRenderer::reactionDurationMs(Reaction::Pout) + 2 * kTickMs;
+  r.run(rest);
+  still.run(rest);
+  TEST_ASSERT_FALSE(framesEqual(still.display.last, r.display.last));
+  TEST_ASSERT_EQUAL_INT(litPixels(still.display.last), litPixels(r.display.last));  // moved, not blinking
+}
+
+// FS1 during a long stroke: a held Purr keeps the idle glances, so the frame never freezes 10 s.
+// Seed 174349 draws the same gaze twice in a row (Codex review on PR #89): a glance must move it.
+static void test_held_reactions_keep_the_idle_glances() {
+  for (uint64_t seed : {uint64_t{1234}, uint64_t{174349}})
+  for (Reaction held : {Reaction::Purr, Reaction::TouchDown}) {
+    Rig r(seed);
+    r.eyes.setColour(kCyan);
+    r.eyes.setMood(Mood::Happy);
+    r.eyes.tick();
+    r.eyes.play(held);
+    Framebuffer previous = r.display.last;
+    uint32_t staticMs = 0;
+    for (uint32_t t = 0; t < 60000; t += kTickMs) {
+      r.clock.advance(kTickMs);
+      r.eyes.tick();
+      if (framesEqual(previous, r.display.last)) {
+        staticMs += kTickMs;
+        TEST_ASSERT_LESS_THAN_UINT32(10000, staticMs);
+      } else {
+        staticMs = 0;
+        previous = r.display.last;
+      }
+    }
+  }
+}
+
+// 05e side rules: SideGlance and Stare look to the side of the last glance, TurnAway opposite,
+// SideGlance and TurnAway at a total gaze of ±kMaxLook, Stare kMaxLook / 2 further on the gaze.
+static void test_jealousy_glances_follow_the_side_of_the_last_glance() {
+  constexpr int8_t kLookX = -3, kLookY = 2;
+  struct Case { Reaction re; int totalX; };
+  const Case cases[] = {{Reaction::SideGlance, -EyesRenderer::kMaxLook},
+                        {Reaction::TurnAway, EyesRenderer::kMaxLook},
+                        {Reaction::Stare, kLookX - EyesRenderer::kMaxLook / 2}};  // offset on the gaze
+  for (const Case& c : cases) {
+    Rig ref = goldenRig(Mood::Curious);  // the same reaction drawn from the centre gaze
+    ref.eyes.tick();
+    ref.eyes.play(c.re);
+    ref.run(1000);
+    Rig r = goldenRig(Mood::Curious);
+    r.eyes.setLook(kLookX, kLookY);
+    r.eyes.tick();
+    r.eyes.play(c.re);
+    r.run(1000);
+    // From the centre the reaction looks right (+); from a left glance it mirrors the side.
+    const int refX = c.re == Reaction::TurnAway ? -EyesRenderer::kMaxLook
+                     : c.re == Reaction::Stare  ? EyesRenderer::kMaxLook / 2
+                                                : EyesRenderer::kMaxLook;
+    const int dy = c.re == Reaction::Stare ? kLookY : 0;  // Stare keeps the vertical gaze
+    TEST_ASSERT_TRUE(shiftedBy(ref.display.last, r.display.last, c.totalX - refX, dy));
+  }
+}
+
 // Goldens: the distinctive frames of each reaction, invitation empty/full, ritual, adoption, error.
 static void goldenReactionAt(Reaction re, const char* name, uint32_t atMs) {
   Rig r = goldenRig(Mood::Curious);
@@ -711,6 +833,14 @@ static void test_golden_yawn() { goldenReaction(Reaction::Yawn, "yawn", 400, 100
 static void test_golden_wake() { goldenReaction(Reaction::Wake, "wake", 200, 680); }   // opening, stretch
 static void test_golden_greet() { goldenReaction(Reaction::Greet, "greet", 120, 280); } // left, right
 static void test_golden_sulk() { goldenReactionAt(Reaction::Sulk, "sulk", 400); }  // social-group/05e
+// G6a repertoire (social-group/05e), each at its key frame.
+static void test_golden_sideglance() { goldenReactionAt(Reaction::SideGlance, "sideglance", 1500); }
+static void test_golden_stare() { goldenReactionAt(Reaction::Stare, "stare", 1000); }
+static void test_golden_turnaway() { goldenReactionAt(Reaction::TurnAway, "turnaway", 1500); }
+static void test_golden_pout() { goldenReactionAt(Reaction::Pout, "pout", 1500); }
+static void test_golden_puppyeyes() { goldenReactionAt(Reaction::PuppyEyes, "puppyeyes", 1500); }
+static void test_golden_metoo() { goldenReaction(Reaction::MeToo, "metoo", 360, 760); }          // up, down
+static void test_golden_fakesleep() { goldenReaction(Reaction::FakeSleep, "fakesleep", 600, 1600); }  // shut, peek
 static void test_golden_purr() {
   Rig r = goldenRig(Mood::Happy);
   r.eyes.tick();
@@ -787,6 +917,11 @@ int main() {
   RUN_TEST(test_ritual_frame_pulses_and_shows_the_candidate_colour);
   RUN_TEST(test_identity_frames_drift_against_burn_in);
   RUN_TEST(test_adoption_and_error_animations_end_on_their_own);
+  RUN_TEST(test_jealousy_reactions_last_three_seconds_and_sulk_keeps_900_ms);
+  RUN_TEST(test_stare_suspends_the_blink_then_blinks_three_times_fast);
+  RUN_TEST(test_idle_glances_are_held_while_a_reaction_plays);
+  RUN_TEST(test_held_reactions_keep_the_idle_glances);
+  RUN_TEST(test_jealousy_glances_follow_the_side_of_the_last_glance);
   RUN_TEST(test_golden_touchdown);
   RUN_TEST(test_golden_surprise);
   RUN_TEST(test_golden_touch_to_surprise);
@@ -796,6 +931,13 @@ int main() {
   RUN_TEST(test_golden_wake);
   RUN_TEST(test_golden_greet);
   RUN_TEST(test_golden_sulk);
+  RUN_TEST(test_golden_sideglance);
+  RUN_TEST(test_golden_stare);
+  RUN_TEST(test_golden_turnaway);
+  RUN_TEST(test_golden_pout);
+  RUN_TEST(test_golden_puppyeyes);
+  RUN_TEST(test_golden_metoo);
+  RUN_TEST(test_golden_fakesleep);
   RUN_TEST(test_golden_purr);
   RUN_TEST(test_golden_invitation);
   RUN_TEST(test_golden_ritual);
