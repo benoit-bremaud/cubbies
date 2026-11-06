@@ -12,8 +12,11 @@ that G2 contagion "must not let a received mood byte do more than nudge the loca
 so a forged frame cannot force a state". ADR-0012 names that risk "mood injection". G2 (a 6 s
 hold on a plurality, calm, refractory) and G5 (the same hold, Bored only) satisfy it.
 
-The G6a jealousy study (issue #73, `diagrams/social-group/05e-state-jealousy.md`, PR #76) needs a
-different shape. A stroke is a moment, and a jealous reaction is only cute if it lands within a
+The G6a jealousy study of PR #76 (issue #73) needed a different shape. G6a was since redesigned
+(issue #85, owner decision D3' 2026-11-05): its reactions leave the mood unchanged, so it no
+longer falls under this ADR; the first feature to cite it will be the G6b Annoyed step
+(`diagrams/social-group/05e-state-jealousy.md`, Later). The reasoning below, written for PR #76,
+still describes that shape. A stroke is a moment, and a jealous reaction is only cute if it lands within a
 tick of the stroke. G6a already asks for two separate strokes on the neighbour within `T_notice`
 (two PET frames) before a reaction can change the mood. The losing option would also hold or
 repeat the signal of **each** stroke (for example two frames 3 s apart per stroke), which pushes
@@ -67,10 +70,10 @@ governed by this ADR; they stay under ADR-0012's nuisance acceptance as designed
 
 ## Consequences
 
-- G6a jealousy (PET `0x04`) is allowed as designed in PR #76: present sender with a matching
-  index, two frames within `T_notice`, one step-2 reaction per `T_jealous` (60 s), Awake only, a
-  stroke forgives, the sulk starts the G2 refractory, and a just-attended cube is never pulled
-  into Annoyed.
+- G6a jealousy (PET `0x04`, issue #85) leaves the mood unchanged and is outside this ADR. A G6b
+  Annoyed step on top of it would be allowed under the checklist: two frames within `T_notice`,
+  one step-2 reaction per `T_jealous` (60 s), Awake only, a stroke forgives, and a G2 echo
+  guard (bound 7) stated in its PDR.
 - Future mood-changing one-shot features (for example G10 flirting) cite this checklist in their
   PDR instead of reopening ADR-0012.
 - The adoption-day briefing adds one line to ADR-0012's: a cube in range can be imitated, and

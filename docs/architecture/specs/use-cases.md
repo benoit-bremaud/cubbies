@@ -151,7 +151,7 @@
   presence moods; a Bored cube with a drowsy neighbour turns Tired and yawns, then sleeps on its
   usual timers. Requirement: REQ-F-20. Views: [diagrams/social-group/](../diagrams/social-group/)
   02d, 05d (issue #59).
-- **B5 — Jealousy** (tier B, G6): an outcome of UC3 on a neighbour; a stroke that does not
+- **B5 — Jealousy** (tier B, G6, G6a): an outcome of UC3 on a neighbour; a stroke that does not
   start a choir sends PET, and an awake, untouched cube in range first glances silently, then on
   a second stroke within a minute shows one reaction drawn by context (pout, puppy eyes, me too,
   fake sleep, sulk), its mood unchanged. Requirement: REQ-F-21. Views:

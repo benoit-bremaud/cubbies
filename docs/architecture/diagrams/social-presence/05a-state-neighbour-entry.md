@@ -47,6 +47,9 @@ stateDiagram-v2
   Absent --> Free: tick, age(lastSeen) > T_regreet
 ```
 
+Every refresh that finds `age(presentSince) ≥ T_friend` sets `presentSince = nowMs − T_friend`,
+so the age never wraps; any other refresh keeps it (G6a, social-group/05e rows 20–20d).
+
 `Absent` remembers whether the entry had been greeted (a `greeted` bit) and when it was last
 seen: a newcomer that leaves before its turn is still greeted when it comes back. An `Absent` slot evicted for a newcomer starts over in `Waiting`.
 
@@ -56,7 +59,7 @@ Each row is one native test (ADR-0014). Ages are `ageMs(now, then)` on the injec
 
 | From | Trigger | To | Output / side effect |
 |------|---------|----|----------------------|
-| Free | valid PRESENCE, MAC not in table | Waiting | store MAC, palette, mood, `lastSeen = frame.nowMs` |
+| Free | valid PRESENCE, MAC not in table | Waiting | store MAC, palette, mood, `lastSeen = frame.nowMs`, `presentSince = nowMs` (G6a, social-group/05e) |
 | Waiting | valid PRESENCE, same MAC | Waiting | refresh palette, mood, `lastSeen` |
 | Waiting | tick, no greeting in the last T_greet_cooldown, fewer than 6 greetings in the last 10 min, lowest waiting slot | Greeted | `SocialOutput{newcomer, paletteIndex}`, push `nowMs` in the budget ring |
 | Waiting | tick, cooldown not elapsed | Waiting | none (greeted on a later tick, never skipped) |
@@ -65,9 +68,9 @@ Each row is one native test (ADR-0014). Ages are `ageMs(now, then)` on the injec
 | Greeted | valid PRESENCE, same MAC | Greeted | refresh |
 | Waiting, Greeted | tick, `age(lastSeen) > T_ttl` | Absent | none (silent, no farewell in V1) |
 | Absent | valid PRESENCE, was greeted, absent `age ≤ T_regreet` | Greeted | refresh (no second hello) |
-| Absent | valid PRESENCE, absent `age > T_regreet` | Waiting | refresh (greeted again) |
+| Absent | valid PRESENCE, absent `age > T_regreet` | Waiting | refresh (greeted again), `presentSince = nowMs` |
 | Absent | valid PRESENCE, never greeted | Waiting | refresh (left before its turn, still owed a hello) |
-| Absent (oldest `lastSeen`) | valid PRESENCE, unknown MAC, no Free slot | Waiting | evict, store the newcomer |
+| Absent (oldest `lastSeen`) | valid PRESENCE, unknown MAC, no Free slot | Waiting | evict, store the newcomer, `presentSince = nowMs` |
 | Absent | tick, `age(lastSeen) > T_regreet` | Free | none (owed a fresh greeting anyway; keeps every Absent age under 10 min, PR #22) |
 | — | valid PRESENCE, unknown MAC, every slot Waiting or Greeted | — | drop, count `dropFull` |
 | — | frame failing the allowlist (06) | — | drop, count by reason: `dropLen`, `dropMagic`, `dropVersion`, `dropType`, `dropRange` |

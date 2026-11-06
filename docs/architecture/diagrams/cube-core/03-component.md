@@ -207,4 +207,4 @@ the `IDisplay` port.
 | Radio | `kEspNowChannel = 1`, set explicitly with `esp_wifi_set_channel`; broadcast peer unencrypted (ADR-0012); RX through an 8-slot FreeRTOS queue, `xQueueSend(…, 0)` fails when full = drop newest; length checked in the callback with an own counter | MCDA 380/500 (implicit default 310, channel 11 350); MCDA 480/500 (`portMUX` ring 400, lock-free ring 360) |
 | Microphone | `ESP_I2S` standard mode, 16 kHz, 32-bit slots, mono left; top 16 bits, running DC removal, rms and peak doubled to the port's unsigned full scale; non-blocking drain each tick | electronics-spec, C7 |
 | Storage | `Preferences` namespace `cubbies`; `readU8` true only when the key's type is `PT_U8` | 02a |
-| Prng | built once in `setup()` after `WiFi.mode(WIFI_STA)`, one stream per consumer (eyes 1, social 2), seeds from `esp_random()` | ADR-0013 |
+| Prng | built once in `setup()` after `WiFi.mode(WIFI_STA)`, one stream per consumer (eyes 1, social 2, jealousy repertoire 3 from G6a), seeds from `esp_random()` | ADR-0013 |

@@ -24,6 +24,7 @@ human context: what was done, why, and by which PR.
   rules, guards, T_calm_jealous 6 s, cooldown 60 s and budget 4 per 10 min kept and charged to
   step 2 only. REQ-F-21 and B5 amended in place; roadmap gains G6a and G6b.
 
+## 2026-11-05
 
 ### ADR-0018 bounded one-shot social events (issue #73) — **PR #77** (8177cde)
 

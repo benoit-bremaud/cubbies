@@ -6,7 +6,7 @@
 > **Related ADRs**: ADR-0005 (versioned frames), ADR-0012, ADR-0013 (single Sound gate,
 > lib-owned `Prng`)
 > **Behaviour**: B5 Jealousy in [specs/use-cases.md](../../specs/use-cases.md)
-> **Rules**: [05e-state-jealousy.md](05e-state-jealousy.md) — **Base**: [02c-sequence-choir.md](02c-sequence-choir.md)
+> **Rules**: [05e-state-jealousy.md](05e-state-jealousy.md) — **Classes**: [04-class-jealousy.md](04-class-jealousy.md) — **Base**: [02c-sequence-choir.md](02c-sequence-choir.md)
 
 > **Status**: G6 design choices validated by the owner 2026-11-05 (issue #73); G6a additions
 > (context, repertoire draw) proposed for issue #85, see 05e.
@@ -27,6 +27,8 @@ sequenceDiagram
   participant MainB as main.cpp tick (cube B)
   participant MB as Mood engine (cube B, lib)
   participant Rep as JealousyRepertoire (cube B, lib)
+  participant Router as Stimulus router (cube B, lib)
+  participant Eyes as Eyes renderer (cube B, lib)
   participant Gate as Sound gate (cube B, lib)
 
   MA->>SA: startChoir(self) on Gesture::Stroke
@@ -38,14 +40,19 @@ sequenceDiagram
     SA->>SB: PET {A's palette} (05e S2, never relayed)
   end
   MainB->>SB: tick(self)
-  SB-->>MainB: SocialOutput {pet, petContext {neighbours, strokedAgeMs}} (05e input, row 11)
+  SB-->>MainB: SocialOutput {pet, petContext from the first PET} (05e input, row 11)
   MainB->>MB: jealousy(padHeld, petContext, repertoire)
-  MB->>MB: guards G, crescendo step, cooldown, budget (05e rows 1–12)
+  MB->>MB: guards G, crescendo step, budget, contexts (05e rows 1–12b)
   alt a step is due
     MB->>Rep: draw(step, contexts)
-    Rep-->>MB: reaction (weights, no repeat, Weary; 05e rows 14–19)
+    Rep-->>MB: reaction (weights, no repeat; 05e rows 14–19)
     MB-->>MainB: JealousReaction (mood unchanged)
-    MainB->>Gate: reaction eyes, and its sound at the gate's volume when step 2
+    MainB->>Router: effects(reaction)
+    Router-->>MainB: Route {reaction, sound when step 2}
+    MainB->>Eyes: play(reaction)
+    opt step 2 with a sound
+      MainB->>Gate: the reaction's sound at the gate's volume
+    end
   else no step
     MB-->>MainB: JealousReaction::None (no draw)
   end
@@ -55,6 +62,8 @@ sequenceDiagram
 
 - **Wiring**: `main.cpp` calls `sendPet()` after a `startChoir()` that sent nothing, and
   `mood.jealousy(gestures.holdMs() > 0, out.petContext, seeded->repertoire)` when the tick's
-  `SocialOutput::pet` is set; it maps the returned `JealousReaction` to its eyes and sound.
+  `SocialOutput::pet` is set; it applies the `Route` of `effects(JealousReaction)` like any other
+  route (no policy in `main.cpp`).
 - **Dependency direction** unchanged: the Social protocol and the Mood engine stay unaware of
-  each other; `main.cpp` passes the flag and the context. The repertoire depends only on `Prng`.
+  each other; `main.cpp` passes the flag and the context (`PetContext` in `core/Mood.h`). The
+  repertoire depends only on `Prng`.
