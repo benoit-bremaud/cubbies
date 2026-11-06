@@ -19,6 +19,15 @@ enum class Reaction : uint8_t {
   Wake,       // progressive open and a stretch (05b Waking from Dozing)
   Greet,      // NewcomerSeen: glance one side then the other (05a, 02-presence, UC7)
   Sulk,       // jealousy: annoyed lids, a glance away and down (social-group/05e)
+  // G6a jealousy repertoire (social-group/05e), T_react each. Step 1, silent look offsets:
+  SideGlance, // both eyes slide to the side of the last glance and hold
+  Stare,      // held at a side look offset, blink suspended, then three fast blinks
+  TurnAway,   // largest look offset, opposite the side of the last glance
+  // Step 2:
+  Pout,       // lower lids raised, eyes narrowed
+  PuppyEyes,  // eyes enlarged with a highlight, lids tilted down at the outer corners
+  MeToo,      // eyes hop up and down
+  FakeSleep,  // eyes shut, one eye half-opens and peeks sideways, shuts again
 };
 
 }  // namespace cubbies

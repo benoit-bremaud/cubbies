@@ -87,7 +87,7 @@ class EyesRenderer {
   struct Lids {        // fraction 0..255 of the eye height covered from each side
     uint8_t top;
     uint8_t bottom;
-    int8_t topSlant;   // positive = inner corner lower (annoyed)
+    int8_t topSlant;   // positive = inner corner lower (annoyed), negative = outer corner lower (puppy)
     Arc arc;
   };
   // What one frame draws, after the three layers are resolved.
@@ -98,7 +98,8 @@ class EyesRenderer {
     int dx;            // extra gaze offset added to lookX_/lookY_
     int dy;
     uint8_t openness;  // 255 open .. 0 closed
-    bool winkLeft;     // left eye drawn closed (adoption)
+    bool winkLeft;     // left eye drawn closed (adoption, fake sleep)
+    bool highlight;    // a black glint in the upper outer quarter (puppy eyes)
   };
   enum class IdentityFrame : uint8_t { None, Invitation, Ritual, Adoption, Error };
 

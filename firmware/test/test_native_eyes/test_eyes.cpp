@@ -367,7 +367,9 @@ static void test_reaction_overlay_ends_and_restores_the_mood_frame() {
 // play() lands right after a tick, and the tick at t0 + d already shows the mood frame again.
 static void test_every_timed_reaction_changes_the_frame_for_its_duration() {
   const Reaction timed[] = {Reaction::Surprise, Reaction::Joy, Reaction::LookUp, Reaction::Yawn,
-                            Reaction::Wake, Reaction::Greet};
+                            Reaction::Wake, Reaction::Greet, Reaction::SideGlance, Reaction::Stare,
+                            Reaction::TurnAway, Reaction::Pout, Reaction::PuppyEyes, Reaction::MeToo,
+                            Reaction::FakeSleep};
   for (Reaction re : timed) {
     Rig r = goldenRig(Mood::Curious);
     r.eyes.tick();
@@ -677,6 +679,66 @@ static void test_adoption_and_error_animations_end_on_their_own() {
   TEST_ASSERT_TRUE(framesEqual(plain, r.display.last));
 }
 
+// social-group/05e Repertoire: every G6a reaction lasts T_react = 3 s; the G6 Sulk keeps 900 ms.
+static void test_jealousy_reactions_last_three_seconds_and_sulk_keeps_900_ms() {
+  const Reaction g6a[] = {Reaction::SideGlance, Reaction::Stare, Reaction::TurnAway, Reaction::Pout,
+                          Reaction::PuppyEyes, Reaction::MeToo, Reaction::FakeSleep};
+  for (Reaction re : g6a) TEST_ASSERT_EQUAL_UINT32(3000, EyesRenderer::reactionDurationMs(re));
+  TEST_ASSERT_EQUAL_UINT32(900, EyesRenderer::reactionDurationMs(Reaction::Sulk));
+}
+
+// 05e Stare: blink suspended while the eyes stare, then three fast blinks before the end.
+static void test_stare_suspends_the_blink_then_blinks_three_times_fast() {
+  Rig r = goldenRig(Mood::Curious);
+  r.eyes.tick();
+  const int open = litPixels(r.display.last);
+  r.eyes.play(Reaction::Stare);
+  int closings = 0;
+  uint32_t firstClosedMs = 0;
+  bool closed = false;
+  for (uint32_t t = kTickMs; t <= EyesRenderer::reactionDurationMs(Reaction::Stare); t += kTickMs) {
+    r.clock.advance(kTickMs);
+    r.eyes.tick();
+    const bool now = litPixels(r.display.last) < open / kClosedDivisor;
+    if (now && !closed && closings++ == 0) firstClosedMs = t;
+    closed = now;
+  }
+  TEST_ASSERT_EQUAL_INT(3, closings);
+  TEST_ASSERT_GREATER_OR_EQUAL_UINT32(2000, firstClosedMs);  // held open for the first two seconds
+}
+
+// 05e: the renderer holds the idle glances while a reaction plays; a due glance waits for its end.
+static void test_idle_glances_are_held_while_a_reaction_plays() {
+  // Replayed once, the reaction covers 5.8 s > kGlanceMaxMs, so a glance falls due while it plays.
+  constexpr uint32_t kReplayMs = 2880;  // on the 40 ms tick grid
+  static_assert(kReplayMs % kTickMs == 0 && 2 * kReplayMs > EyesRenderer::kGlanceMaxMs, "a glance must fall due during the test");
+  Rig r;
+  r.eyes.setColour(kCyan);
+  r.eyes.setMood(Mood::Curious);
+  Rig still = goldenRig(Mood::Curious);  // same seed, glances off: the reference gaze
+  for (Rig* rig : {&r, &still}) {
+    rig->eyes.tick();
+    rig->eyes.play(Reaction::SideGlance);
+    rig->run(400);  // past the slide
+  }
+  const Framebuffer held = r.display.last;
+  for (uint32_t t = 440; t < 2 * kReplayMs; t += kTickMs) {
+    if (t == kReplayMs) { r.eyes.play(Reaction::SideGlance); still.eyes.play(Reaction::SideGlance); }
+    r.clock.advance(kTickMs);
+    r.eyes.tick();
+    still.clock.advance(kTickMs);
+    still.eyes.tick();
+    if (t > kReplayMs + 400 || t < kReplayMs)
+      TEST_ASSERT_TRUE_MESSAGE(framesEqual(held, r.display.last), "the gaze moved during a reaction");
+  }
+  // The reaction ends: the overdue glance fires, so the gaze differs from the reference rig.
+  const uint32_t rest = EyesRenderer::reactionDurationMs(Reaction::SideGlance) + 2 * kTickMs;
+  r.run(rest);
+  still.run(rest);
+  TEST_ASSERT_FALSE(framesEqual(still.display.last, r.display.last));
+  TEST_ASSERT_EQUAL_INT(litPixels(still.display.last), litPixels(r.display.last));  // moved, not blinking
+}
+
 // Goldens: the distinctive frames of each reaction, invitation empty/full, ritual, adoption, error.
 static void goldenReactionAt(Reaction re, const char* name, uint32_t atMs) {
   Rig r = goldenRig(Mood::Curious);
@@ -711,6 +773,14 @@ static void test_golden_yawn() { goldenReaction(Reaction::Yawn, "yawn", 400, 100
 static void test_golden_wake() { goldenReaction(Reaction::Wake, "wake", 200, 680); }   // opening, stretch
 static void test_golden_greet() { goldenReaction(Reaction::Greet, "greet", 120, 280); } // left, right
 static void test_golden_sulk() { goldenReactionAt(Reaction::Sulk, "sulk", 400); }  // social-group/05e
+// G6a repertoire (social-group/05e), each at its key frame.
+static void test_golden_sideglance() { goldenReactionAt(Reaction::SideGlance, "sideglance", 1500); }
+static void test_golden_stare() { goldenReactionAt(Reaction::Stare, "stare", 1000); }
+static void test_golden_turnaway() { goldenReactionAt(Reaction::TurnAway, "turnaway", 1500); }
+static void test_golden_pout() { goldenReactionAt(Reaction::Pout, "pout", 1500); }
+static void test_golden_puppyeyes() { goldenReactionAt(Reaction::PuppyEyes, "puppyeyes", 1500); }
+static void test_golden_metoo() { goldenReaction(Reaction::MeToo, "metoo", 360, 760); }          // up, down
+static void test_golden_fakesleep() { goldenReaction(Reaction::FakeSleep, "fakesleep", 600, 1600); }  // shut, peek
 static void test_golden_purr() {
   Rig r = goldenRig(Mood::Happy);
   r.eyes.tick();
@@ -787,6 +857,9 @@ int main() {
   RUN_TEST(test_ritual_frame_pulses_and_shows_the_candidate_colour);
   RUN_TEST(test_identity_frames_drift_against_burn_in);
   RUN_TEST(test_adoption_and_error_animations_end_on_their_own);
+  RUN_TEST(test_jealousy_reactions_last_three_seconds_and_sulk_keeps_900_ms);
+  RUN_TEST(test_stare_suspends_the_blink_then_blinks_three_times_fast);
+  RUN_TEST(test_idle_glances_are_held_while_a_reaction_plays);
   RUN_TEST(test_golden_touchdown);
   RUN_TEST(test_golden_surprise);
   RUN_TEST(test_golden_touch_to_surprise);
@@ -796,6 +869,13 @@ int main() {
   RUN_TEST(test_golden_wake);
   RUN_TEST(test_golden_greet);
   RUN_TEST(test_golden_sulk);
+  RUN_TEST(test_golden_sideglance);
+  RUN_TEST(test_golden_stare);
+  RUN_TEST(test_golden_turnaway);
+  RUN_TEST(test_golden_pout);
+  RUN_TEST(test_golden_puppyeyes);
+  RUN_TEST(test_golden_metoo);
+  RUN_TEST(test_golden_fakesleep);
   RUN_TEST(test_golden_purr);
   RUN_TEST(test_golden_invitation);
   RUN_TEST(test_golden_ritual);

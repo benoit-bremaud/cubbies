@@ -7,7 +7,20 @@ human context: what was done, why, and by which PR.
 
 ## 2026-11-06
 
-### G6a jealousy repertoire PDR (issue #85) — **PR pending**
+### G6a face sheet of the seven jealousy reactions (issue #88) — **PR pending**
+
+- Seven new `Reaction` values in the eyes renderer, 3 s each (T_react, 05e Repertoire): step 1
+  SideGlance, Stare, TurnAway (look offsets, silent), step 2 Pout, PuppyEyes, MeToo, FakeSleep.
+  Sulk keeps its 900 ms and its golden is byte-identical; no other golden changed.
+- The renderer now holds idle glances while any reaction plays (the due glance fires once it
+  ends). Stare draws its own three fast blinks in the last 600 ms (owner choice 440/500: inside
+  `applyReaction`, `Timeline` untouched, vs a repeating `Timeline` mode 330), pinned by a test.
+- TDD: tests first (durations, Stare blinks, glance hold, nine goldens: MeToo and FakeSleep have
+  two key frames). Owner reviewed the sheet twice: round 1 accepted three retouches (470/500:
+  SideGlance lids lowered so it no longer matches `greet-1`, Stare 2 px taller, Pout inner
+  corners low), round 2 validated (450/500). No repertoire logic, mood or protocol change.
+
+### G6a jealousy repertoire PDR (issue #85) — **PR #86** (10f5c3c)
 
 - PR #76 (G6a design written before G6 merged) superseded: owner chose a fresh branch from main
   porting only its reusable parts (MCDA 415/500 vs merging main into #76 255; adversarial check:
