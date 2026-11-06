@@ -16,11 +16,13 @@ The G6a jealousy study of PR #76 (issue #73) needed a different shape. G6a was s
 (issue #85, owner decision D3' 2026-11-05): its reactions leave the mood unchanged, so it no
 longer falls under this ADR; the first feature to cite it will be the G6b Annoyed step
 (`diagrams/social-group/05e-state-jealousy.md`, Later). The reasoning below, written for PR #76,
-still describes that shape. A stroke is a moment, and a jealous reaction is only cute if it lands within a
-tick of the stroke. G6a already asks for two separate strokes on the neighbour within `T_notice`
-(two PET frames) before a reaction can change the mood. The losing option would also hold or
-repeat the signal of **each** stroke (for example two frames 3 s apart per stroke), which pushes
-every reaction seconds past the stroke.
+still describes that shape.
+
+A stroke is a moment, and a jealous reaction is only cute if it lands within a tick of the stroke.
+That design already asks for two separate strokes on the neighbour within `T_notice` (two PET
+frames) before a reaction can change the mood. The losing option would also hold or repeat the
+signal of **each** stroke (for example two frames 3 s apart per stroke), which pushes every
+reaction seconds past the stroke.
 
 Accepting this widens ADR-0012's envelope: a forged frame could then do more than set a mood
 byte in the neighbour table (ADR-0012's list of reachable effects). It could put the cube's own

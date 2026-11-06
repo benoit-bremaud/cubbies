@@ -160,7 +160,9 @@ at step 1, so at least two remain).
 **Owner attention** is a touch-down, a gesture or a sound, the events that already break the
 calm in G6 row 2. The engine keeps a dedicated `lastOwnerMs_` for it (the calm timestamp also
 moves on a G2 pull or a caught yawn, so it cannot serve). **Weary** reads the engine's ring of
-step-2 times, the G6 budget ring kept at four entries (enough for three within T_weary).
+step-2 times, the G6 budget ring kept at four entries (enough for three within T_weary); the
+ring is cleared only once its newest entry is older than max(kJealousWindow, T_weary) = 30 min
+(the budget still reads its entries against 10 min).
 
 **Draw**: `r = prng.uniform(sum of the weights)`, then walk the reactions of the step in the
 order of the repertoire table and pick the first whose cumulative weight exceeds `r`. A guard
@@ -202,6 +204,7 @@ Rows 1 to 11 are the G6 rows, reworded for the crescendo; rows 12 onward are new
 | 14 | draw with seed s and contexts c | equals the reference sequence for (s, c), computed with the draw rule above (replayable) |
 | 15 | `weights(step, contexts, last)` on combined contexts | exact vectors: Crowd + Friend at step 1 → SideGlance 5, Stare 4, TurnAway 2; Crowd + Friend + Neglected at step 2 → Pout 5, PuppyEyes 4, MeToo 5, FakeSleep 1, Sulk 0; Weary + Newcomer at step 2 → Pout 3, PuppyEyes 2, MeToo 2, FakeSleep 5, Sulk 0 |
 | 16 | each context of the table holds alone | its modifiers apply; Weary sets Sulk to 0; a synthetic table with a modifier larger than its base weight yields 0, not a negative weight |
+| 16b | three step-2 reactions in the last 30 min, the last one 11 min ago | Weary holds (the ring is not cleared after 10 min) |
 | 17 | the same step drawn twice in a row | never the same reaction twice (weight 0) |
 | 18 | 10 000 draws on one context, no-repeat off | each frequency within 2 percentage points of its weight share |
 | 19 | a guard or the budget fails | no draw: the `Prng` sequence does not move |

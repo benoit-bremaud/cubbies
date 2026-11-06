@@ -23,6 +23,12 @@ human context: what was done, why, and by which PR.
   Newcomer, Friend, Neglected, Weary) by a `JealousyRepertoire` owning `Prng` stream 3; G6 sender
   rules, guards, T_calm_jealous 6 s, cooldown 60 s and budget 4 per 10 min kept and charged to
   step 2 only. REQ-F-21 and B5 amended in place; roadmap gains G6a and G6b.
+- Adversarial review: round 1 Must 5 Should 13 (owner attention after the notice, Sulk keeps
+  its 900 ms, engine-computed Weary and Neglected, draw rule, wrap-safe `presentSince` rows in
+  social-presence/05a, lib `effects(JealousReaction)`, new class view 04-class-jealousy, ADR-0018
+  Context and Consequences retargeted from PR #76 to G6b, misdated log heading) fixed; round 2
+  Must 1 (02e Mermaid parse error) and the Weary ring clearing fixed. The G6a PDR passes only
+  once the face sheet PR is accepted.
 
 ## 2026-11-05
 

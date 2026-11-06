@@ -75,6 +75,8 @@ classDiagram
   MoodEngine ..> JealousyRepertoire : draws through (passed per call)
   JealousyRepertoire ..> JealousContexts
   JealousyRepertoire ..> JealousReaction : returns
+  MoodEngine ..> JealousReaction : returns
+  SocialOutput ..> Neighbour : petContext from presentSince
 ```
 
 ## Notes

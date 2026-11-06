@@ -45,7 +45,7 @@ sequenceDiagram
   MB->>MB: guards G, crescendo step, budget, contexts (05e rows 1–12b)
   alt a step is due
     MB->>Rep: draw(step, contexts)
-    Rep-->>MB: reaction (weights, no repeat; 05e rows 14–19)
+    Rep-->>MB: reaction (weights, no repeat, 05e rows 14–19)
     MB-->>MainB: JealousReaction (mood unchanged)
     MainB->>Router: effects(reaction)
     Router-->>MainB: Route {reaction, sound when step 2}
