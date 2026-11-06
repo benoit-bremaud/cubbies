@@ -10,7 +10,6 @@ void MoodEngine::restart() {
   enteredMs_ = lastAnyMs_ = lastLoudMs_ = lastOwnerMs_ = lastYawnMs_ = now;
   holding_ = yawnHolding_ = false;  // a wake starts with no candidate; the refractory period is kept
   noticed_ = false;                 // 05e rows 5, 10: the jealousy cooldown and ring are kept
-  forgetStaleRing(now);             // but a ring older than T_weary never survives to alias
 }
 
 MoodEffect MoodEngine::enter(Mood m) {
@@ -149,7 +148,10 @@ JealousReaction MoodEngine::jealousy(bool padHeld, const PetContext& pet, Jealou
 
 MoodEffect MoodEngine::tick() {
   const uint32_t now = clock_.nowMs();
-  forgetStaleRing(now);  // every Awake tick: the ring is gone ~49 days before its ages could wrap
+  // Every Awake tick: the ring is gone long before its ages could wrap while Awake. A sleep whose
+  // length falls within 30 min of a 2^32 ms multiple can still alias it at the wake (accepted,
+  // like sendPet: at most a false Weary or cooldown for 30 min, never louder).
+  forgetStaleRing(now);
   switch (mood_) {
     case Mood::Curious:
       if (ageMs(now, lastAnyMs_) >= kBoredMs) return enter(Mood::Bored);

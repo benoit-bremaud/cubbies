@@ -649,7 +649,7 @@ static void test_weary_ring_forgotten_before_the_wrap() {
   TEST_ASSERT_TRUE(r.engine.contexts(r.ctx).weary);
   r.clock.advance(E::kWearyMs);
   r.engine.tick();  // an Awake tick past T_weary
-  r.clock.advance(0xFFFFFFFFu - E::kWearyMs - E::kJealousMs);  // ages alias back to ≈ recent
+  r.clock.advance(0xFFFFFFFFu - E::kWearyMs - E::kJealousMs + 1);  // newest age = 2^32 ≡ 0
   TEST_ASSERT_FALSE(r.engine.contexts(r.ctx).weary);
 }
 
