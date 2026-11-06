@@ -463,7 +463,6 @@ void EyesRenderer::tick() {
     blink_.start(now, kBlinkTotalMs);
     blinking_ = true;
   }
-  // Idle glances
   // Idle glances: held while a timed reaction plays (05e); a held TouchDown or Purr keeps them,
   // so a long press or stroke never freezes the frame (FS1).
   const bool timedReaction = reacting_ && reactionDurationMs(reaction_) > 0;

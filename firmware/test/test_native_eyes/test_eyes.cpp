@@ -712,7 +712,7 @@ static void test_stare_suspends_the_blink_then_blinks_three_times_fast() {
   TEST_ASSERT_GREATER_OR_EQUAL_UINT32(2400, firstClosedMs);  // held open until the last 600 ms
 }
 
-// 05e: the renderer holds the idle glances while a reaction plays; a due glance waits for its end.
+// 05e: the renderer holds the idle glances while a timed reaction plays; a due glance waits for its end.
 static void test_idle_glances_are_held_while_a_reaction_plays() {
   // Pout keeps the gaze, so a glance firing mid-reaction would move it. Replayed once, the
   // reaction covers 5.76 s > kGlanceMaxMs, so a glance falls due while it plays.
@@ -727,7 +727,8 @@ static void test_idle_glances_are_held_while_a_reaction_plays() {
     rig->eyes.tick();
     rig->eyes.play(Reaction::Pout);
   }
-  const Framebuffer held = (r.run(kTickMs), r.display.last);
+  r.run(kTickMs);
+  const Framebuffer held = r.display.last;
   still.run(kTickMs);
   for (uint32_t t = 2 * kTickMs; t < 2 * kReplayMs; t += kTickMs) {
     if (t == kReplayMs) { r.eyes.play(Reaction::Pout); still.eyes.play(Reaction::Pout); }
