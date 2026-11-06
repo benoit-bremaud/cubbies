@@ -442,6 +442,26 @@ static void test_joy_after_touchdown_starts_from_the_touchdown_size() {
   TEST_ASSERT_EQUAL_INT(plain.back(), chained.back());
 }
 
+// social-group/05e row 13: a touch while a jealousy reaction plays replaces it at once, and once
+// the touch ends the eyes show the plain mood frame, as if the reaction had never played.
+static void test_touch_replaces_a_jealousy_reaction() {
+  Rig jealous = goldenRig(Mood::Curious);
+  Rig plain = goldenRig(Mood::Curious);
+  for (Rig* r : {&jealous, &plain}) r->eyes.tick();
+  jealous.eyes.play(Reaction::Pout);
+  for (Rig* r : {&jealous, &plain}) {
+    r->run(10 * kTickMs);
+    r->eyes.play(Reaction::TouchDown);
+    r->run(4 * kTickMs);
+  }
+  TEST_ASSERT_TRUE(framesEqual(plain.display.last, jealous.display.last));
+  for (Rig* r : {&jealous, &plain}) {
+    r->eyes.stopReaction();
+    r->run(EyesRenderer::reactionDurationMs(Reaction::Pout));
+  }
+  TEST_ASSERT_TRUE(framesEqual(plain.display.last, jealous.display.last));
+}
+
 // Replaying a timed reaction restarts it.
 static void test_replaying_a_timed_reaction_restarts_it() {
   Rig r = goldenRig(Mood::Curious);
@@ -905,6 +925,7 @@ int main() {
   RUN_TEST(test_touchdown_is_visible_next_tick_and_held_until_release);
   RUN_TEST(test_surprise_after_touchdown_grows_continuously);
   RUN_TEST(test_joy_after_touchdown_starts_from_the_touchdown_size);
+  RUN_TEST(test_touch_replaces_a_jealousy_reaction);
   RUN_TEST(test_replaying_a_timed_reaction_restarts_it);
   RUN_TEST(test_purr_holds_until_stopped_then_releases_gradually);
   RUN_TEST(test_purr_released_mid_ramp_reopens_without_a_snap);
