@@ -467,8 +467,10 @@ void EyesRenderer::tick() {
   // so a long press or stroke never freezes the frame (FS1).
   const bool timedReaction = reacting_ && reactionDurationMs(reaction_) > 0;
   if (idleGlances_ && !timedReaction && isDue(now, nextGlanceMs_)) {
-    setLook(static_cast<int8_t>(static_cast<int>(prng_.uniform(2 * kMaxLook + 1)) - kMaxLook),
-            static_cast<int8_t>(static_cast<int>(prng_.uniform(kMaxLook + 1)) - kMaxLook / 2));
+    int x = static_cast<int>(prng_.uniform(2 * kMaxLook + 1)) - kMaxLook;
+    const int y = static_cast<int>(prng_.uniform(kMaxLook + 1)) - kMaxLook / 2;
+    if (x == lookX_ && y == lookY_) x += x < kMaxLook ? 1 : -1;  // a glance always moves the gaze
+    setLook(static_cast<int8_t>(x), static_cast<int8_t>(y));
     scheduleGlance();
   }
   const uint32_t driftStep = ageMs(now, driftStartMs_) / kDriftPeriodMs;

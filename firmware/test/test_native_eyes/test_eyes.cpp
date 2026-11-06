@@ -747,16 +747,18 @@ static void test_idle_glances_are_held_while_a_reaction_plays() {
 }
 
 // FS1 during a long stroke: a held Purr keeps the idle glances, so the frame never freezes 10 s.
+// Seed 174349 draws the same gaze twice in a row (Codex review on PR #89): a glance must move it.
 static void test_held_reactions_keep_the_idle_glances() {
+  for (uint64_t seed : {uint64_t{1234}, uint64_t{174349}})
   for (Reaction held : {Reaction::Purr, Reaction::TouchDown}) {
-    Rig r;
+    Rig r(seed);
     r.eyes.setColour(kCyan);
     r.eyes.setMood(Mood::Happy);
     r.eyes.tick();
     r.eyes.play(held);
     Framebuffer previous = r.display.last;
     uint32_t staticMs = 0;
-    for (uint32_t t = 0; t < 30000; t += kTickMs) {
+    for (uint32_t t = 0; t < 60000; t += kTickMs) {
       r.clock.advance(kTickMs);
       r.eyes.tick();
       if (framesEqual(previous, r.display.last)) {
