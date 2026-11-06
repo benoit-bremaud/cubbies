@@ -65,9 +65,10 @@ For **type `0x04` PET** (G6, [social-group/05e](../social-group/05e-state-jealou
 | 5 | 3 | reserved | `0` | must be zero |
 
 PET is sent only by a stroke that did not start a choir, at most once per 10 s per cube, and is
-never relayed; a receiver shows a step-2 reaction at most once per 60 s and four times per
-10 min, and the first stroke heard only a silent glance, at most once per 60 s once the budget
-is spent (05e, G6a), so forged frames are capped like CHOIR. Protocol version stays `1`; a pre-G6 cube drops PET as `dropType`.
+never relayed; a receiver shows a step-2 reaction at most once per 60 s and four times per 10 min,
+and the first stroke heard only a silent glance, at most once per 60 s once the budget is spent
+(05e, G6a), so forged frames are capped like CHOIR. Protocol version stays `1`; a pre-G6 cube drops
+PET as `dropType`.
 
 Total 8 bytes, far below the 250-byte ESP-NOW payload limit. The sender MAC is **not** in the
 payload: it is taken from the receive callback metadata, which the radio stack fills in from the

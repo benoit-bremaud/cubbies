@@ -39,6 +39,10 @@
 >   tables by context drawn with a lib-owned `Prng` 440/500, against one fixed reaction per
 >   context 375 and pure chance 345.
 >
+> Sensitivity: with cute raised to 50 and the other weights scaled down (rounded to 5), D3'
+> gives 400 against 380 (Annoyed step) and D6 465 against 370 (one step) and 360 (three steps);
+> the ranking holds. D7 was scored as totals only in PR #76, so it has no per-criterion check.
+>
 > Owner validation of the G6a behaviour is recorded in the PR. The G6a PDR passes only once the
 > face sheet of the seven new reactions is accepted as well (gates.md: reference images rendered
 > and accepted); the sheet is its own PR, before any repertoire test.
