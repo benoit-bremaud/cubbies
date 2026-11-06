@@ -304,6 +304,12 @@ static void test_row20e_unknown_sender_is_a_newcomer() {
   TEST_ASSERT_TRUE(out.pet);
   TEST_ASSERT_EQUAL_UINT8(1, out.petContext.neighbours);
   TEST_ASSERT_EQUAL_UINT32(0, out.petContext.strokedAgeMs);
+  clock.advance(SocialProtocol::kTtlMs + 1);
+  announce(b, 3);  // 1 is Absent now, its MAC still in the table
+  injectPet(b, 1);
+  const SocialOutput absent = b.social.tick(b.self);
+  TEST_ASSERT_EQUAL_UINT8(1, absent.petContext.neighbours);
+  TEST_ASSERT_EQUAL_UINT32(0, absent.petContext.strokedAgeMs);
 }
 
 // Row 20: a new MAC is stored with presentSince = now, including one back after its entry was freed.
@@ -459,9 +465,12 @@ static void test_row2_owner_attention_drops_the_notice() {
     TEST_ASSERT_TRUE(isStep1(r.pet()));  // a new notice, not a step 2
   }
   Rig t;
+  TEST_ASSERT_TRUE(isStep1(t.pet()));
+  t.clock.advance(kSecond);
   t.engine.touchDown();
   t.clock.advance(E::kJealousCalmMs - 1);
   TEST_ASSERT_EQUAL(JR::None, t.pet());
+  TEST_ASSERT_FALSE(t.engine.noticed());
   t.clock.advance(1);
   TEST_ASSERT_TRUE(isStep1(t.pet()));
 }
@@ -623,6 +632,7 @@ static void test_row16b_weary_reads_the_ring_over_30_min() {
   r.clock.advance(E::kJealousMs);
   r.pair();
   r.clock.advance(11 * 60 * kSecond);
+  TEST_ASSERT_TRUE(isStep1(r.pet()));  // jealousy() runs the ring maintenance: kept past 10 min
   TEST_ASSERT_TRUE(r.engine.contexts(r.ctx).weary);
   r.clock.advance(E::kWearyMs);
   TEST_ASSERT_FALSE(r.engine.contexts(r.ctx).weary);
@@ -657,6 +667,59 @@ static void test_row19_failed_guard_draws_nothing() {
   r.clock.advance(E::kJealousCalmMs);
   const JR a = r.pet();
   TEST_ASSERT_EQUAL(twin.draw(JealousStep::Notice, r.engine.contexts(r.ctx)), a);
+}
+
+// Rows 1, 1b, D7: the engine draws with the contexts it computed (a twin repertoire replays them).
+static void test_engine_draws_with_its_contexts() {
+  Rig r;
+  r.ctx = PetContext{2, 0};  // Crowd + Newcomer
+  JealousyRepertoire twin(42);
+  for (int i = 0; i < 12; ++i) {
+    const auto c1 = r.engine.contexts(r.ctx);
+    TEST_ASSERT_EQUAL(twin.draw(JealousStep::Notice, c1), r.pet());
+    r.clock.advance(15 * kSecond);
+    const auto c2 = r.engine.contexts(r.ctx);  // before the step-2 record
+    TEST_ASSERT_EQUAL(twin.draw(JealousStep::Jealous, c2), r.pet());
+    r.clock.advance(151 * kSecond);  // under the 4 / 10 min budget
+  }
+}
+
+// Row 19 (budget): a step 2 refused by the budget draws nothing either.
+static void test_row19_budget_failure_draws_nothing() {
+  Rig a;
+  Rig b;
+  for (Rig* r : {&a, &b}) {
+    for (uint8_t i = 0; i < E::kJealousBudget; ++i) {
+      r->pair();
+      r->clock.advance(E::kJealousMs);
+    }
+    TEST_ASSERT_TRUE(isStep1(r->pet()));
+    r->clock.advance(15 * kSecond);
+  }
+  TEST_ASSERT_EQUAL(JR::None, a.pet());  // refused by the budget, only on a
+  for (Rig* r : {&a, &b}) r->clock.advance(E::kNoticeMs);
+  TEST_ASSERT_EQUAL(b.pet(), a.pet());
+}
+
+// Owner attention is not the calm (05e Contexts): a G2 pull blocks jealousy (calm guard) but is
+// not owner attention: Neglected still holds and a notice is kept.
+static void test_pull_breaks_the_calm_not_owner_attention() {
+  Rig r;
+  r.idle(E::kLonelyMs);
+  TEST_ASSERT_EQUAL(Mood::Bored, r.engine.mood());
+  MoodTally t;
+  t.votes[static_cast<uint8_t>(Mood::Happy)] = 1;
+  r.engine.contagion(t);  // the hold starts now
+  TEST_ASSERT_TRUE(isStep1(r.pet()));
+  r.clock.advance(E::kContagionMs);
+  r.engine.contagion(t);
+  TEST_ASSERT_EQUAL(Mood::Happy, r.engine.mood());  // pulled: the calm restarts
+  TEST_ASSERT_TRUE(r.engine.contexts(r.ctx).neglected);
+  r.clock.advance(E::kJealousCalmMs - 1);
+  TEST_ASSERT_EQUAL(JR::None, r.pet());
+  TEST_ASSERT_TRUE(r.engine.noticed());
+  r.clock.advance(1);
+  TEST_ASSERT_TRUE(isStep2(r.pet()));
 }
 
 // Clock wrap: the crescendo and the cooldown stay correct across 2^32 ms.
@@ -761,6 +824,12 @@ static void test_row14_draw_replays_the_reference() {
   const JR order1[] = {JR::SideGlance, JR::Stare, JR::TurnAway};
   const uint8_t base2[] = {3, 2, 2, 1, 2};
   const JR order2[] = {JR::Pout, JR::PuppyEyes, JR::MeToo, JR::FakeSleep, JR::Sulk};
+  // Bored + Friend from the 05e table: step 1 TurnAway +1, SideGlance +2; step 2 PuppyEyes +3,
+  // Pout +2, Sulk −2.
+  const uint8_t ctx1[] = {5, 2, 3};
+  const uint8_t ctx2[] = {5, 5, 2, 1, 0};
+  JealousContexts bf;
+  bf.bored = bf.friend_ = true;
   JealousyRepertoire rep(7);
   Prng ref(7, JealousyRepertoire::kStream);
   JR last1 = JR::None;
@@ -782,6 +851,8 @@ static void test_row14_draw_replays_the_reference() {
   for (int i = 0; i < 50; ++i) {
     TEST_ASSERT_EQUAL(expected(base1, order1, 3, last1), rep.draw(kS1, {}));
     TEST_ASSERT_EQUAL(expected(base2, order2, 5, last2), rep.draw(kS2, {}));
+    TEST_ASSERT_EQUAL(expected(ctx1, order1, 3, last1), rep.draw(kS1, bf));
+    TEST_ASSERT_EQUAL(expected(ctx2, order2, 5, last2), rep.draw(kS2, bf));
   }
 }
 
@@ -895,6 +966,9 @@ int main() {
   RUN_TEST(test_row16b_weary_reads_the_ring_over_30_min);
   RUN_TEST(test_contexts_from_the_engine);
   RUN_TEST(test_row19_failed_guard_draws_nothing);
+  RUN_TEST(test_engine_draws_with_its_contexts);
+  RUN_TEST(test_row19_budget_failure_draws_nothing);
+  RUN_TEST(test_pull_breaks_the_calm_not_owner_attention);
   RUN_TEST(test_crescendo_across_the_clock_wrap);
   RUN_TEST(test_weights_follow_the_table_order);
   RUN_TEST(test_row15_combined_contexts);

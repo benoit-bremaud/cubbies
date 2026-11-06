@@ -23,6 +23,9 @@ constexpr JealousRow kStep2[] = {
     {R::Sulk, 2, {0, 0, 2, -2, 0, kZero}},
 };
 
+static_assert(sizeof(kStep1) / sizeof(kStep1[0]) <= kMaxStepReactions, "step 1 fits JealousWeights");
+static_assert(sizeof(kStep2) / sizeof(kStep2[0]) <= kMaxStepReactions, "step 2 fits JealousWeights");
+
 int clampZero(int w) { return w < 0 ? 0 : w; }
 
 }  // namespace

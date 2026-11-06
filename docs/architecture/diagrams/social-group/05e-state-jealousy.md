@@ -217,7 +217,7 @@ Rows 1 to 11 are the G6 rows, reworded for the crescendo; rows 12 onward are new
 | 12b | Noticed, owner attention after the notice time but more than T_calm_jealous before this PET | treated as from Indifferent (row 1): a new step 1 |
 | 13 | B touched while a reaction is shown | the touch-down reaction replaces it at once (the renderer plays one reaction at a time) and the touch follows 05a (a stroke purrs): the cube forgives; a step-2 sound already started finishes (it is short and rank 2) |
 | 14 | draw with seed s and contexts c | equals the reference sequence for (s, c), computed with the draw rule above (replayable) |
-| 15 | `weights(step, contexts, last)` on combined contexts | exact vectors: Crowd + Friend at step 1 → SideGlance 5, Stare 4, TurnAway 2; Crowd + Friend + Neglected at step 2 → Pout 5, PuppyEyes 4, MeToo 5, FakeSleep 1, Sulk 0; Weary + Newcomer at step 2 → Pout 3, PuppyEyes 2, MeToo 2, FakeSleep 5, Sulk 0 |
+| 15 | `jealousWeights(step, contexts, last)` on combined contexts | exact vectors: Crowd + Friend at step 1 → SideGlance 5, Stare 4, TurnAway 2; Crowd + Friend + Neglected at step 2 → Pout 5, PuppyEyes 4, MeToo 5, FakeSleep 1, Sulk 0; Weary + Newcomer at step 2 → Pout 3, PuppyEyes 2, MeToo 2, FakeSleep 5, Sulk 0 |
 | 16 | each context of the table holds alone | its modifiers apply; Weary sets Sulk to 0; a synthetic table with a modifier larger than its base weight yields 0, not a negative weight |
 | 16b | three step-2 reactions in the last 30 min, the last one 11 min ago | Weary holds (the ring is not cleared after 10 min) |
 | 17 | the same step drawn twice in a row | never the same reaction twice (weight 0) |
