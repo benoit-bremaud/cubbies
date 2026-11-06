@@ -722,6 +722,25 @@ static void test_pull_breaks_the_calm_not_owner_attention() {
   TEST_ASSERT_TRUE(isStep2(r.pet()));
 }
 
+// Same for a caught yawn (05d): it breaks the calm, is not owner attention and keeps the notice.
+static void test_caught_yawn_breaks_the_calm_not_owner_attention() {
+  Rig r;
+  r.idle(E::kLonelyMs);
+  TEST_ASSERT_EQUAL(Mood::Bored, r.engine.mood());
+  MoodTally t;
+  t.drowsy = 1;
+  r.engine.contagion(t);  // the yawn hold starts now
+  TEST_ASSERT_TRUE(isStep1(r.pet()));
+  r.clock.advance(E::kContagionMs);
+  TEST_ASSERT_EQUAL(MoodEffect::Yawn, r.engine.contagion(t));
+  TEST_ASSERT_TRUE(r.engine.contexts(r.ctx).neglected);
+  r.clock.advance(E::kJealousCalmMs - 1);
+  TEST_ASSERT_EQUAL(JR::None, r.pet());
+  TEST_ASSERT_TRUE(r.engine.noticed());
+  r.clock.advance(1);
+  TEST_ASSERT_TRUE(isStep2(r.pet()));
+}
+
 // Clock wrap: the crescendo and the cooldown stay correct across 2^32 ms.
 static void test_crescendo_across_the_clock_wrap() {
   FakeClock clock(0xFFFFFFFFu - E::kJealousCalmMs - 10);
@@ -969,6 +988,7 @@ int main() {
   RUN_TEST(test_engine_draws_with_its_contexts);
   RUN_TEST(test_row19_budget_failure_draws_nothing);
   RUN_TEST(test_pull_breaks_the_calm_not_owner_attention);
+  RUN_TEST(test_caught_yawn_breaks_the_calm_not_owner_attention);
   RUN_TEST(test_crescendo_across_the_clock_wrap);
   RUN_TEST(test_weights_follow_the_table_order);
   RUN_TEST(test_row15_combined_contexts);

@@ -52,9 +52,9 @@ classDiagram
   }
   class JealousWeights {
     <<value>>
-    +count
-    +reaction[5]
-    +weight[5]
+    +uint8_t count
+    +JealousReaction reaction[5]
+    +uint8_t weight[5]
     +total() uint32_t
   }
   class JealousyRepertoire {
