@@ -1,7 +1,7 @@
 // Transient reactions drawn as an overlay on the mood frame (05a: "reactions are not states").
 // Timed reactions end on their own (reactionDurationMs); TouchDown and Purr are held while the
 // pad is pressed and end with stopReaction(). Sources: 05a transition table, 05b Waking,
-// 02-sequence-presence (greeting), use cases UC3 / UC4 / UC7.
+// 02-sequence-presence (greeting), social-group/05e (jealousy), use cases UC3 / UC4 / UC7.
 #pragma once
 
 #include <cstdint>
@@ -20,11 +20,11 @@ enum class Reaction : uint8_t {
   Greet,      // NewcomerSeen: glance one side then the other (05a, 02-presence, UC7)
   Sulk,       // jealousy: annoyed lids, a glance away and down (social-group/05e)
   // G6a jealousy repertoire (social-group/05e), T_react each. Step 1, silent look offsets:
-  SideGlance, // both eyes slide to the side of the last glance and hold
+  SideGlance, // both eyes slide to the side of the last glance and hold, top lids a little low
   Stare,      // held at a side look offset, blink suspended, then three fast blinks
   TurnAway,   // largest look offset, opposite the side of the last glance
   // Step 2:
-  Pout,       // lower lids raised, eyes narrowed
+  Pout,       // lower lids raised, eyes narrowed, inner corners a little low
   PuppyEyes,  // eyes enlarged with a highlight, lids tilted down at the outer corners
   MeToo,      // eyes hop up and down
   FakeSleep,  // eyes shut, one eye half-opens and peeks sideways, shuts again

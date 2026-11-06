@@ -25,7 +25,7 @@ constexpr int kSmileDepthPercent = 45;         // arc depth at the centre, % of 
 constexpr int kSmileClosedDepthPercent = 60;   // deeper when nearly shut (purr)
 // G6a jealousy repertoire (social-group/05e).
 constexpr uint32_t kJealousReactionMs = 3000;  // T_react
-constexpr uint32_t kSideSlideMs = 280;         // SideGlance / TurnAway slide (seven ticks)
+constexpr uint32_t kSideSlideMs = 280;         // SideGlance / TurnAway slide, reached on the sixth tick
 constexpr uint32_t kStareBlinksFromMs = 2400;  // Stare: three blinks in the last 600 ms
 constexpr uint32_t kStareBlinkMs = 200;        // one fast blink: half, closed, half, open (40 ms ticks)
 constexpr uint8_t kSideGlanceTop = 40;         // top lids slightly lowered
@@ -464,7 +464,10 @@ void EyesRenderer::tick() {
     blinking_ = true;
   }
   // Idle glances
-  if (idleGlances_ && !reacting_ && isDue(now, nextGlanceMs_)) {  // held while a reaction plays (05e)
+  // Idle glances: held while a timed reaction plays (05e); a held TouchDown or Purr keeps them,
+  // so a long press or stroke never freezes the frame (FS1).
+  const bool timedReaction = reacting_ && reactionDurationMs(reaction_) > 0;
+  if (idleGlances_ && !timedReaction && isDue(now, nextGlanceMs_)) {
     setLook(static_cast<int8_t>(static_cast<int>(prng_.uniform(2 * kMaxLook + 1)) - kMaxLook),
             static_cast<int8_t>(static_cast<int>(prng_.uniform(kMaxLook + 1)) - kMaxLook / 2));
     scheduleGlance();

@@ -35,8 +35,8 @@ class EyesRenderer {
   void setBrightness(Brightness level);  // forwarded to the port; the policy is the sleep cycle's
   // Gaze offset in pixels, clamped to ±kMaxLook.
   void setLook(int8_t dx, int8_t dy);
-  // Idle glances drive setLook(); disable while something else owns the gaze (reactions,
-  // deterministic frames in tests).
+  // Idle glances drive setLook(); they are held while a timed reaction plays (a due glance
+  // fires once it ends). Disable for deterministic frames in tests.
   void setIdleGlances(bool enabled);
   void closeEyes();   // sleep: lids close over kLidMoveMs and stay closed; no blinks while closed
   void openEyes();

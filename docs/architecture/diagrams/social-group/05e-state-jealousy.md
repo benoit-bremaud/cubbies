@@ -43,6 +43,17 @@
 > gives 400 against 380 (Annoyed step) and D6 465 against 370 (one step) and 360 (three steps);
 > the ranking holds. D7 was scored as totals only in PR #76, so it has no per-criterion check.
 >
+> Face sheet choices (issue #88, owner 2026-11-06):
+> - D8 Stare blinks (simplicity 40, fidelity to this table 30, regression risk 30): drawn by the
+>   renderer inside the Stare reaction, pinned by a renderer test, `Timeline` untouched, 440/500,
+>   against a repeating `Timeline` mode 330.
+> - D9 idle glances: held while a **timed** reaction plays; the held TouchDown and Purr keep them,
+>   so a long press or stroke never shows a static frame for 10 s (FS1, adversarial review of
+>   the face sheet PR).
+> - Face retouches after the first sheet (470/500 against accepting it as drawn 380): SideGlance
+>   lowers the top lids a little (it no longer matches the Greet frame), Stare is 2 px taller,
+>   Pout lowers its inner corners. Second sheet validated (450/500).
+>
 > Owner validation of the G6a behaviour is recorded in the PR. The G6a PDR passes only once the
 > face sheet of the seven new reactions is accepted as well (gates.md: reference images rendered
 > and accepted); the sheet is its own PR, before any repertoire test.
@@ -119,10 +130,10 @@ Noticed, and nothing is shown when it does.
 
 | Reaction | Step | Eyes | Sound (placeholder until the sound brick) | Length |
 |----------|------|------|-------------------------------------------|--------|
-| SideGlance | 1 | both eyes slide to one side and hold | none | 3 s |
-| Stare | 1 | eyes held at a side look offset, blink suspended, then three fast blinks (a new `Timeline` case, pinned by a timeline test) | none | 3 s |
+| SideGlance | 1 | both eyes slide to the side of the last glance and hold, top lids a little low | none | 3 s |
+| Stare | 1 | eyes a little taller, held at a side look offset, blink suspended, then three fast blinks in the last 600 ms (drawn by the renderer, pinned by a renderer test, D8) | none | 3 s |
 | TurnAway | 1 | eyes at the largest look offset, opposite the side of the last glance | none | 3 s |
-| Pout | 2 | lower lids raised, eyes narrowed | short "hmpf", rank 2 | 3 s |
+| Pout | 2 | lower lids raised, eyes narrowed, inner corners a little low | short "hmpf", rank 2 | 3 s |
 | PuppyEyes | 2 | eyes enlarged with a highlight, lids tilted | small whimper, rank 2 | 3 s |
 | MeToo | 2 | eyes hop up and down | rising chirp, rank 2 | 3 s |
 | FakeSleep | 2 | eyes close, one eye half-opens and peeks sideways, closes again | none | 3 s |
@@ -131,7 +142,7 @@ Noticed, and nothing is shown when it does.
 Each reaction is a new `Reaction` value of the eyes renderer (Sulk exists), so the eyes play it
 like any other reaction and its length is `reactionDurationMs(reaction)`, the only constant
 (T_react in this document names it). The look offset is drawn inside the renderer, which holds
-the idle glances while a reaction plays. The new sounds rank 2 in the Sound gate, like the
+the idle glances while a timed reaction plays (D9). The new sounds rank 2 in the Sound gate, like the
 grumble (cube-core/05e): a choir voice (3) wins, a greeting (0) is replaced.
 
 A lib function `Route effects(JealousReaction r)` in the Stimulus router (next to
@@ -139,7 +150,7 @@ A lib function `Route effects(JealousReaction r)` in the Stimulus router (next t
 only applies the route.
 
 The seven new eye animations are drawn first, as a face sheet of golden images (one per
-reaction, at its key frame) plus the Stare timeline test, validated by the owner before any
+reaction at its key frame, two for MeToo and FakeSleep) plus the Stare blink test, validated by the owner before any
 repertoire logic (gates.md, ADR-0014).
 
 ## Contexts and weights

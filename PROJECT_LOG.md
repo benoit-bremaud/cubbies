@@ -12,13 +12,19 @@ human context: what was done, why, and by which PR.
 - Seven new `Reaction` values in the eyes renderer, 3 s each (T_react, 05e Repertoire): step 1
   SideGlance, Stare, TurnAway (look offsets, silent), step 2 Pout, PuppyEyes, MeToo, FakeSleep.
   Sulk keeps its 900 ms and its golden is byte-identical; no other golden changed.
-- The renderer now holds idle glances while any reaction plays (the due glance fires once it
-  ends). Stare draws its own three fast blinks in the last 600 ms (owner choice 440/500: inside
+- The renderer now holds idle glances while a timed reaction plays (the due glance fires once it
+  ends); held TouchDown and Purr keep them so a long stroke never freezes the frame (FS1). Stare draws its own three fast blinks in the last 600 ms (owner choice 440/500: inside
   `applyReaction`, `Timeline` untouched, vs a repeating `Timeline` mode 330), pinned by a test.
 - TDD: tests first (durations, Stare blinks, glance hold, nine goldens: MeToo and FakeSleep have
   two key frames). Owner reviewed the sheet twice: round 1 accepted three retouches (470/500:
   SideGlance lids lowered so it no longer matches `greet-1`, Stare 2 px taller, Pout inner
   corners low), round 2 validated (450/500). No repertoire logic, mood or protocol change.
+- 05e records D8 (Stare blinks), D9 (glance hold) and the retouches; the traceability matrix
+  marks the G6a PDR validated with this sheet.
+- Adversarial review round 1: Must 3 (glances held during TouchDown and Purr froze the frame,
+  05e and the matrix still described a `Timeline` case, the glance test passed without the hold)
+  and Should 4 (untested blink cut and side rules, stale comments and counts) fixed; both
+  mutants now fail their test.
 
 ### G6a jealousy repertoire PDR (issue #85) — **PR #86** (10f5c3c)
 
