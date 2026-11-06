@@ -150,7 +150,7 @@ MoodEffect MoodEngine::tick() {
   const uint32_t now = clock_.nowMs();
   // Every Awake tick: the ring is gone long before its ages could wrap while Awake. A sleep whose
   // length falls within 30 min of a 2^32 ms multiple can still alias it at the wake (accepted,
-  // like sendPet: at most a false Weary or cooldown for 30 min, never louder).
+  // like sendPet: at most a false Weary, budget block or cooldown for 30 min, never louder).
   forgetStaleRing(now);
   switch (mood_) {
     case Mood::Curious:
