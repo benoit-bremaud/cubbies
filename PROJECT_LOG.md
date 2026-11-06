@@ -25,6 +25,8 @@ human context: what was done, why, and by which PR.
   05e and the matrix still described a `Timeline` case, the glance test passed without the hold)
   and Should 4 (untested blink cut and side rules, stale comments and counts) fixed; both
   mutants now fail their test.
+- Codex review on PR #89 (P2): a glance could redraw the current gaze, so a held stroke could
+  still freeze 10 s (seed 174349); a repeated draw is now nudged one pixel (97d3a18).
 
 ### G6a jealousy repertoire PDR (issue #85) — **PR #86** (10f5c3c)
 
