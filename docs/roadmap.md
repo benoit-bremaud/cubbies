@@ -48,6 +48,8 @@ Within a tier, the order is the implementation order.
 | G4 | Synchronised choir: shared clock, multi-voice melody | B | G1, S4 |
 | G5 | Collective sleep: the first yawn spreads (design: social-group 05d, #59) | B | G2, S5 |
 | G6 | Jealousy: the owner pets another cube in range, mine sulks (design: social-group 05e, #73) | B | G1, S3 |
+| G6a | Jealousy repertoire: a silent glance, then one of five reactions drawn by context, mood unchanged (design: social-group 05e, #85) | B | G6 |
+| G6b | Jealousy extras: an Annoyed top step once ADR-0018 is Accepted, more reactions, group sulk | C | G6a, ADR-0018 |
 | G7 | Pass the ball: a tap sends a virtual object to a neighbour | C | G1, S3 |
 | G8 | Team poll: one cube asks, each answers by tap, all display the result | C | G7 |
 | G9 | Chinese whispers: each cube distorts the melody before passing it on | C | G3, S4 |
