@@ -53,6 +53,7 @@ stateDiagram-v2
   Scheduled --> Scheduled: same key heard again → ignored
   Scheduled --> Fired: delay elapsed → react (if Awake), relay once with hop + 1 (if hop < kMaxHop)
   Fired --> Idle: event done (key kept for T_seen)
+  Scheduled --> Idle: own trigger (row 12)
 ```
 
 ## Transition table (source of the native tests)
