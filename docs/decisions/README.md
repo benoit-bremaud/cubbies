@@ -24,3 +24,4 @@ choice, so the reasoning can be re-examined when the context changes.
 | [0016](ADR-0016-expansion-port.md) | Expansion port J1: module power budget 50/75 mA, internal bay behind a clipped rear cover, plug-and-play by allowlisted I2C probe | Accepted |
 | [0017](ADR-0017-voice-group-sound-cues-first.md) | Voice: group sound cues on the V1 hardware first, no words, no cloud | Proposed |
 | [0018](ADR-0018-bounded-one-shot-social-events.md) | Security: a received frame may change the mood through a bounded one-shot social event (amends 0012) | Proposed |
+| [0019](ADR-0019-local-first-ci-no-github-workflows.md) | Local-first CI: every check runs on the laptop (just, lefthook, mise, gate attestation), no GitHub workflow | Accepted |

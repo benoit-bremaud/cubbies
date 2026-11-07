@@ -7,6 +7,30 @@ human context: what was done, why, and by which PR.
 
 ## 2026-11-07
 
+### Local-first CI, no GitHub workflow (issue #99) — **PR pending**
+
+- Owner decision of the day for every project (agents-skills#210 model A, wave 0 bis #259): the
+  checks run on the laptop, GitHub Actions keeps only a production deploy on a signed tag, and
+  cubbies deploys nothing. The five workflows (`ci`, `codeql`, `dependency-review`, `gitleaks`,
+  `scorecard`) and `dependabot.yml` are removed; `.github/` holds `allowed_signers` only. Since
+  2026-10-01 they had run 591 times for about 1 240 minutes (free, public repository).
+- ADR-0019 records the two MCDA decisions: Scorecard removed (385/500 vs 330 to keep it weekly
+  and 285 as it was), no tag-triggered `prod.yml` (470/500 vs 325 for a later local `just
+  release` and 280 for a workflow publishing the `.bin`).
+- Local CI per skill `local-ci`: `justfile` (fast / check / gate / nightly, build, sonar, merge),
+  `mise.toml` + `mise.lock`, `lefthook.yml`, `typos.toml`, `scripts/attest.sh`,
+  `check-commit-msg.sh`, `test-attest.sh` (20 cases), `test-local-ci.sh` (54 cases), systemd user
+  timer `cubbies-nightly` at 04:50. `tools/sonar-scan.sh` now passes extra scanner options so
+  `just sonar` waits for the quality gate.
+- Gotcha: `~/.local/bin/pio` (pipx) is broken; PlatformIO runs as `uvx --from platformio==6.2.0
+  pio`. The pioarduino platform points `SSL_CERT_FILE` at the penv certifi bundle before its
+  `uv pip install --upgrade`, so behind Aikido every board build failed with
+  `invalid peer certificate: UnknownIssuer`; `scripts/pio-trust-local-ca.sh` (run by `just
+  build`) appends the locally installed CAs to that bundle. `certifi-system-store` was tried and
+  reverted (needs `pkg_resources`, absent from the penv).
+- `just check` timings on this machine: native tests 373 cases in 37 s, both board builds 33 s,
+  lint 5 s, Semgrep 4 s, gitleaks under 1 s.
+
 ### Chain frame stamped before the origin's trigger meets the cooldown (issue #95) — **PR pending**
 
 - `startChain()` runs before `tick()` in `main.cpp`, so a CHAIN frame queued for another event

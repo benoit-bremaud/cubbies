@@ -1,0 +1,104 @@
+# ADR-0019: Local-first CI — every check runs on the laptop, no GitHub workflow
+
+**Status:** Accepted — 2026-11-07 — issue #99
+
+## Context
+
+Until this decision five GitHub workflows ran on every push and pull request: `ci` (native
+tests, both board builds, ruff), `codeql` (C++ on the native build, the workflows themselves),
+`dependency-review` (GitHub Actions only: PlatformIO packages are pinned by hand in
+`platformio.ini` and belong to no ecosystem GitHub sees), `gitleaks` and the weekly OSSF
+`scorecard`. From 2026-10-01 to 2026-11-07 they ran 591 times for about 1 240 Actions minutes
+(888 in October, 352 in November), free because the repository is public (ADR-0005 of
+agents-skills, public by default).
+
+The owner decided on 2026-11-07, for every project (epic agents-skills#210, model A, ADR-0004/D5
+of agents-skills; wave 0 bis agents-skills#259), that every check runs locally and
+deterministically (skill `local-ci`: `just fast` on commit, `just check` on push, `just gate`
+before every merge, `just nightly` on a systemd user timer, with lefthook, mise and a signed gate
+attestation), and that GitHub Actions is reserved for a production deploy triggered by a signed
+release tag. The policy does not depend on the minutes being paid.
+
+cubbies deploys nothing: the firmware is flashed by cable; V1.5 will distribute a release through
+the mother cube (roadmap T6). The repository already had `tools/sonar-scan.sh` (Python coverage
+plus the SonarQube scan) and the review-local gate; the native tests and the board builds were
+already required before every push (CLAUDE.md § Toolchain).
+
+## Options and scoring (OSSF Scorecard)
+
+Criteria and weights: conformity with the zero-CI policy (30), security value (25), maintenance
+of the workflow and its pinned actions (20), minutes (15), visibility for a public repository (10).
+
+| Option | Policy | Security | Maintenance | Minutes | Visibility | Total /500 |
+|---|---|---|---|---|---|---|
+| A — keep it weekly only (schedule trigger) | 3 | 4 | 2 | 4 | 4 | 330 |
+| **B — remove it** | 5 | 2 | 5 | 5 | 1 | **385** |
+| C — keep it as it was (push + schedule) | 2 | 4 | 2 | 3 | 4 | 285 |
+
+Sensitivity: with security at 35 and policy at 20, A scores 340 and B 355; B stays first. The
+checks Scorecard audits (pinned actions, token permissions, branch protection, dependency
+update tooling) mostly concern a CI that no longer exists; secrets and SAST are local tiers.
+
+## Options and scoring (a tag-triggered `prod.yml`)
+
+Criteria and weights: real need (40), conformity with agents-skills ADR-0004 (25), maintenance
+(20), readiness for V1.5 (15).
+
+| Option | Need | Conformity | Maintenance | V1.5 | Total /500 |
+|---|---|---|---|---|---|
+| **A — no workflow at all** | 5 | 5 | 5 | 3 | **470** |
+| B — `prod.yml` publishing the `.bin` as a release asset | 2 | 4 | 2 | 4 | 280 |
+| C — a local `just release` recipe later | 2 | 5 | 3 | 4 | 325 |
+
+Nothing deploys, so a `prod.yml` would need its tag ruleset, `production` environment and
+`deploy/staging` attestation for a job with no consumer before V1.5. When T6 fixes the format of
+an over-the-air release, a local `just release` (compile the tag's commit, `attest.sh release`,
+upload the asset) is enough: a build, not a deploy.
+
+## Decision
+
+1. **No GitHub workflow and no Dependabot configuration.** `.github/` holds `allowed_signers`
+   only. The wiring test refuses any file under `.github/workflows/`.
+2. **Four local tiers** in the `justfile`, tools pinned in `mise.toml` and `mise.lock`, hooks in
+   `lefthook.yml` (`just setup` once per clone):
+   - L0 `just fast` (pre-commit): gitleaks on the staged files, ruff on the staged Python, typos,
+     shellcheck; the commit-msg hook enforces Conventional Commits.
+   - L1 `just check` (pre-push, `review-local --push`): ruff check and format, typos, shellcheck,
+     `lefthook validate`; `pio test -e native`, the wiring and attestation tests; `pio run` for
+     both board envs; Semgrep Community Edition (`p/python`) on the Python tooling; gitleaks on
+     the whole history. Measured on this machine: about 2 min 30 s warm.
+   - L2 `just gate` (before every merge, on the pushed head): `check`, then `just sonar`
+     (`tools/sonar-scan.sh` with the quality-gate wait), then the attestation of agents-skills
+     ADR-0003 (signed note on `refs/notes/gate` plus the commit status `gate`). `just merge <pr>`
+     refuses a head without it and squashes with `--match-head-commit`.
+   - L3 `just nightly` (systemd user timer `cubbies-nightly.timer`, 04:50): `check`, TruffleHog on
+     the history, `pio pkg outdated` (the only watch on the hand-pinned PlatformIO packages, which
+     Dependabot never covered) and `mise outdated` for the toolchain pins.
+3. **What replaces what.** `ci.yml` → `check` (same commands, same pins: PlatformIO 6.2.0 and
+   ruff 0.14.0 through `uvx`). `codeql.yml` → Semgrep on the Python scripts; CodeQL's C++ analysis
+   of the native build has no free local equivalent (CodeQL CLI is limited to GitHub-hosted public
+   analysis; Semgrep CE has no C++ ruleset), the behaviour logic stays covered by the 373 native
+   tests, the golden images and the adversarial review of every PR. `dependency-review.yml` had
+   only the Actions to review: nothing left. `gitleaks.yml` → `check` plus TruffleHog nightly.
+   `scorecard.yml` → removed (matrix above).
+4. **PlatformIO through `uvx --from platformio==6.2.0 pio`**, not a mise pipx install (it would
+   need a mise-managed Python) and not `~/.local/bin/pio`. The pioarduino platform points
+   `SSL_CERT_FILE` at the certifi bundle of `~/.platformio/penv` before installing its Python
+   dependencies, so a machine whose TLS-inspecting endpoint agent is trusted only by the system
+   store fails every board build; `scripts/pio-trust-local-ca.sh`, run by `just build`, appends
+   the locally installed CAs (`/usr/local/share/ca-certificates/*.crt`) to that bundle.
+   Verification is never relaxed.
+5. **Signing.** SSH only (agents-skills #213): `.github/allowed_signers` holds the owner's key;
+   `attest.sh` reads it from `origin/main`, never from the checkout.
+
+## Consequences
+
+- No PR check appears on GitHub; the evidence of a green gate is the `gate` commit status and
+  its signed note on the head SHA. The first merge of this ADR is a bootstrap: `allowed_signers`
+  is not on `main` yet, so it goes through `gh pr merge --squash --match-head-commit` on the
+  owner's explicit yes; every later merge is `just merge <pr>`.
+- CLAUDE.md § Toolchain and the README § Local quality scan describe the tiers; the review-local
+  gate keeps running the adversarial review and `just check` before every push.
+- The native tests and the two board builds now run on the laptop only: `just check` needs the
+  PlatformIO packages cached (first run downloads about 1 GB).
+- V1.5 (roadmap T6): add a local `just release`; still no GitHub workflow unless a deploy appears.

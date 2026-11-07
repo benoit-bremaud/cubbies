@@ -6,7 +6,7 @@
 # when kicad-cli is installed (the committed copy is used otherwise).
 # Usage: sh run.sh   (from anywhere; needs ngspice 42 and python3; kicad-cli 9 to refresh the values)
 set -u
-cd "$(dirname "$0")"
+cd "$(dirname "$0")" || exit 1
 status=0
 if command -v kicad-cli > /dev/null 2>&1; then
   # keep going on failure: every bench still reports
