@@ -21,7 +21,7 @@ void ChainReaction::hear(const Chain& c, uint32_t now, uint8_t rank) {
   if (seen(c, now)) return;  // rows 8, 9
   if (pending_) return;      // row 10: not remembered
   remember(c, now);
-  if (reacted_ && ageMs(now, lastReaction_) < kCooldownMs) return;  // row 12
+  if (cooling(now)) return;  // row 12
   pending_ = true;
   pendingFrame_ = c;
   fireAt_ = now + kStepMs * (1u + rank);  // row 4
@@ -38,6 +38,12 @@ ChainFire ChainReaction::tick(uint32_t now, bool awake) {
   f.frame = Chain{pendingFrame_.paletteIndex, pendingFrame_.eventId,
                   static_cast<uint8_t>(pendingFrame_.hop + (f.relay ? 1 : 0))};
   return f;
+}
+
+bool ChainReaction::cooling(uint32_t now) const {
+  // Symmetric window: start() runs before tick(), so a frame queued for another event may be
+  // stamped just before the origin's own trigger; it is within T_cooldown too (issue #95).
+  return reacted_ && (ageMs(now, lastReaction_) < kCooldownMs || ageMs(lastReaction_, now) < kCooldownMs);
 }
 
 bool ChainReaction::seen(const Chain& c, uint32_t now) const {

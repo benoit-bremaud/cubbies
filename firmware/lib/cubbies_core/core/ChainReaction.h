@@ -43,6 +43,7 @@ class ChainReaction {
     uint8_t id;
     uint32_t at;
   };
+  bool cooling(uint32_t now) const;
   bool seen(const Chain& c, uint32_t now) const;
   void remember(const Chain& c, uint32_t now);
 

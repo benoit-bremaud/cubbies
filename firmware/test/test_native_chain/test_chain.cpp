@@ -184,6 +184,19 @@ static void test_row12_reaction_cooldown() {
   TEST_ASSERT_FALSE(chain.tick(fired + 20000, true).react);
 }
 
+// Row 12, issue #95: start() runs before tick() in main.cpp, so a CHAIN frame queued for another
+// event is heard stamped before the origin's own trigger; it is still within T_cooldown.
+static void test_row12_backlogged_frame_meets_the_cooldown() {
+  C chain;
+  Chain out{};
+  Prng prng(5, 5);
+  TEST_ASSERT_TRUE(chain.start(kT0, true, 2, 1, prng, out));
+  chain.hear(Chain{5, 1, 0}, kT0 - 1, 0);
+  const ChainFire f = chain.tick(kT0 + 10000, true);
+  TEST_ASSERT_FALSE(f.react);
+  TEST_ASSERT_FALSE(f.relay);
+}
+
 // Row 13: past 8 keys the oldest is forgotten (keys heard during the cooldown are remembered,
 // so the ring fills well within T_seen).
 static void test_row13_ring_overwrites_the_oldest() {
@@ -369,6 +382,7 @@ int main(int, char**) {
   RUN_TEST(test_row10_one_pending_event_at_a_time);
   RUN_TEST(test_row11_sleeping_cube_relays_without_reacting);
   RUN_TEST(test_row12_reaction_cooldown);
+  RUN_TEST(test_row12_backlogged_frame_meets_the_cooldown);
   RUN_TEST(test_row13_ring_overwrites_the_oldest);
   RUN_TEST(test_row14_key_expires_after_t_seen_across_the_wrap);
   RUN_TEST(test_protocol_alone_start_sends_nothing);
