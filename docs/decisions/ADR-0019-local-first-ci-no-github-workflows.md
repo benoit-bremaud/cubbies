@@ -9,7 +9,8 @@ tests, both board builds, ruff), `codeql` (C++ on the native build, the workflow
 `dependency-review` (GitHub Actions only: PlatformIO packages are pinned by hand in
 `platformio.ini` and belong to no ecosystem GitHub sees), `gitleaks` and the weekly OSSF
 `scorecard`. From 2026-10-01 to 2026-11-07 they ran 589 times for 812 job minutes
-(888 in October, 352 in November), free because the repository is public (ADR-0005 of
+(CI 372, CodeQL 357, Scorecard 30, Dependabot 22, gitleaks 20, dependency review 11; table on
+#99), free because the repository is public (ADR-0005 of
 agents-skills, public by default).
 
 The owner decided on 2026-11-07, for every project (epic agents-skills#210, model A, ADR-0004/D5

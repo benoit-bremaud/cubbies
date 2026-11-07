@@ -41,6 +41,13 @@ deps() { just --show "$1" | grep -E "^$1( |:)" | sed 's/.*: *//'; } # deps <reci
 [ "$(deps check)" = "lint test build security secrets" ] || fail "check must be exactly lint test build security secrets"; ok
 deps nightly | grep -qw check || fail "nightly does not depend on check"; ok
 just --show test | grep -qE 'CI=1 {{ *pio *}} test -e native' || fail "test does not run the native suites under CI=1 (golden images never regenerated)"; ok
+for r in golden flash; do just --show "$r" > /dev/null 2>&1 || fail "recipe $r missing"; ok; done
+# just ruff passes each file name as one quoted argument (a staged name is attacker-chosen in a public repo).
+mkdir -p "$work/uvx" && printf '#!/bin/sh\nprintf "%%s\\n" "$#" "$@" > "$UVX_LOG"\n' > "$work/uvx/uvx" && chmod +x "$work/uvx/uvx"
+UVX_LOG="$work/uvx.log" PATH="$work/uvx:$PATH" just ruff 'a b.py' 'c;touch pwned;.py' > /dev/null 2>&1 || fail "just ruff failed on odd file names"
+# the log holds the last call (format --check): 3 fixed words + the 2 names, each on its own line
+[ "$(head -n 1 "$work/uvx.log")" = 5 ] && grep -qxF 'a b.py' "$work/uvx.log" && grep -qxF 'c;touch pwned;.py' "$work/uvx.log" && [ ! -e pwned ] \
+  || { cat "$work/uvx.log"; fail "just ruff split or executed a file name"; }; ok
 for s in test-local-ci test-attest; do just --show test | grep -qF "sh scripts/$s.sh" || fail "test does not run scripts/$s.sh"; ok; done
 just --show security | grep -qF -- '--error' || fail "security does not fail on Semgrep findings"; ok
 just --show secrets | grep -qF 'gitleaks git' || fail "secrets does not scan the git history"; ok

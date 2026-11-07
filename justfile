@@ -35,15 +35,16 @@ setup:
 fast:
     lefthook run pre-commit
 
-# ruff check + format on the whole repository, or on the files the pre-commit hook passes
-ruff *files=".":
-    {{ruff}} check {{files}}
-    {{ruff}} format --check {{files}}
+# ruff check + format on the whole repository, or on the files the pre-commit hook passes. Positional
+# arguments: a staged file name is passed as one quoted argument, never pasted into the command line.
+[positional-arguments]
+ruff *files:
+    if [ $# -eq 0 ]; then set -- .; fi; {{ruff}} check "$@" && {{ruff}} format --check "$@"
 
 # ruff, typos, shellcheck on every tracked shell script, the hook config
 lint: ruff
     typos
-    shellcheck --severity=warning $(git ls-files '*.sh')
+    git ls-files -z '*.sh' | xargs -0 shellcheck --severity=warning
     lefthook validate
 
 # CI=1: the golden images are compared, never regenerated, whatever the shell exports (Golden.h).
@@ -57,6 +58,10 @@ test:
 golden:
     cd firmware && CUBBIES_UPDATE_GOLDEN=1 {{pio}} test -e native
 
+# Flash a board by USB (docs/hardware/assembly.md); the packages directory of this project applies here too
+flash env="xiao_c3":
+    cd firmware && {{pio}} run -e {{quote(env)}} -t upload
+
 # The penv certifi bundle must trust the machine's local CAs first (scripts/pio-trust-local-ca.sh).
 # Firmware build for every board env
 build:
@@ -69,7 +74,7 @@ build:
 # io_uring rings charged to RLIMIT_MEMLOCK and dies intermittently (skill local-ci § Gotchas).
 # SAST (Semgrep CE, p/python) on every tracked Python file
 security:
-    EIO_BACKEND=posix {{semgrep}} scan --config p/python --error --metrics=off --quiet $(git ls-files '*.py')
+    git ls-files -z '*.py' | EIO_BACKEND=posix xargs -0 {{semgrep}} scan --config p/python --error --metrics=off --quiet
 
 # Secrets in the whole git history
 secrets:
