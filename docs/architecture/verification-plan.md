@@ -14,7 +14,7 @@
 | Native unit tests | PlatformIO `env:native`, Unity | `firmware/test/` | moods, sleep, identity, gestures, protocol, rate limits |
 | Golden images | native display adapter rendering the 96×64 framebuffer to PNG, compared to references | `firmware/test/golden/` | every expression and transition (REQ-F-01, REQ-F-02, REQ-NF-08) |
 | Fuzzing | native test feeding random and malformed frames to the parser | `firmware/test/` | REQ-NF-06 |
-| ERC | `kicad-cli sch erc` | CI (later) and local | GPIO contract, net sanity |
+| ERC | `kicad-cli sch erc` | local (a `just gate` step later) | GPIO contract, net sanity |
 | Bench measurement | multimeter, phone sound meter, two prototypes, camera for latency | results recorded in `docs/hardware/measurements.md` | current, dB, range, latency, frame rate |
 | Scripted dimension checks | `freecadcmd hardware/case/cubbies_case.py` runs 18 checks (valid solids, 40 mm envelope, 1.6 mm walls, every opening present and the vents on the flat face, bay free of any part, J1 parameters, 0.2 mm hook clearance, barb ramps leading, barb engagement, hook strain against PLA, no overlap, cover push-in stop, OLED module and XIAO clear of shells, hooks and bay, tolerance coupon complete) and exports nothing if one fails; mutation-tested 2026-10-19 (a reversed barb and a vent past the corner both fail) | `hardware/case/cubbies_case.py` | REQ-NF-10, REQ-NF-11, ADR-0016 bay |
 | Print trial | the printed enclosure on prototype hardware | photos in `docs/hardware/assembly.md` | REQ-NF-10, REQ-NF-11 |
@@ -33,7 +33,7 @@
 | Expansion port J1 module budget (REQ-NF-12, ADR-0016) | C-0012, C-0013 | calculation (tier 1, provisional: passes at the nominal θJA, not at the 400 °C/W bound); bench: LDO temperature with a 50 mA dummy load on J1 is a CDR exit criterion | CDR |
 | Expansion modules ignored unless known (REQ-F-20) | ADR-0016 D3 | native tests of the module registry at the module PDR; bench: boot with an unknown Qwiic board fitted | module PDR, CDR (bench) |
 | GPIO allocation (C3, ADR-0007) | review against ADR-0007 | `kicad-cli sch erc` | CDR (signed contract) |
-| Eyes and expressions (REQ-F-01, 02, NF-08) | native PNG render | golden images in CI | PDR (owner review of the images) |
+| Eyes and expressions (REQ-F-01, 02, NF-08) | native PNG render | golden images in `just check` | PDR (owner review of the images) |
 | Moods, sleep, identity, protocol (REQ-F-05..13) | Unity tests | replayed scenarios with injected clock | PDR |
 | Choir drift ≤ 50 ms (REQ-F-14, FS8) | design budget: radio latency only, lead rest in the Sound gate (social-group/05c) | native test: two cubes out of tick phase start on the same ms; bench: two prototypes recorded by one microphone, onset gap measured | V1 (bench) |
 | Radio range (REQ-NF-05) | estimate | measured with two prototypes | V1 |

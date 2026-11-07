@@ -61,10 +61,10 @@ Within a tier, the order is the implementation order.
 
 | # | Item | Tier |
 |---|------|------|
-| T1 | PlatformIO skeleton, two board envs, native tests, CI build + test | A |
+| T1 | PlatformIO skeleton, two board envs, native tests, build + test in the local CI (ADR-0019) | A |
 | T2 | Pin map and hardware abstraction (display, audio, touch, radio, sensors as adapters) | A |
 | T3 | Versioned ESP-NOW frame format with allowlist parsing | A |
-| T4 | Security CI baseline (gitleaks, dependency review) | A |
+| T4 | Security baseline: gitleaks and Semgrep in the local CI, TruffleHog nightly (ADR-0019; dependency review dropped with the workflows) | A |
 | T5 | Enclosure v1: 40 mm cube, snap-fit, OLED window, touch pad on top, USB-C at the back | A |
 | T6 | OTA relayed by the mother cube (ESP-NOW OTA) | V1.5 |
 | T7 | Power management: light sleep, screen off, battery gauge | V2 |

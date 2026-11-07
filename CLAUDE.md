@@ -44,7 +44,7 @@ this repository.
 - **Tests follow the conception (ADR-0014).** On `firmware/lib/` every table row of the
   validated diagrams becomes a failing native test before the code (TDD, Red → Green →
   Refactor). The eyes are verified by golden images under `firmware/test/golden/`
-  (regenerate with `CUBBIES_UPDATE_GOLDEN=1 pio test -e native`, review the PNG sheet from
+  (regenerate with `just golden`, review the PNG sheet from
   `firmware/tools/golden_sheet.py` in the PR, then commit). Adapters in `firmware/src/` are
   validated by the board builds and on the bench, never by mocking Arduino.
 - **The cube must never be loud.** Every sound goes through the single Sound gate in `lib/`,
@@ -78,13 +78,20 @@ firmware/test/            native unit tests (Unity): one folder per test program
 hardware/electronics/     KiCad schematic (native) + PDF export, sim/ (ngspice netlists and plots)
 hardware/case/            enclosure: FreeCAD Python script (source) + generated exports (CC BY-SA 4.0)
 tools/                    repository-wide scripts (local SonarQube scan)
+scripts/                  local CI: gate attestation, commit-msg check, wiring tests, penv trust
+justfile, mise.toml,      local CI tiers, pinned toolchain, git hooks (ADR-0019)
+lefthook.yml
 ```
 
 ## Toolchain
 
 - PlatformIO with the **pioarduino** platform pinned to a release URL in `platformio.ini`
   (Arduino core 3.3.x on ESP-IDF 5.5). Never float the platform or a library version.
-- `pio test -e native` must be green before every push; `pio run` for both board envs must
-  build. CI (`.github/workflows/ci.yml`) re-runs both on every pull request and push to `main`.
-- `uvx ruff@0.14.0 check .` and `uvx ruff@0.14.0 format --check .` must be clean before every
-  push; CI runs both (job `python`).
+- **Local CI only, no GitHub workflow (ADR-0019, skill `local-ci`).** `just setup` once per
+  clone (mise toolchain + lefthook hooks). `just fast` runs on commit (staged files), `just check`
+  on push: `pio test -e native` (golden images compared, never regenerated), `pio run` for both
+  board envs, `just ruff` (check + format), typos, shellcheck, Semgrep on the Python tooling,
+  gitleaks on the history, the wiring tests. `just gate` runs before every merge on the pushed head (check +
+  SonarQube + the signed attestation); `just merge <pr>` refuses a head without it. `just nightly`
+  runs on the systemd user timer. PlatformIO, ruff and Semgrep run through `uvx`, pinned once in
+  the `justfile`; the other CLIs are pinned in `mise.toml`.

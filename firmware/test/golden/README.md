@@ -6,10 +6,10 @@ the same regeneration for humans and GitHub (our own minimal encoder, `test/supp
 no third-party code). On a mismatch the test writes `<name>.actual.png` next to the reference
 (ignored by git) and fails with the pixel count.
 
-After an intended visual change, from `firmware/`:
+After an intended visual change, from the repository root:
 
 ```bash
-CUBBIES_UPDATE_GOLDEN=1 pio test -e native
+just golden
 ```
 
 then `python3 tools/golden_sheet.py` (needs Pillow) and attach the before/after `sheet.png`

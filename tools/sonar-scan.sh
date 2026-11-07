@@ -3,7 +3,8 @@
 # FreeCAD AppImage python in check-only mode, so no export is rewritten), write coverage.xml,
 # then run the local SonarQube scan. C/C++ is not analysed by the Community server.
 # Like run.sh, schematic_values.py regenerates schematic.lib from the schematic.
-# Usage: SONAR_TOKEN=$(cat ~/.config/sonarqube/analysis-token) sh tools/sonar-scan.sh
+# Usage: SONAR_TOKEN=$(cat ~/.config/sonarqube/analysis-token) sh tools/sonar-scan.sh [sonar-scanner options]
+# `just sonar` (step of `just gate`) runs it with -Dsonar.qualitygate.wait=true.
 # Needs uv, python3, kicad-cli 9, freecadcmd (FreeCAD 1.1, python 3.11) and sonar-scanner.
 set -eu
 cd "$(dirname "$0")/.."
@@ -51,4 +52,4 @@ if tr '\r\t' '\n\n' < "$work/case.log" | grep -q '^FAIL' || ! grep -q CASE-COV-O
 cov combine -q
 cov xml -q -o coverage.xml
 cov report --skip-empty
-SONAR_TOKEN=$token sonar-scanner
+SONAR_TOKEN=$token sonar-scanner "$@" # extra -D options, e.g. the quality-gate wait of `just sonar`

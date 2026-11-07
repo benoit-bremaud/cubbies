@@ -42,15 +42,38 @@ docs/hardware/            electronics spec, calculation log, assembly guide, ben
 firmware/                 PlatformIO project (pioarduino platform, Arduino core 3.3.x)
 hardware/electronics/     KiCad schematic + PDF, sim/ (ngspice benches, closed-form cross-check)
 hardware/case/            3D-printable enclosure (CC BY-SA 4.0), to come
+scripts/                  local CI: gate attestation, commit-msg check, wiring tests, penv trust
 tools/                    repository-wide scripts (local SonarQube scan)
+justfile, mise.toml, lefthook.yml   local CI tiers, pinned toolchain, git hooks
 PROJECT_LOG.md            operational logbook
 ```
 
-## Local quality scan
+## Local CI
+
+Every check runs on the laptop (ADR-0019, skill `local-ci`); the repository has no GitHub
+workflow. Once per clone:
+
+```bash
+just setup
+```
+
+| Tier | Recipe | When | Holds |
+|---|---|---|---|
+| L0 | `just fast` | pre-commit hook | gitleaks, ruff, typos, shellcheck on the staged files (the commit-msg hook enforces the Conventional Commits subject) |
+| L1 | `just check` | pre-push hook | ruff check + format, typos, shellcheck, `lefthook validate`, `pio test -e native` (golden images compared, never regenerated), both board builds, Semgrep (Python), gitleaks on the history, wiring and attestation tests |
+| L2 | `just gate` | before every merge, on the pushed head | `check` + SonarQube with the quality-gate wait, then the signed attestation; `just merge <pr>` requires it |
+| L3 | `just nightly` | systemd user timer | `check` + TruffleHog + PlatformIO and toolchain pin drift |
+
+PlatformIO, ruff and Semgrep run through `uvx`, pinned once in the `justfile`. Behind a
+TLS-inspecting endpoint agent, `just build` first lets the PlatformIO penv trust the machine's
+local CAs (`scripts/pio-trust-local-ca.sh`). The `justfile` keeps the PlatformIO packages of this
+project under `~/.platformio/packages-cubbies`, so another project's toolchain pin cannot
+replace ours.
 
 The self-hosted SonarQube (Community Build, `main` only) reads `sonar-project.properties`.
 `tools/sonar-scan.sh` measures the Python coverage (sim scripts, then the case script inside the
-FreeCAD python in check-only mode), writes `coverage.xml` and runs the scan:
+FreeCAD python in check-only mode), writes `coverage.xml` and runs the scan; `just sonar` calls
+it with the global analysis token and the quality-gate wait:
 
 ```bash
 SONAR_TOKEN=$(cat ~/.config/sonarqube/analysis-token) sh tools/sonar-scan.sh
