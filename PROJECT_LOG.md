@@ -19,7 +19,7 @@ human context: what was done, why, and by which PR.
   release` and 280 for a workflow publishing the `.bin`).
 - Local CI per skill `local-ci`: `justfile` (fast / check / gate / nightly, build, sonar, merge),
   `mise.toml` + `mise.lock`, `lefthook.yml`, `typos.toml`, `scripts/attest.sh`,
-  `check-commit-msg.sh`, `test-attest.sh` (23 cases), `test-local-ci.sh` (70 cases), systemd user
+  `check-commit-msg.sh`, `test-attest.sh` (23 cases), `test-local-ci.sh` (73 cases), systemd user
   timer `cubbies-nightly` at 04:50. `tools/sonar-scan.sh` now passes extra scanner options so
   `just sonar` waits for the quality gate.
 - Gotcha: `~/.local/bin/pio` (pipx) is broken; PlatformIO runs as `uvx --from platformio==6.2.0

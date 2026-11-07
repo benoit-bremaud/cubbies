@@ -44,7 +44,7 @@ ruff *files:
 # ruff, typos, shellcheck on every tracked shell script, the hook config
 lint: ruff
     typos
-    git ls-files -z '*.sh' | xargs -0 shellcheck --severity=warning
+    git ls-files -z '*.sh' | xargs -0 -r shellcheck --severity=warning
     lefthook validate
 
 # CI=1: the golden images are compared, never regenerated, whatever the shell exports (Golden.h).
@@ -60,6 +60,7 @@ golden:
 
 # Flash a board by USB (docs/hardware/assembly.md); the packages directory of this project applies here too
 flash env="xiao_c3":
+    sh scripts/pio-trust-local-ca.sh
     cd firmware && {{pio}} run -e {{quote(env)}} -t upload
 
 # The penv certifi bundle must trust the machine's local CAs first (scripts/pio-trust-local-ca.sh).
@@ -74,7 +75,7 @@ build:
 # io_uring rings charged to RLIMIT_MEMLOCK and dies intermittently (skill local-ci § Gotchas).
 # SAST (Semgrep CE, p/python) on every tracked Python file
 security:
-    git ls-files -z '*.py' | EIO_BACKEND=posix xargs -0 {{semgrep}} scan --config p/python --error --metrics=off --quiet
+    git ls-files -z '*.py' | EIO_BACKEND=posix xargs -0 -r {{semgrep}} scan --config p/python --error --metrics=off --quiet
 
 # Secrets in the whole git history
 secrets:
