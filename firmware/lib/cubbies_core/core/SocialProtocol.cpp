@@ -48,7 +48,12 @@ SocialOutput SocialProtocol::tick(const SelfState& self) {
   const uint32_t now = clock_.nowMs();
   RxFrame f;
   petHeard_ = false;
-  for (uint8_t i = 0; i < kMaxFramesPerTick && radio_.receive(f); ++i) receive(f);
+  for (uint8_t i = 0; i < kMaxFramesPerTick && radio_.receive(f); ++i) {
+    // Issue #91: the adapter stamps frames after `now` was read; a receive time is never later
+    // than the tick, or ageMs() would wrap to ~2^32 and expire the sender in this pass.
+    if (!isDue(now, f.nowMs)) f.nowMs = now;
+    receive(f);
+  }
   expire(now);
   SocialOutput out = greet(now);
   const bool awake = self.sleep == SleepState::Awake;
