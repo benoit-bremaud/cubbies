@@ -5,9 +5,21 @@ human context: what was done, why, and by which PR.
 
 ---
 
+## 2026-11-07
+
+### Requirement ids, diagram index and ruff format (issues #87, #80) — **PR pending**
+
+- REQ-F-20 was used twice. Collective sleep becomes REQ-F-22; the expansion module, added first
+  (ADR-0016), keeps REQ-F-20, so no accepted ADR changes (MCDA 435/500 vs 215). Older log
+  entries and review reports keep the old number as history.
+- The README diagram table now lists every view (social-group, expansion-port, identity 05a/05b,
+  social-presence 05a).
+- `ruff format` applied to `golden_sheet.py` and `calc.py`; CI gains a `python` job running
+  `ruff check` and `ruff format --check` with ruff 0.14.0 (MCDA 450/500 vs 210).
+
 ## 2026-11-06
 
-### G6a jealousy repertoire (issue #90) — **PR pending**
+### G6a jealousy repertoire (issue #90) — **PR #92** (07888bf)
 
 - The G6 single Sulk becomes the 05e two-step crescendo: the first PET under the guards is
   noticed (a silent step-1 reaction, no cooldown or budget entry), a second one within T_notice

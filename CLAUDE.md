@@ -86,3 +86,5 @@ tools/                    repository-wide scripts (local SonarQube scan)
   (Arduino core 3.3.x on ESP-IDF 5.5). Never float the platform or a library version.
 - `pio test -e native` must be green before every push; `pio run` for both board envs must
   build. CI (`.github/workflows/ci.yml`) re-runs both on every pull request and push to `main`.
+- `uvx ruff@0.14.0 check .` and `uvx ruff@0.14.0 format --check .` must be clean before every
+  push; CI runs both (job `python`).

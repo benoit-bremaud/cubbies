@@ -1,5 +1,6 @@
 # Build and test gate: native unit tests of the behaviour logic, then a firmware build for every
-# board env. The heavy review runs locally before the push (review-local gate).
+# board env, and the Python lint and format check (ruff).
+# The heavy review runs locally before the push (review-local gate).
 name: CI
 
 on:
@@ -41,3 +42,17 @@ jobs:
       - run: pip install platformio==6.2.0 # keep in sync with codeql.yml and the cache key above
       - run: pio test -e native
       - run: pio run -e xiao_c3 -e c3_supermini
+
+  python:
+    name: Python lint and format
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/ruff-action@278981a28ce3188b1e39527901f38254bf3aac89 # v4.1.0
+        with:
+          version: '0.14.0' # keep in sync with the local gate (uvx ruff@0.14.0)
+          args: check
+      - run: ruff format --check --diff .

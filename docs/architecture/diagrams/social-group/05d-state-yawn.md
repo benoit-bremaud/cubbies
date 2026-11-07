@@ -7,7 +7,7 @@
 > **Base machines**: [cube-core/05a-state-mood-engine.md](../cube-core/05a-state-mood-engine.md),
 > [cube-core/05b-state-sleep-wake.md](../cube-core/05b-state-sleep-wake.md) (Tired → Dozing → Asleep), [05a-state-contagion.md](05a-state-contagion.md) (G2 hook)
 > **Sequence**: [02d-sequence-yawn.md](02d-sequence-yawn.md)
-> **Requirement**: REQ-F-20, FS8 — behaviour B4 (system-initiated, outcome of UC5 and UC8)
+> **Requirement**: REQ-F-22, FS8 — behaviour B4 (system-initiated, outcome of UC5 and UC8)
 
 > **Status**: design choices validated by the owner 2026-10-23 (issue #59), scored options
 > (criteria: visible effect 30, owner safety 25, simplicity 25, robustness 20): D1 only a Bored
