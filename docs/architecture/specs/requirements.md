@@ -64,8 +64,8 @@ are not makers: the cube works from the moment it is plugged in.
 | REQ-F-12 | A cube can trigger a chain reaction that neighbours relay once each. | FS8 | FW |
 | REQ-F-13 | Rare gag behaviour: a discreet "toot" with embarrassed eyes, neighbours react; rate-limited on awake time (≈ once per 16 h awake), never while asleep or in the dark. | C8, C10 | FW |
 | REQ-F-14 | Synchronised choir across cubes (tier B). | FS8 | FW |
-| REQ-F-22 | Collective sleep: an idle (Bored) cube catches the yawn of a drowsy neighbour (Tired, dozing or asleep) and turns Tired; a cube in use never does (tier B, G5). | FS8, FS5 | FW |
 | REQ-F-21 | Jealousy: when the owner strokes another cube in range, an awake cube left alone reacts briefly (a silent glance at the first stroke, then one reaction drawn by context from a small repertoire, eyes and at most one sound through the Sound gate, mood unchanged), rate-limited; a cube in use or asleep never does (tier B, G6, G6a). | FS8, C10 | FW |
+| REQ-F-22 | Collective sleep: an idle (Bored) cube catches the yawn of a drowsy neighbour (Tired, dozing or asleep) and turns Tired; a cube in use never does (tier B, G5; REQ-F-20 until #87). | FS8, FS5 | FW |
 | REQ-F-15 | Eyes follow the cube's tilt; shaking annoys it; upside down it sleeps (tier B, S9). The motion sensor is fitted in V1 so the series needs no rework. | FS1, FS2 | FW, EL |
 | REQ-F-20 | A delivered cube accepts one extra I2C module through an internal expansion port: the module works without a per-cube firmware, an unknown or absent module changes nothing, and the cube still boots (ADR-0016, issue #18). | FS9, C3, C4 | FW, EL, ME |
 

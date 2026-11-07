@@ -131,8 +131,8 @@ Conventions: Mermaid under `diagrams/<feature>/<NN>-<type>.md`; only the views w
 applies; use cases are actor-initiated goals grouped by domain, never by module; the component
 diagram is the only place where the lib/adapters split appears.
 
-Status: validated by the owner (PR #5), to be re-validated against `requirements.md` at the
-`cube-core` PDR. Class diagrams are deferred until a feature introduces three or more domain
+Status: each diagram carries its own Status line (validation date and issue); the `cube-core`
+views were validated in PR #5 and at the cube-core PDR (2026-10-14, ADR-0013). Class diagrams are deferred until a feature introduces three or more domain
 types (the first one is `social-group/04-class-jealousy`).
 
 | Feature | Diagram | Question it answers |
@@ -149,7 +149,7 @@ types (the first one is `social-group/04-class-jealousy`).
 | `identity` | [05a-state-invitation-window](diagrams/identity/05a-state-invitation-window.md) | When the post-boot invitation window opens, and how a hold enters the ritual |
 | `identity` | [05b-state-adoption-ritual](diagrams/identity/05b-state-adoption-ritual.md) | Palette cycling, confirmation and timeout inside the adoption ritual |
 | `social-presence` | [02-sequence-presence](diagrams/social-presence/02-sequence-presence.md) | Presence broadcast, neighbour table, greeting a newcomer |
-| `social-presence` | [05a-state-neighbour-entry](diagrams/social-presence/05a-state-neighbour-entry.md) | A neighbour entry's life: stored, greeted, kept, expired |
+| `social-presence` | [05a-state-neighbour-entry](diagrams/social-presence/05a-state-neighbour-entry.md) | A neighbour slot's life: free, waiting, greeted, absent; when the cube greets |
 | `social-presence` | [06-data-flow](diagrams/social-presence/06-data-flow.md) | The 8-byte versioned frame, allowlist parsing, where untrusted frames die |
 | `social-group` | [02-sequence-contagion](diagrams/social-group/02-sequence-contagion.md) | How a neighbour's mood pulls mine (G2) |
 | `social-group` | [02b-sequence-chain](diagrams/social-group/02b-sequence-chain.md) | How a double tap ripples through the group (G3) |

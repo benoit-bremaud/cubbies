@@ -1,7 +1,8 @@
 # Dependabot — keeps the SHA-pinned GitHub Actions in .github/workflows current.
 # Each bump PR carries the new SHA and refreshes the trailing "# vX.Y.Z" comment.
 # PlatformIO platform and libraries are pinned by hand in firmware/platformio.ini (no ecosystem),
-# and so is the PlatformIO core version in the workflows' `pip install` lines.
+# and so is the PlatformIO core version in the workflows' `pip install` lines
+# and the ruff `version:` input of the ci.yml python job.
 version: 2
 updates:
   - package-ecosystem: 'github-actions'
