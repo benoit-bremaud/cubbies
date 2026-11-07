@@ -133,8 +133,9 @@ diagram is the only place where the lib/adapters split appears.
 
 Status: diagrams validated after the cube-core PDR carry their own Status line. `cube-core`,
 `identity/02a-02b` and `social-presence/02` and `06` were validated in PR #5 and at the
-cube-core PDR (2026-10-14, ADR-0013); `expansion-port` with ADR-0016. Class diagrams are deferred until a feature introduces three or more domain
-types (the first one is `social-group/04-class-jealousy`).
+cube-core PDR (2026-10-14, ADR-0013); `expansion-port` with ADR-0016.
+Class diagrams are deferred until a feature introduces three or more domain types (the first
+one is `social-group/04-class-jealousy`).
 
 | Feature | Diagram | Question it answers |
 |---------|---------|---------------------|
