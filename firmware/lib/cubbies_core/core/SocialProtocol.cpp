@@ -51,7 +51,7 @@ SocialOutput SocialProtocol::tick(const SelfState& self) {
   for (uint8_t i = 0; i < kMaxFramesPerTick && radio_.receive(f); ++i) {
     // Issue #91: the adapter stamps frames after `now` was read; a receive time is never later
     // than the tick, or ageMs() would wrap to ~2^32 and expire the sender in this pass.
-    if (static_cast<int32_t>(f.nowMs - now) > 0) f.nowMs = now;
+    if (!isDue(now, f.nowMs)) f.nowMs = now;
     receive(f);
   }
   expire(now);

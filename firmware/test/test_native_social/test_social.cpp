@@ -151,8 +151,8 @@ static void test_known_mac_is_refreshed_without_a_second_greeting() {
 
 // Issue #91: the radio stamps a frame in the Wi-Fi callback, so it can be 1 ms later than the
 // tick's `now`. That frame must not age the entry by ~2^32 ms and free it in the same pass.
-static void test_frame_stamped_after_now_keeps_the_greeted_entry() {
-  Rig r;
+static void checkFrameStampedAfterNow(uint32_t startMs) {
+  Rig r(startMs);
   r.hear(1);
   r.step();
   r.run(2000);
@@ -162,9 +162,13 @@ static void test_frame_stamped_after_now_keeps_the_greeted_entry() {
   r.tickAt(now);
   TEST_ASSERT_EQUAL(EntryState::Greeted, r.stateOf(1));
   TEST_ASSERT_TRUE(r.social.neighbour(r.slotOf(1)).lastSeen == now);
-  r.hear(1);
-  r.step();
+  r.runHearing(1, S::kGreetCooldownMs + S::kPresenceMs);  // past the cooldown, a re-greet would show
   TEST_ASSERT_EQUAL(1u, r.greetings);
+}
+static void test_frame_stamped_after_now_keeps_the_greeted_entry() { checkFrameStampedAfterNow(1000); }
+// Same across the wrap: the tick's now is 0xFFFFFFFF and the frame is stamped 0.
+static void test_frame_stamped_after_now_across_the_wrap() {
+  checkFrameStampedAfterNow(0xFFFFFFFFu - 2000 - 2 * kTick);
 }
 
 // Waiting -> Waiting, cooldown not elapsed: greeted at exactly T_greet_cooldown, not before.
@@ -523,6 +527,7 @@ int main() {
   RUN_TEST(test_first_newcomer_is_greeted);
   RUN_TEST(test_known_mac_is_refreshed_without_a_second_greeting);
   RUN_TEST(test_frame_stamped_after_now_keeps_the_greeted_entry);
+  RUN_TEST(test_frame_stamped_after_now_across_the_wrap);
   RUN_TEST(test_second_newcomer_waits_for_the_cooldown);
   RUN_TEST(test_newcomers_arriving_together_are_greeted_one_by_one);
   RUN_TEST(test_budget_caps_greetings_in_a_sliding_window);

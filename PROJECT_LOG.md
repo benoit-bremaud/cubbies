@@ -14,7 +14,7 @@ human context: what was done, why, and by which PR.
   `expire()`, so the entry went Absent then Free in one pass and was greeted again (forbidden by
   social-presence 05a). The drain now clamps a later receive time to `now` inside `lib/` (MCDA
   460/500, vs 440 for clamp plus reading `now` after the drain, 350 for the reorder alone).
-- New native test with a frame stamped 1 ms ahead (red first, ADR-0014); the false claim in
+- New native test with a frame stamped 1 ms ahead (red first, ADR-0014); the misleading claim in
   `ChainReaction.h` that `ageMs()` tolerates it is corrected. Diagram 05a unchanged.
 
 ### Requirement ids, diagram index and ruff format (issues #87, #80) — **PR #93** (8d4ad70)
