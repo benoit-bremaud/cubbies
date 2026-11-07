@@ -8,7 +8,7 @@ pre-commit:
       run: mise x -- gitleaks git --staged --redact --no-banner .
     - name: ruff
       glob: '*.py'
-      run: mise x -- uvx ruff@0.14.0 check {staged_files} && mise x -- uvx ruff@0.14.0 format --check {staged_files}
+      run: mise x -- just ruff {staged_files}
     - name: typos
       run: mise x -- typos --force-exclude {staged_files}
     - name: shellcheck

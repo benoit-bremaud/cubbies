@@ -6,6 +6,7 @@
 set -e
 # shellcheck disable=SC2046 # one variable name per word
 unset $(git rev-parse --local-env-vars)
+export GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_SYSTEM=/dev/null
 root=$(cd "$(dirname "$0")/.." && pwd)
 work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT
@@ -17,8 +18,14 @@ cat > "$work/bin/gh" <<'EOF'
 #!/bin/sh
 case "$*" in
   "repo view"*) echo o/r ;;
-  "api --silent -X POST repos/o/r/statuses/"*) sha=${5##*/}; echo success > "$FAKE_STATUS/$sha" ;;
-  "api repos/o/r/commits/"*) sha=${2#repos/o/r/commits/}; sha=${sha%/status}; cat "$FAKE_STATUS/$sha" 2>/dev/null || echo missing ;;
+  "api --silent -X POST repos/o/r/statuses/"*) # records the posted state and context (the statuses API body)
+    sha=${5##*/}; shift 5; st= ctx=
+    while [ $# -gt 0 ]; do case "$1" in -f) case "$2" in state=*) st=${2#state=} ;; context=*) ctx=${2#context=} ;; esac; shift 2 ;; *) shift ;; esac; done
+    printf '%s %s\n' "$ctx" "$st" >> "$FAKE_STATUS/$sha" ;;
+  "api repos/o/r/commits/"*) # the jq of attest.sh: state of the status whose context is gate, else "missing"
+    sha=${2#repos/o/r/commits/}; sha=${sha%/status}
+    case "$4" in *'select(.context == "gate")'*) ;; *) echo "unexpected jq: $4" >&2; exit 1 ;; esac
+    { grep '^gate ' "$FAKE_STATUS/$sha" 2>/dev/null || echo "gate missing"; } | tail -n 1 | cut -d' ' -f2 ;;
   *) exit 1 ;;
 esac
 EOF
@@ -76,7 +83,7 @@ second=$(git rev-parse HEAD)
 
 # Forgeries: a note signed by a key outside the trust store (even one the checkout trusts), a
 # note copied to another commit.
-echo success > "$work/status/$second"
+echo "gate success" > "$work/status/$second"
 printf 'gate o/r %s\n' "$second" > "$work/payload"
 ssh-keygen -q -Y sign -n local-ci -f "$work/other" "$work/payload" > /dev/null 2>&1
 cat "$work/payload" "$work/payload.sig" | git notes --ref refs/notes/gate add -f -F - "$second"
@@ -89,6 +96,19 @@ git checkout -q .github/allowed_signers
 git notes --ref refs/notes/gate copy -f "$first" "$second" 2> /dev/null || fail "note not copied to $second"
 git push -q origin refs/notes/gate
 run 1 "note moved to another commit refused" "names another commit" sh scripts/attest.sh verify gate HEAD
+# A trusted key, the right header, but a signature over another commit's payload (or another namespace).
+printf 'gate o/r %s\n' "$first" > "$work/p1" && ssh-keygen -q -Y sign -n local-ci -f "$work/key" "$work/p1" > /dev/null 2>&1
+{ printf 'gate o/r %s\n' "$second"; cat "$work/p1.sig"; } | git notes --ref refs/notes/gate add -f -F - "$second" 2> /dev/null
+git push -q -f origin refs/notes/gate
+run 1 "trusted key, signature over another payload refused" "bad signature" sh scripts/attest.sh verify gate HEAD
+rm -f "$work/payload.sig" && ssh-keygen -q -Y sign -n other-ns -f "$work/key" "$work/payload" > /dev/null 2>&1
+cat "$work/payload" "$work/payload.sig" | git notes --ref refs/notes/gate add -f -F - "$second" 2> /dev/null
+git push -q -f origin refs/notes/gate
+run 1 "wrong signature namespace refused" "bad signature" sh scripts/attest.sh verify gate HEAD
+echo "gate failure" >> "$work/status/$second"
+run 1 "status gate failure refused" "status gate is failure" sh scripts/attest.sh verify gate HEAD
+echo "gate success" > "$work/status/$second" # the release cases below expect the moved note of $first on $second
+git notes --ref refs/notes/gate copy -f "$first" "$second" 2> /dev/null && git push -q -f origin refs/notes/gate
 
 # Release checks: a signed stable tag on the attested commit passes, anything else is refused.
 git tag -s -m v1.0.0 v1.0.0 "$first"

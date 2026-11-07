@@ -40,14 +40,17 @@ done
 deps() { just --show "$1" | grep -E "^$1( |:)" | sed 's/.*: *//'; } # deps <recipe>
 [ "$(deps check)" = "lint test build security secrets" ] || fail "check must be exactly lint test build security secrets"; ok
 deps nightly | grep -qw check || fail "nightly does not depend on check"; ok
-just --show test | grep -qE 'pio *}} test -e native' || fail "test does not run the native suites"; ok
+just --show test | grep -qE 'CI=1 {{ *pio *}} test -e native' || fail "test does not run the native suites under CI=1 (golden images never regenerated)"; ok
+for s in test-local-ci test-attest; do just --show test | grep -qF "sh scripts/$s.sh" || fail "test does not run scripts/$s.sh"; ok; done
+just --show security | grep -qF -- '--error' || fail "security does not fail on Semgrep findings"; ok
+just --show secrets | grep -qF 'gitleaks git' || fail "secrets does not scan the git history"; ok
+just --show golden | grep -qF 'CUBBIES_UPDATE_GOLDEN=1' || fail "golden does not regenerate the golden images"; ok
 just --show build | grep -qE 'pio *}} run -e xiao_c3 -e c3_supermini' || fail "build does not build both board envs"; ok
-[ -z "$(find .github -path '*/workflows/*' -name '*.y*ml' 2>/dev/null)" ] || fail "a GitHub workflow is left (ADR-0019: none, nothing deploys)"; ok
+[ -z "$(find .github -path '*/workflows/*' -type f 2>/dev/null)" ] || fail "a GitHub workflow is left (ADR-0019: none, nothing deploys)"; ok
 [ ! -e .github/dependabot.yml ] || fail "dependabot.yml is left: no GitHub ecosystem to watch (ADR-0019)"; ok
-# The PlatformIO and ruff pins are each written in two places; they must agree.
-rv=$(sed -n 's/^ruff := "uvx ruff@\([^"]*\)".*/\1/p' justfile)
-grep -qF "uvx ruff@$rv check" CLAUDE.md || fail "ruff pin of justfile ($rv) diverges from CLAUDE.md"; ok
-grep -qF "uvx ruff@$rv" lefthook.yml || fail "ruff pin of lefthook.yml diverges from justfile ($rv)"; ok
+# The uvx pins are written once, in the justfile: the hook and the docs go through its recipes.
+grep -qE '^ +run: mise x -- just ruff \{staged_files\}' lefthook.yml || fail "pre-commit ruff does not go through just ruff"; ok
+! grep -qE 'ruff@[0-9]|platformio==[0-9]' CLAUDE.md README.md lefthook.yml || fail "a uvx pin is copied outside the justfile"; ok
 grep -qE '^ +run: sh scripts/check-commit-msg.sh \{1\}' lefthook.yml || fail "commit-msg hook does not run check-commit-msg.sh on the message file"; ok
 grep -qE '^ +mise x -- just check$' lefthook.yml || fail "pre-push hook does not run just check"; ok
 lefthook validate > /dev/null || fail "lefthook validate"; ok
@@ -65,7 +68,8 @@ msg 0 'fixup! feat: x'
 msg 1 'Wire just'
 msg 1 'ci(local): ends with a period.'
 msg 1 'wip: not a listed type'
-msg 1 "feat: $(printf 'x%.0s' $(seq 100))"
+msg 0 "feat: $(printf 'x%.0s' $(seq 94))" # 100 characters, the limit
+msg 1 "feat: $(printf 'x%.0s' $(seq 95))" # 101
 
 # Recipes with their boundaries stubbed, in a throwaway repository with a bare origin. The real
 # `just` runs the recipe; a stub `just` first on PATH records the steps the recipe delegates to
@@ -118,19 +122,25 @@ no_line '^just check' "gate ran check on an unpushed HEAD"
 git push -q origin main 2> /dev/null
 box_run 0 "gate: green path" "attest write gate" -- "$real_just" gate main
 [ "$(tr '\n' ' ' < "$LOG")" = "just check just sonar attest write gate " ] || { cat "$LOG"; fail "gate steps or order: $(cat "$LOG")"; }; ok
-box_run 1 "gate: failing sonar stops it" - -- env FAIL_STEP=sonar "$real_just" gate main
+box_run 1 "gate: failing sonar stops it" "just sonar" -- env FAIL_STEP=sonar "$real_just" gate main
 no_line '^attest' "gate attested after a failed step"
 box_run 1 "gate: HEAD moved during the run" "HEAD moved" -- env MOVE_HEAD=1 "$real_just" gate main
 no_line '^attest' "gate attested a HEAD that moved"
+git reset -q --hard origin/main
+box_run 1 "gate: failing check stops it" "just check" -- env FAIL_STEP=check "$real_just" gate main
+no_line '^just sonar' "gate ran sonar after a failed check"
 git reset -q --hard origin/main
 git -C "$box/origin" update-ref refs/heads/ahead "$(git rev-parse HEAD)" && git commit -q --allow-empty -m 'chore: ahead' --no-verify && git push -q origin HEAD:ahead 2> /dev/null && git reset -q --hard origin/main
 box_run 1 "gate: HEAD behind the base refused" "behind origin/ahead" -- "$real_just" gate origin/ahead
 no_line '^just check' "gate ran check on a HEAD behind the base"
 
 # merge: argument shape, the attestation, the exact gh command.
-box_run 1 "merge: non-numeric PR refused" "usage just merge" -- "$real_just" merge --help
-no_line '^gh' "merge called gh on a bad argument"
-box_run 1 "merge: unattested head refused" - -- env ATTEST_FAIL=1 "$real_just" merge 7
+for bad in --help abc '7; touch pwned' ''; do
+  box_run 1 "merge: PR '$bad' refused" "usage just merge" -- "$real_just" merge "$bad"
+  no_line '^gh' "merge called gh on a bad argument"
+done
+[ ! -e pwned ] || fail "merge ran an injected command"; ok
+box_run 1 "merge: unattested head refused" "attest verify gate" -- env ATTEST_FAIL=1 "$real_just" merge 7
 no_line 'gh pr merge' "merge merged an unattested head"
 head=$(git rev-parse origin/main)
 box_run 0 "merge: attested head merged" "gh pr merge 7 --squash --match-head-commit $head" -- "$real_just" merge 7
@@ -139,10 +149,12 @@ grep -q "^attest verify gate $head\$" "$LOG" || fail "merge did not verify the h
 # sonar: the two guards, then the call with the token in the environment and the gate wait.
 mkdir "$box/bare" && for b in sh git cat; do ln -s "$(command -v "$b")" "$box/bare/$b"; done
 box_run 1 "sonar: no scanner" "not on PATH" -- env PATH="$box/bare" HOME="$box" "$real_just" sonar
-box_run 1 "sonar: no token" "no token" -- env HOME="$box" "$real_just" sonar
+box_run 1 "sonar: no token" "no token" -- env -u SONAR_TOKEN HOME="$box" "$real_just" sonar
 no_line sonar-scan "sonar ran the scan without a token"
 box_run 0 "sonar: scan with the gate wait" "sonar-scan -Dsonar.qualitygate.wait=true token=t0k" -- env HOME="$box" SONAR_TOKEN=t0k "$real_just" sonar
 grep -q 't0k' "$work/out" && fail "sonar printed the token"; ok
+mkdir -p "$box/.config/sonarqube" && printf 'f1l3\n' > "$box/.config/sonarqube/analysis-token"
+box_run 0 "sonar: token file" "token=f1l3" -- env -u SONAR_TOKEN HOME="$box" "$real_just" sonar
 unset MISE_TRUSTED_CONFIG_PATHS LOG
 
 # L0 in a throwaway repository holding this repository's hook config and scripts. The ruff job

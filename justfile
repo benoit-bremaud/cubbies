@@ -14,9 +14,14 @@
 
 set shell := ["sh", "-eu", "-c"]
 
-pio := "uvx --from platformio==6.2.0 pio" # the former ci.yml and codeql.yml pin
-ruff := "uvx ruff@0.14.0" # CLAUDE.md § Toolchain
+pio := "uvx --from platformio==6.2.0 pio"
+ruff := "uvx ruff@0.14.0"
 semgrep := "uvx semgrep@1.183.0"
+
+# PlatformIO packages of this project only: the shared ~/.platformio/packages holds one directory per
+# package name, and another platform on this machine pins a different toolchain-riscv32-esp, so the
+# two projects kept reinstalling each other's toolchain (ADR-0019). Platform, penv and cache stay shared.
+export PLATFORMIO_PACKAGES_DIR := env("HOME") / ".platformio/packages-cubbies"
 
 # L1 by default
 default: check
@@ -30,22 +35,30 @@ setup:
 fast:
     lefthook run pre-commit
 
-# ruff check + format on the Python scripts, typos, the shell scripts, the hook config
-lint:
-    {{ruff}} check .
-    {{ruff}} format --check .
+# ruff check + format on the whole repository, or on the files the pre-commit hook passes
+ruff *files=".":
+    {{ruff}} check {{files}}
+    {{ruff}} format --check {{files}}
+
+# ruff, typos, shellcheck on every tracked shell script, the hook config
+lint: ruff
     typos
-    shellcheck --severity=warning scripts/*.sh tools/*.sh hardware/electronics/sim/*.sh
+    shellcheck --severity=warning $(git ls-files '*.sh')
     lefthook validate
 
+# CI=1: the golden images are compared, never regenerated, whatever the shell exports (Golden.h).
 # Native unit tests of the behaviour logic (golden images included), then the local CI wiring tests
 test:
-    cd firmware && {{pio}} test -e native
+    cd firmware && CI=1 {{pio}} test -e native
     sh scripts/test-local-ci.sh
     sh scripts/test-attest.sh
 
+# Regenerate the golden images (ADR-0014): review the sheet of firmware/tools/golden_sheet.py in the PR
+golden:
+    cd firmware && CUBBIES_UPDATE_GOLDEN=1 {{pio}} test -e native
+
 # The penv certifi bundle must trust the machine's local CAs first (scripts/pio-trust-local-ca.sh).
-# Firmware build for every board env (the former ci.yml firmware job)
+# Firmware build for every board env
 build:
     sh scripts/pio-trust-local-ca.sh
     cd firmware && {{pio}} run -e xiao_c3 -e c3_supermini
@@ -54,11 +67,11 @@ build:
 # project URL; metrics off). The C++ behaviour logic has no free Semgrep ruleset: it is covered by
 # the native tests and the review (ADR-0019). EIO_BACKEND=posix: semgrep-core otherwise opens
 # io_uring rings charged to RLIMIT_MEMLOCK and dies intermittently (skill local-ci § Gotchas).
-# SAST (Semgrep CE, p/python) on firmware/tools, hardware/case, hardware/electronics/sim, tools
+# SAST (Semgrep CE, p/python) on every tracked Python file
 security:
-    EIO_BACKEND=posix {{semgrep}} scan --config p/python --error --metrics=off --quiet firmware/tools hardware/case hardware/electronics/sim tools
+    EIO_BACKEND=posix {{semgrep}} scan --config p/python --error --metrics=off --quiet $(git ls-files '*.py')
 
-# Secrets in the whole git history (the former gitleaks workflow)
+# Secrets in the whole git history
 secrets:
     gitleaks git --redact --no-banner .
 

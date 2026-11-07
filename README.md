@@ -59,14 +59,14 @@ just setup
 
 | Tier | Recipe | When | Holds |
 |---|---|---|---|
-| L0 | `just fast` | pre-commit hook | gitleaks, ruff, typos, shellcheck on the staged files; Conventional Commits subject |
-| L1 | `just check` | pre-push hook | ruff check + format, typos, shellcheck, `pio test -e native`, both board builds, Semgrep (Python), gitleaks on the history, wiring tests |
+| L0 | `just fast` | pre-commit hook | gitleaks, ruff, typos, shellcheck on the staged files (the commit-msg hook enforces the Conventional Commits subject) |
+| L1 | `just check` | pre-push hook | ruff check + format, typos, shellcheck, `lefthook validate`, `pio test -e native` (golden images compared, never regenerated), both board builds, Semgrep (Python), gitleaks on the history, wiring and attestation tests |
 | L2 | `just gate` | before every merge, on the pushed head | `check` + SonarQube with the quality-gate wait, then the signed attestation; `just merge <pr>` requires it |
 | L3 | `just nightly` | systemd user timer | `check` + TruffleHog + PlatformIO and toolchain pin drift |
 
-PlatformIO runs as `uvx --from platformio==6.2.0 pio` (pins in the `justfile`). Behind a
+PlatformIO, ruff and Semgrep run through `uvx`, pinned once in the `justfile`. Behind a
 TLS-inspecting endpoint agent, `just build` first lets the PlatformIO penv trust the machine's
-local CAs (`scripts/pio-trust-local-ca.sh`). `mise.toml` keeps the PlatformIO packages of this
+local CAs (`scripts/pio-trust-local-ca.sh`). The `justfile` keeps the PlatformIO packages of this
 project under `~/.platformio/packages-cubbies`, so another project's toolchain pin cannot
 replace ours.
 

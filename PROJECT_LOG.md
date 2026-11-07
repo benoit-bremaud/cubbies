@@ -32,8 +32,8 @@ human context: what was done, why, and by which PR.
   package name. V-SEA's official `espressif32@6.12.0` pins `toolchain-riscv32-esp` 8.4.0 where
   pioarduino pins 14.2.0, so each build of one project reinstalled the toolchain of the other and
   `just check` failed twice with `riscv32-esp-elf-g++: not found` or `Directory not empty`.
-  `mise.toml` now sets `PLATFORMIO_PACKAGES_DIR=~/.platformio/packages-cubbies` (5 GB, first
-  build 200 s); the platform, the penv and the download cache stay shared.
+  the `justfile` now exports `PLATFORMIO_PACKAGES_DIR=~/.platformio/packages-cubbies` (5 GB,
+  first build 200 s); the platform, the penv and the download cache stay shared.
 - Measured 2026-10-01 → 2026-11-07 from the jobs API (table on #99): 589 runs, 812 job minutes
   (CI 372, CodeQL 357, Scorecard 30, Dependabot 22, Gitleaks 20, dependency review 11).
 - `just check` timings on this machine: native tests 373 cases in 15–37 s, both board builds

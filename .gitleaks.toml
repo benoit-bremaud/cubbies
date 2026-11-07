@@ -7,7 +7,7 @@ title = "cubbies gitleaks config"
 [extend]
 useDefault = true
 
-# Requires gitleaks >= 8.25.0 (CI pins 8.30.1 in .github/workflows/gitleaks.yml).
+# Requires gitleaks >= 8.25.0 (mise.toml pins 8.30.1; run by `just fast` and `just check`).
 # Paths only, for files that trigger rules on every scan: this config is listed because its own
 # comments and example patterns can match the default rules. For a single reviewed false
 # positive, add the finding's fingerprint to a `.gitleaksignore` file at the repository root

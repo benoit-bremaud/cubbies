@@ -32,7 +32,8 @@ then writes to `export/`:
 | `print/` | the same parts turned and laid on the bed, the tolerance coupon and two slicer-neutral 3MF plates: see [PRINT.md](PRINT.md) |
 
 Every dimension is a named parameter at the top of the script; rationale in
-`docs/hardware/mechanical-spec.md`. CI does not run FreeCAD (ADR-0010).
+`docs/hardware/mechanical-spec.md`. `just check` does not run FreeCAD (ADR-0010); `just gate` runs the script in check-only mode
+inside `freecadcmd` for its coverage (`tools/sonar-scan.sh`).
 
 ## Agent tooling
 
