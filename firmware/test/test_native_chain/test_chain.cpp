@@ -197,6 +197,34 @@ static void test_row12_backlogged_frame_meets_the_cooldown() {
   TEST_ASSERT_FALSE(f.relay);
 }
 
+// Row 12, issue #95: the window before the trigger ends at T_cooldown and is wrap-safe.
+static void test_row12_window_before_the_trigger_bounds_and_wrap() {
+  Chain out{};
+  Prng prng(5, 5);
+  const uint32_t starts[] = {kT0 + C::kCooldownMs, 0x10};  // the second wraps the window
+  for (const uint32_t t : starts) {
+    C inside, edge;
+    TEST_ASSERT_TRUE(inside.start(t, true, 2, 1, prng, out));
+    inside.hear(Chain{5, 1, 0}, t - (C::kCooldownMs - 1), 0);
+    TEST_ASSERT_FALSE(inside.tick(t + 10000, true).react);
+    TEST_ASSERT_TRUE(edge.start(t, true, 2, 1, prng, out));
+    edge.hear(Chain{5, 1, 0}, t - C::kCooldownMs, 0);
+    TEST_ASSERT_TRUE(edge.tick(t + 10000, true).react);
+  }
+}
+
+// Row 12, issue #95: an event heard one tick before the origin's own trigger is dropped by it.
+static void test_row12_trigger_drops_a_pending_event() {
+  C chain;
+  Chain out{};
+  Prng prng(5, 5);
+  chain.hear(Chain{5, 1, 0}, kT0 - 40, 0);
+  TEST_ASSERT_TRUE(chain.start(kT0, true, 2, 1, prng, out));
+  const ChainFire f = chain.tick(kT0 + 10000, true);
+  TEST_ASSERT_FALSE(f.react);
+  TEST_ASSERT_FALSE(f.relay);
+}
+
 // Row 13: past 8 keys the oldest is forgotten (keys heard during the cooldown are remembered,
 // so the ring fills well within T_seen).
 static void test_row13_ring_overwrites_the_oldest() {
@@ -383,6 +411,8 @@ int main(int, char**) {
   RUN_TEST(test_row11_sleeping_cube_relays_without_reacting);
   RUN_TEST(test_row12_reaction_cooldown);
   RUN_TEST(test_row12_backlogged_frame_meets_the_cooldown);
+  RUN_TEST(test_row12_window_before_the_trigger_bounds_and_wrap);
+  RUN_TEST(test_row12_trigger_drops_a_pending_event);
   RUN_TEST(test_row13_ring_overwrites_the_oldest);
   RUN_TEST(test_row14_key_expires_after_t_seen_across_the_wrap);
   RUN_TEST(test_protocol_alone_start_sends_nothing);

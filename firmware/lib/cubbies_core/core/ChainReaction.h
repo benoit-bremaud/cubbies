@@ -27,7 +27,8 @@ class ChainReaction {
   // Receiver side (rows 4, 8–10, 12–14); `rank` = present neighbours with a lower MAC, sender excluded.
   void hear(const Chain& c, uint32_t now, uint8_t rank);
   // Fires the pending event once its delay has elapsed (rows 5–7, 11). Any fire, with or without a
-  // reaction, starts T_cooldown (row 12), so relays are rate-limited too.
+  // reaction, starts T_cooldown (row 12), so relays are rate-limited too. The cooldown is a
+  // window on both sides of the last fire (issue #95).
   ChainFire tick(uint32_t now, bool awake);
 
   // Tuning values (05b).

@@ -15,8 +15,11 @@ human context: what was done, why, and by which PR.
   cooldown is now a symmetric window around the last reaction (MCDA 480/500, vs 375 for a
   signed age, which locks a cube idle for over 24.8 days, and 340 for judging it in `tick()`
   like Choir, which would hold the pending slot against row 10).
-- New native test with a frame stamped 1 ms before `start()` (red first, ADR-0014). Diagram
-  05b unchanged.
+- The trigger also drops an event heard one tick before it (same double Joy, found by the
+  adversarial review), as `Choir::start` already refuses with one pending.
+- New native tests: a frame stamped 1 ms before `start()` (red first, ADR-0014), the window's
+  bound and wrap, and the pending event dropped. 05b row 12 and its age note amended (window on
+  both sides of the last fire).
 
 ### Frame receive time clamped to the tick (issue #91) — **PR #96** (a572b13)
 

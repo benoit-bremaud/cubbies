@@ -12,6 +12,7 @@ bool ChainReaction::start(uint32_t now, bool awake, uint8_t paletteIndex, uint8_
   lastTrigger_ = now;
   reacted_ = true;  // the origin's own Joy counts as its chain reaction (row 12)
   lastReaction_ = now;
+  pending_ = false;  // row 12: an event heard just before the trigger falls in its cooldown
   out = Chain{paletteIndex, static_cast<uint8_t>(prng.uniform(256)), 0};
   remember(out, now);  // row 9
   return true;
@@ -42,7 +43,9 @@ ChainFire ChainReaction::tick(uint32_t now, bool awake) {
 
 bool ChainReaction::cooling(uint32_t now) const {
   // Symmetric window: start() runs before tick(), so a frame queued for another event may be
-  // stamped just before the origin's own trigger; it is within T_cooldown too (issue #95).
+  // stamped just before the origin's own trigger, or a backlogged frame drained late; it is
+  // within T_cooldown too (issue #95). After ~2^32 ms without a fire the age may alias and drop
+  // one window of events (accepted, as in Choir).
   return reacted_ && (ageMs(now, lastReaction_) < kCooldownMs || ageMs(lastReaction_, now) < kCooldownMs);
 }
 
