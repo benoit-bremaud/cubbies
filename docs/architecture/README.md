@@ -133,7 +133,7 @@ diagram is the only place where the lib/adapters split appears.
 
 Status: validated by the owner (PR #5), to be re-validated against `requirements.md` at the
 `cube-core` PDR. Class diagrams are deferred until a feature introduces three or more domain
-types.
+types (the first one is `social-group/04-class-jealousy`).
 
 | Feature | Diagram | Question it answers |
 |---------|---------|---------------------|
@@ -146,8 +146,24 @@ types.
 | `cube-core` | [05e-state-sound-gate](diagrams/cube-core/05e-state-sound-gate.md) | What reaches the buzzer, at what volume, and when the cube is silent |
 | `identity` | [02a-sequence-first-boot](diagrams/identity/02a-sequence-first-boot.md) | How every boot ends with a colour (NVS, else MAC-derived) |
 | `identity` | [02b-sequence-adoption-ritual](diagrams/identity/02b-sequence-adoption-ritual.md) | Tap cycles the palette, long stroke confirms; the only entry is a hold during the post-boot invitation window (ADR-0013) |
+| `identity` | [05a-state-invitation-window](diagrams/identity/05a-state-invitation-window.md) | When the post-boot invitation window opens, and how a hold enters the ritual |
+| `identity` | [05b-state-adoption-ritual](diagrams/identity/05b-state-adoption-ritual.md) | Palette cycling, confirmation and timeout inside the adoption ritual |
 | `social-presence` | [02-sequence-presence](diagrams/social-presence/02-sequence-presence.md) | Presence broadcast, neighbour table, greeting a newcomer |
+| `social-presence` | [05a-state-neighbour-entry](diagrams/social-presence/05a-state-neighbour-entry.md) | A neighbour entry's life: stored, greeted, kept, expired |
 | `social-presence` | [06-data-flow](diagrams/social-presence/06-data-flow.md) | The 8-byte versioned frame, allowlist parsing, where untrusted frames die |
+| `social-group` | [02-sequence-contagion](diagrams/social-group/02-sequence-contagion.md) | How a neighbour's mood pulls mine (G2) |
+| `social-group` | [02b-sequence-chain](diagrams/social-group/02b-sequence-chain.md) | How a double tap ripples through the group (G3) |
+| `social-group` | [02c-sequence-choir](diagrams/social-group/02c-sequence-choir.md) | How a stroke starts a synchronised choir (G4) |
+| `social-group` | [02d-sequence-yawn](diagrams/social-group/02d-sequence-yawn.md) | How a neighbour's yawn makes an idle cube sleepy (G5) |
+| `social-group` | [02e-sequence-jealousy](diagrams/social-group/02e-sequence-jealousy.md) | How a stroke on one cube makes another react (G6, G6a) |
+| `social-group` | [04-class-jealousy](diagrams/social-group/04-class-jealousy.md) | The jealousy repertoire types and who owns them (G6a) |
+| `social-group` | [05a-state-contagion](diagrams/social-group/05a-state-contagion.md) | Mood contagion as an extension of the mood engine |
+| `social-group` | [05b-state-chain](diagrams/social-group/05b-state-chain.md) | One event, one reaction and one relay per cube |
+| `social-group` | [05c-state-choir](diagrams/social-group/05c-state-choir.md) | One choir start, one voice per cube |
+| `social-group` | [05d-state-yawn](diagrams/social-group/05d-state-yawn.md) | Collective sleep: when the first yawn spreads |
+| `social-group` | [05e-state-jealousy](diagrams/social-group/05e-state-jealousy.md) | The jealousy crescendo and the context-weighted repertoire |
+| `expansion-port` | [02-sequence-boot-scan](diagrams/expansion-port/02-sequence-boot-scan.md) | How the boot finds a plugged module and ignores an unknown one |
+| `expansion-port` | [03-component](diagrams/expansion-port/03-component.md) | Where the module registry, the I2C probe and J1 sit |
 
 Shared vocabulary across the diagrams: module names and port names come from the component
 diagram, timer names (`T_*`) are tuning constants listed in each diagram's table, and the mood
