@@ -15,5 +15,13 @@ shellcheck = "0.11.0"
 gitleaks = "8.30.1"
 trufflehog = "3.99.8"
 
+[env]
+# PlatformIO packages of this project only. The shared ~/.platformio/packages holds one directory per
+# package name, and the official espressif32 platform of another project on this machine pins
+# toolchain-riscv32-esp 8.4.0 where pioarduino pins 14.2.0: each build of one project reinstalled
+# the toolchain of the other, and a build in between found no riscv32-esp-elf-g++ (ADR-0019). The
+# platform, the penv and the download cache stay shared under ~/.platformio.
+PLATFORMIO_PACKAGES_DIR = "{{env.HOME}}/.platformio/packages-cubbies"
+
 [settings]
 lockfile = true

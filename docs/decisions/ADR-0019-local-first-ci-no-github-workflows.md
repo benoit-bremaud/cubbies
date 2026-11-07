@@ -87,7 +87,9 @@ upload the asset) is enough: a build, not a deploy.
    dependencies, so a machine whose TLS-inspecting endpoint agent is trusted only by the system
    store fails every board build; `scripts/pio-trust-local-ca.sh`, run by `just build`, appends
    the locally installed CAs (`/usr/local/share/ca-certificates/*.crt`) to that bundle.
-   Verification is never relaxed.
+   Verification is never relaxed. `mise.toml` sets `PLATFORMIO_PACKAGES_DIR` to a directory of
+   this project, because the shared `~/.platformio/packages` holds one `toolchain-riscv32-esp`
+   for every project and another platform on the same machine pins a different version.
 5. **Signing.** SSH only (agents-skills #213): `.github/allowed_signers` holds the owner's key;
    `attest.sh` reads it from `origin/main`, never from the checkout.
 

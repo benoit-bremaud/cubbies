@@ -66,7 +66,9 @@ just setup
 
 PlatformIO runs as `uvx --from platformio==6.2.0 pio` (pins in the `justfile`). Behind a
 TLS-inspecting endpoint agent, `just build` first lets the PlatformIO penv trust the machine's
-local CAs (`scripts/pio-trust-local-ca.sh`).
+local CAs (`scripts/pio-trust-local-ca.sh`). `mise.toml` keeps the PlatformIO packages of this
+project under `~/.platformio/packages-cubbies`, so another project's toolchain pin cannot
+replace ours.
 
 The self-hosted SonarQube (Community Build, `main` only) reads `sonar-project.properties`.
 `tools/sonar-scan.sh` measures the Python coverage (sim scripts, then the case script inside the

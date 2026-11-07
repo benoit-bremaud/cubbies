@@ -13,7 +13,7 @@ human context: what was done, why, and by which PR.
   checks run on the laptop, GitHub Actions keeps only a production deploy on a signed tag, and
   cubbies deploys nothing. The five workflows (`ci`, `codeql`, `dependency-review`, `gitleaks`,
   `scorecard`) and `dependabot.yml` are removed; `.github/` holds `allowed_signers` only. Since
-  2026-10-01 they had run 591 times for about 1 240 minutes (free, public repository).
+  2026-10-01 they had run 589 times for 812 job minutes (free, public repository).
 - ADR-0019 records the two MCDA decisions: Scorecard removed (385/500 vs 330 to keep it weekly
   and 285 as it was), no tag-triggered `prod.yml` (470/500 vs 325 for a later local `just
   release` and 280 for a workflow publishing the `.bin`).
@@ -28,8 +28,17 @@ human context: what was done, why, and by which PR.
   `invalid peer certificate: UnknownIssuer`; `scripts/pio-trust-local-ca.sh` (run by `just
   build`) appends the locally installed CAs to that bundle. `certifi-system-store` was tried and
   reverted (needs `pkg_resources`, absent from the penv).
-- `just check` timings on this machine: native tests 373 cases in 37 s, both board builds 33 s,
-  lint 5 s, Semgrep 4 s, gitleaks under 1 s.
+- Gotcha: `~/.platformio/packages` is shared by every project on the machine, one directory per
+  package name. V-SEA's official `espressif32@6.12.0` pins `toolchain-riscv32-esp` 8.4.0 where
+  pioarduino pins 14.2.0, so each build of one project reinstalled the toolchain of the other and
+  `just check` failed twice with `riscv32-esp-elf-g++: not found` or `Directory not empty`.
+  `mise.toml` now sets `PLATFORMIO_PACKAGES_DIR=~/.platformio/packages-cubbies` (5 GB, first
+  build 200 s); the platform, the penv and the download cache stay shared.
+- Measured 2026-10-01 → 2026-11-07 from the jobs API (table on #99): 589 runs, 812 job minutes
+  (CI 372, CodeQL 357, Scorecard 30, Dependabot 22, Gitleaks 20, dependency review 11).
+- `just check` timings on this machine: native tests 373 cases in 15–37 s, both board builds
+  18–87 s warm, lint 5 s, Semgrep 4 s, gitleaks under 1 s; the whole tier 87–174 s from a clean
+  environment (budget 3 min).
 
 ### Chain frame stamped before the origin's trigger meets the cooldown (issue #95) — **PR pending**
 
