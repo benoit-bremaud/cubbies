@@ -7,7 +7,17 @@ human context: what was done, why, and by which PR.
 
 ## 2026-11-07
 
-### Requirement ids, diagram index and ruff format (issues #87, #80) — **PR pending**
+### Frame receive time clamped to the tick (issue #91) — **PR pending**
+
+- `SocialProtocol::tick()` read `now` before draining the radio, while `EspNowRadio` stamps each
+  frame in the Wi-Fi callback: a frame stamped `now + 1` aged its sender by ~2^32 ms in
+  `expire()`, so the entry went Absent then Free in one pass and was greeted again (forbidden by
+  social-presence 05a). The drain now clamps a later receive time to `now` inside `lib/` (MCDA
+  460/500, vs 440 for clamp plus reading `now` after the drain, 350 for the reorder alone).
+- New native test with a frame stamped 1 ms ahead (red first, ADR-0014); the false claim in
+  `ChainReaction.h` that `ageMs()` tolerates it is corrected. Diagram 05a unchanged.
+
+### Requirement ids, diagram index and ruff format (issues #87, #80) — **PR #93** (8d4ad70)
 
 - REQ-F-20 was used twice. Collective sleep becomes REQ-F-22; the expansion module, added first
   (ADR-0016), keeps REQ-F-20, so no accepted ADR changes (MCDA 435/500 vs 215). Older log

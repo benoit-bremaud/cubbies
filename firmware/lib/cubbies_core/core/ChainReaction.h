@@ -1,8 +1,8 @@
 // Chain reaction (social-group/05b): one event per (origin palette, event id) key, remembered in
 // an 8-key ring for T_seen; each cube reacts once after T_step × (1 + rank) and relays once with
 // hop + 1 below kMaxHop. Pure: the Social protocol feeds it decoded CHAIN frames, the time and
-// the rank, and broadcasts what it returns. Times are on one IClock timeline; a frame's receive
-// time may be slightly later than the tick's `now`, which isDue() and ageMs() tolerate.
+// the rank, and broadcasts what it returns. Times are on one IClock timeline; the Social protocol
+// clamps a frame's receive time to the tick's `now`, so it is never later (issue #91).
 #pragma once
 
 #include <cstdint>
