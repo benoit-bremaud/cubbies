@@ -53,6 +53,7 @@ stateDiagram-v2
   Scheduled --> Scheduled: same key heard again → ignored
   Scheduled --> Fired: delay elapsed → react (if Awake), relay once with hop + 1 (if hop < kMaxHop)
   Fired --> Idle: event done (key kept for T_seen)
+  Scheduled --> Idle: own trigger (row 12)
 ```
 
 ## Transition table (source of the native tests)
@@ -70,11 +71,14 @@ stateDiagram-v2
 | 9 | the origin hears its own event relayed | ignored (key remembered at row 1) |
 | 10 | a new key while one event is already scheduled | ignored (one pending event at a time); the key is **not** remembered, so a later copy can still be taken |
 | 11 | delay elapsed, cube not Awake (Dozing, Asleep, Waking) | no reaction, no sound; still relays (row 6), so a sleeping cube does not break the wave |
-| 12 | a new event within T_cooldown 5 s of the last chain fire (own trigger, reaction, or silent relay of row 11) | the key is remembered, no reaction, no relay (caps forged-frame nuisance) |
+| 12 | a new event within T_cooldown 5 s either side of the last chain fire (own trigger, reaction, or silent relay of row 11); an own trigger also drops a pending event | the key is remembered, no reaction, no relay (caps forged-frame nuisance) |
 | 13 | the 8-key ring is full | the oldest key is overwritten |
 | 14 | key older than T_seen 30 s heard again | treated as new (row 4) |
 
-Every age test is `(uint32)(now - then) ≥ T`, wrap-safe (social-presence/06).
+Every age test is `(uint32)(now - then) ≥ T`, wrap-safe (social-presence/06). The row 12
+cooldown is a window on both sides of the last fire, `(uint32)(now - last) < T_cooldown ||
+(uint32)(last - now) < T_cooldown`: a frame stamped just before the origin's trigger, or drained
+late from a backlog, can be heard after it (issue #95).
 
 ## Why no echo storm
 

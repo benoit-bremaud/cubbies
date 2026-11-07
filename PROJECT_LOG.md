@@ -7,7 +7,21 @@ human context: what was done, why, and by which PR.
 
 ## 2026-11-07
 
-### Frame receive time clamped to the tick (issue #91) — **PR pending**
+### Chain frame stamped before the origin's trigger meets the cooldown (issue #95) — **PR pending**
+
+- `startChain()` runs before `tick()` in `main.cpp`, so a CHAIN frame queued for another event
+  was heard stamped `T - 1` after the origin set its last reaction to `T`: `ageMs(T - 1, T)` is
+  ~2^32 ms, the frame slipped past the row 12 cooldown and the origin reacted twice. The
+  cooldown is now a symmetric window around the last reaction (MCDA 480/500, vs 375 for a
+  signed age, which locks a cube idle for over 24.8 days, and 340 for judging it in `tick()`
+  like Choir, which would hold the pending slot against row 10).
+- The trigger also drops an event heard one tick before it (same double Joy, found by the
+  adversarial review), as `Choir::start` already refuses with one pending.
+- New native tests: a frame stamped 1 ms before `start()` (red first, ADR-0014), the window's
+  bound and wrap, and the pending event dropped. 05b row 12 and its age note amended (window on
+  both sides of the last fire).
+
+### Frame receive time clamped to the tick (issue #91) — **PR #96** (a572b13)
 
 - `SocialProtocol::tick()` read `now` before draining the radio, while `EspNowRadio` stamps each
   frame in the Wi-Fi callback: a frame stamped `now + 1` aged its sender by ~2^32 ms in
