@@ -5,9 +5,19 @@ human context: what was done, why, and by which PR.
 
 ---
 
+## 2026-11-13
+
+### Nightly toolchain drift: typos 1.52.2 (issue #101) — **PR #102** (848a4c1)
+
+- The 2026-11-13 nightly failed at the toolchain-drift step: `mise outdated --bump` reported typos
+  1.52.0 with 1.52.2 available. Bumped `mise.toml` and refreshed `mise.lock`; `just nightly`,
+  `just check` and `just gate` green, adversarial review gate open.
+- LovyanGFX 1.3.0 not bumped: `pio pkg outdated` reports it informationally only (does not fail
+  the nightly) and ADR-0014 pins 1.2.33; a bump needs its own issue and ADR update.
+
 ## 2026-11-07
 
-### Local-first CI, no GitHub workflow (issue #99) — **PR pending**
+### Local-first CI, no GitHub workflow (issue #99) — **PR #100** (8b2a814)
 
 - Owner decision of the day for every project (agents-skills#210 model A, wave 0 bis #259): the
   checks run on the laptop, GitHub Actions keeps only a production deploy on a signed tag, and
@@ -40,7 +50,7 @@ human context: what was done, why, and by which PR.
   18–87 s warm, lint 5 s, Semgrep 4 s, gitleaks under 1 s; the whole tier 87–174 s from a clean
   environment (budget 3 min).
 
-### Chain frame stamped before the origin's trigger meets the cooldown (issue #95) — **PR pending**
+### Chain frame stamped before the origin's trigger meets the cooldown (issue #95) — **PR #98** (6b48df9)
 
 - `startChain()` runs before `tick()` in `main.cpp`, so a CHAIN frame queued for another event
   was heard stamped `T - 1` after the origin set its last reaction to `T`: `ageMs(T - 1, T)` is
