@@ -1,6 +1,6 @@
 # ADR-0019: Local-first CI — every check runs on the laptop, no GitHub workflow
 
-**Status:** Accepted — 2026-11-07 — issue #99
+**Status:** Accepted — 2026-11-07 — issue #99; L3 (nightly) superseded by ADR-0020
 
 ## Context
 
