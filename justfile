@@ -8,7 +8,7 @@
 #   L1 check    pre-push hook, review-local --push     lint + test + build + security + secrets < 3 min
 #   L2 gate     review-local § 2b, on the pushed head  check + SonarQube, then the attestation  5–15 min
 #               before every merge
-#   L3 nightly  systemd user timer                     check + TruffleHog + pin drift
+#   L3 nightly  systemd timer, clean worktree          secrets fail; check + drift warn
 #
 # Then: `just merge <pr>` (refuses without the gate attestation on the head SHA).
 
@@ -128,17 +128,34 @@ merge pr:
     sh scripts/attest.sh verify gate "$sha"
     gh pr merge "$pr" --squash --match-head-commit "$sha"
 
-# L3 — nightly, systemd user timer (no time budget): deep secret history, then pin drift. PlatformIO
-# packages (platform, libraries) are pinned exactly by hand in firmware/platformio.ini (no Dependabot
-# ecosystem), so `pio pkg outdated` is the only watch on them: its table is printed for the journal
-# (an exact pin never has a "Wanted" newer than "Current", so a newer "Latest" is a review item, not
-# a failure). `mise outdated` exits 0 whatever it finds and lists the global ~/.tool-versions under
-# --no-global, so the recipe keeps the mise.toml rows and fails on a non-empty report (`--bump`:
-# without it exact pins report nothing).
-# L3 — nightly (systemd timer): check + TruffleHog + PlatformIO and toolchain pin drift
-nightly: check
-    trufflehog git "file://$PWD" --no-verification --fail --no-update
-    cd firmware && {{pio}} pkg outdated
-    out=$(mise outdated --bump --no-global --no-header) || { echo "nightly: mise outdated failed" >&2; exit 1; }; \
-    drift=$(printf '%s\n' "$out" | grep -F mise.toml || true); \
-    [ -z "$drift" ] || { echo "nightly: toolchain drift, bump mise.toml:"; echo "$drift"; exit 1; }
+# PlatformIO platform, toolchains and libraries of every env, ahead of the nightly (its unit runs this
+# in the fresh worktree, scripts/systemd/cubbies-nightly.service)
+deps:
+    sh scripts/pio-trust-local-ca.sh
+    cd firmware && {{pio}} pkg install -e native -e xiao_c3 -e c3_supermini
+
+# L3 — nightly, systemd user timer (no time budget), on a clean origin/main worktree (ADR-0020,
+# agents-skills#427). Only a secret fails it: gitleaks (re-run apart, so a lint or test failure
+# inside check cannot hide it) and TruffleHog on the whole history. A red check only warns (it gates
+# every push and merge already), and so does mise.toml drift. PlatformIO packages are pinned exactly
+# by hand in firmware/platformio.ini (no Dependabot ecosystem), so `pio pkg outdated` is the only
+# watch on them: its table is printed for the journal (a tool error warns, an outdated pin does
+# not). `mise outdated` exits 0 whatever it finds and lists the global ~/.tool-versions under
+# --no-global, so the recipe keeps the mise.toml rows (`--bump`: without it exact pins report
+# nothing).
+nightly:
+    #!/bin/sh
+    set -u
+    rc=0
+    warn() { echo "WARNING nightly: $1 (not a failure)" >&2; }
+    just check || warn "just check failed"
+    just secrets || rc=1
+    trufflehog git "file://$PWD" --no-verification --fail --no-update || rc=1
+    (cd firmware && {{pio}} pkg outdated) || warn "pio pkg outdated failed"
+    if out=$(mise outdated --bump --no-global --no-header); then
+      drift=$(printf '%s\n' "$out" | grep -F mise.toml || true)
+      [ -z "$drift" ] || { echo "$drift"; warn "toolchain drift, bump mise.toml (drift)"; }
+    else
+      warn "mise outdated failed"
+    fi
+    exit "$rc"

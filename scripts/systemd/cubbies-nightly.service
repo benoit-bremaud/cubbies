@@ -1,0 +1,25 @@
+[Unit]
+Description=Nightly local CI of cubbies: just nightly, tier L3 (#99), on a clean origin/main worktree (#104)
+OnFailure=cubbies-nightly-failed.service
+
+[Service]
+Type=oneshot
+# The TLS trust variables of the Aikido endpoint agent come from /etc/environment, not from the
+# user manager: uv and PlatformIO need them. That file also sets PATH, and an EnvironmentFile always
+# wins over Environment=, so each shell below puts ~/.local/bin (mise) back first; mise brings the
+# pinned tools.
+Environment=LANG=C.UTF-8
+EnvironmentFile=-/etc/environment
+Environment=REPO=%h/Documents/02_personal/cubbies WT=%h/.cache/nightly/cubbies
+# Never the working checkout: it may be dirty, on a feature branch or behind origin/main
+# (agents-skills#427). '-': a catch-up run before the network is up uses the last fetched origin/main.
+ExecStartPre=-/usr/bin/git -C ${REPO} fetch --quiet origin main
+ExecStartPre=/bin/sh -c 'test -d "$WT" || { git -C "$REPO" worktree prune && git -C "$REPO" worktree add --detach "$WT" origin/main; }'
+ExecStartPre=/usr/bin/git -C ${WT} reset --quiet --hard origin/main
+ExecStartPre=/usr/bin/git -C ${WT} clean -ffdq
+ExecStartPre=%h/.local/bin/mise trust --quiet ${WT}
+# PlatformIO platform, toolchains and libraries of every env; '-': offline, the next steps use the cache.
+ExecStartPre=-/bin/sh -c 'PATH="$HOME/.local/bin:$PATH"; cd "$WT" && exec mise x -- just deps'
+ExecStart=/bin/sh -c 'PATH="$HOME/.local/bin:$PATH"; cd "$WT" && exec mise x -- just nightly'
+# A oneshot has no timeout: a hung download would block the timer for good.
+TimeoutStartSec=2h

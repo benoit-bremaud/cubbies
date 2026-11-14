@@ -5,6 +5,23 @@ human context: what was done, why, and by which PR.
 
 ---
 
+## 2026-11-15
+
+### Nightly on a clean origin/main worktree (issue #104, ADR-0020) — **PR pending**
+
+- Owner decision 2026-11-13 on agents-skills#427: the nightly stays on the workstation but runs in
+  `~/.cache/nightly/cubbies`, a detached worktree fetched, reset to `origin/main` and cleaned each
+  run, never the working checkout (4 of 9 nightly failures across projects were dirty checkouts).
+- ADR-0020 (PR #105, c62e5f0) supersedes the L3 part of ADR-0019.
+- The units `cubbies-nightly.service`, `cubbies-nightly.timer` and
+  `cubbies-nightly-failed.service` are now versioned in `scripts/systemd/`; the service installs the PlatformIO packages
+  of every env first (new recipe `just deps`).
+- `just nightly` fails only on a secret (gitleaks, TruffleHog); a red `just check`, a failing
+  `pio pkg outdated` or `mise outdated`, and mise.toml drift print `WARNING nightly: …`; outdated
+  PlatformIO pins are printed for the journal. Gotcha: `/etc/environment` (EnvironmentFile) sets
+  PATH and overrides `Environment=`, so the unit re-adds `~/.local/bin` in each shell. Wiring
+  tests: 89 cases, 7 of them running the nightly with stubbed tools.
+
 ## 2026-11-13
 
 ### Nightly toolchain drift: typos 1.52.2 (issue #101) — **PR #102** (848a4c1)
