@@ -16,17 +16,13 @@ dedicated worktree of `origin/main`, and that only a vulnerability or a secret f
 
 ## Options and scoring
 
-Where the nightly runs: the owner's MCDA on agents-skills#427 (criteria and weights there),
-applied to every project.
-
-| Option | Total /500 |
-|---|---|
-| A. Workstation, `Persistent=true`, dedicated clean worktree of `origin/main` | **400** |
-| B. Homelab runner (alerts even when the laptop is off) | 385 |
-| C. Workstation, working checkout as it stands (ADR-0019) | 375 |
-
-B loses on setup cost and on copying secrets (SonarQube token, signing key) to another host; C
-keeps the 4 false failures of the sweep. What fails the run is the owner's scope decision on the
+Where the nightly runs: the owner's MCDA of 2026-11-13 on agents-skills#427 (options, criteria
+and weights recorded there), applied to every project. Option A, the workstation with
+`Persistent=true` catch-up and a dedicated clean worktree of `origin/main`, scored **400/500**
+against 385 and 375 for the two alternatives; moving the nightly to the homelab was rejected
+because its setup and the copy of secrets to another host outweigh faster alerts. Running in the
+working checkout as it stands (ADR-0019) is what produced the 4 false failures above.
+What fails the run is the owner's scope decision on the
 same issue, not a scored choice: only vulnerabilities and secrets, because tool drift is fixed
 by a later bump and gates nothing that night.
 
