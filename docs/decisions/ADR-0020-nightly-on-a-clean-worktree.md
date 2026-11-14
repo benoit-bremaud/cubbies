@@ -22,9 +22,10 @@ and weights recorded there), applied to every project. Option A, the workstation
 against 385 and 375 for the two alternatives; moving the nightly to the homelab was rejected
 because its setup and the copy of secrets to another host outweigh faster alerts. Running in the
 working checkout as it stands (ADR-0019) is what produced the 4 false failures above.
-What fails the run is the owner's scope decision on the
-same issue, not a scored choice: only vulnerabilities and secrets, because tool drift is fixed
-by a later bump and gates nothing that night.
+
+What fails the run is the owner's scope decision on the same issue, not a scored choice: only
+vulnerabilities and secrets, because tool drift is fixed by a later bump and gates nothing that
+night.
 
 ## Decision
 
