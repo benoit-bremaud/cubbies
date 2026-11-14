@@ -16,8 +16,8 @@ dedicated worktree of `origin/main`, and that only a vulnerability or a secret f
 
 ## Options and scoring
 
-Where the nightly runs: the owner's MCDA of 2026-11-13 on agents-skills#427 (options, criteria
-and weights recorded there), applied to every project. Option A, the workstation with
+Where the nightly runs: the owner's MCDA of 2026-11-13 on agents-skills#427, applied to every
+project; the issue records the totals and the rejection reason only, not the criteria and weights. Option A, the workstation with
 `Persistent=true` catch-up and a dedicated clean worktree of `origin/main`, scored **400/500**
 against 385 and 375 for the two alternatives; moving the nightly to the homelab was rejected
 because its setup and the copy of secrets to another host outweigh faster alerts. Running in the
