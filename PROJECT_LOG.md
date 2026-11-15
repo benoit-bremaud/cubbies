@@ -7,7 +7,7 @@ human context: what was done, why, and by which PR.
 
 ## 2026-11-15
 
-### Nightly on a clean origin/main worktree (issue #104, ADR-0020) — **PR pending**
+### Nightly on a clean origin/main worktree (issue #104, ADR-0020) — **PR #106** (23c6c9a)
 
 - Owner decision 2026-11-13 on agents-skills#427: the nightly stays on the workstation but runs in
   `~/.cache/nightly/cubbies`, a detached worktree fetched, reset to `origin/main` and cleaned each
@@ -21,6 +21,8 @@ human context: what was done, why, and by which PR.
   PlatformIO pins are printed for the journal. Gotcha: `/etc/environment` (EnvironmentFile) sets
   PATH and overrides `Environment=`, so the unit re-adds `~/.local/bin` in each shell. Wiring
   tests: 89 cases, 7 of them running the nightly with stubbed tools.
+- Units installed from `origin/main`, `daemon-reload`; live run 2026-11-15 in
+  `~/.cache/nightly/cubbies` on 23c6c9a: success in 65 s, no WARNING.
 
 ## 2026-11-13
 
