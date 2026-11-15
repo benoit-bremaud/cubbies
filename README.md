@@ -62,7 +62,7 @@ just setup
 | L0 | `just fast` | pre-commit hook | gitleaks, ruff, typos, shellcheck on the staged files (the commit-msg hook enforces the Conventional Commits subject) |
 | L1 | `just check` | pre-push hook | ruff check + format, typos, shellcheck, `lefthook validate`, `pio test -e native` (golden images compared, never regenerated), both board builds, Semgrep (Python), gitleaks on the history, wiring and attestation tests |
 | L2 | `just gate` | before every merge, on the pushed head | `check` + SonarQube with the quality-gate wait, then the signed attestation; `just merge <pr>` requires it |
-| L3 | `just nightly` | systemd user timer | `check` + TruffleHog + PlatformIO and toolchain pin drift |
+| L3 | `just nightly` | systemd user timer, clean `origin/main` worktree (units in `scripts/systemd/`) | secrets (gitleaks, TruffleHog) fail; `check` and the mise.toml drift only warn; PlatformIO pin drift is printed (ADR-0020) |
 
 PlatformIO, ruff and Semgrep run through `uvx`, pinned once in the `justfile`. Behind a
 TLS-inspecting endpoint agent, `just build` first lets the PlatformIO penv trust the machine's

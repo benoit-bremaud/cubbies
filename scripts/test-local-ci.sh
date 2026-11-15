@@ -1,12 +1,12 @@
 #!/bin/sh
 # Tests for the local CI wiring (#99, skill local-ci rule 7): the four tiers exist and compose
-# (check = lint + test + build + security + secrets; nightly ⊇ check), no GitHub workflow and no
-# Dependabot config is left (ADR-0019), the PlatformIO and ruff pins agree with CLAUDE.md,
-# lefthook.yml is valid and wires the commit-msg and pre-push hooks, the commit-msg check accepts
+# (check = lint + test + build + security + secrets), no GitHub workflow and no Dependabot config
+# is left (ADR-0019), the PlatformIO and ruff pins agree with CLAUDE.md, lefthook.yml is valid and wires the commit-msg and pre-push hooks, the commit-msg check accepts
 # and refuses the right subjects; then, in a throwaway repository with stubbed boundaries (just
 # steps, attest.sh, gh, sonar-scanner): gate refuses a dirty tree, a HEAD behind the base or
 # unpushed, runs check → sonar → attestation in that order and attests nothing when a step fails or
-# HEAD moved (agents-skills ADR-0003); merge refuses a non-numeric PR and a head without attestation
+# HEAD moved (agents-skills ADR-0003); nightly fails on a secret only, a red check and pin drift
+# warn (agents-skills#427); merge refuses a non-numeric PR and a head without attestation
 # and merges with --squash --match-head-commit; sonar refuses a missing scanner and a missing token;
 # L0 (`just fast`) passes a clean staged change but refuses a staged secret, typo and shell warning.
 # Needs mise, just, lefthook, gitleaks, typos, shellcheck (the tool wordings asserted are pinned by
@@ -39,7 +39,14 @@ for r in fast check gate nightly setup merge sonar build; do
 done
 deps() { just --show "$1" | grep -E "^$1( |:)" | sed 's/.*: *//'; } # deps <recipe>
 [ "$(deps check)" = "lint test build security secrets" ] || fail "check must be exactly lint test build security secrets"; ok
-deps nightly | grep -qw check || fail "nightly does not depend on check"; ok
+n_body=$(just --show nightly)
+for c in 'just check || warn' 'just secrets || rc=1' 'trufflehog git .* || rc=1' 'pkg outdated) || warn' 'exit "[$]rc"'; do
+  printf '%s\n' "$n_body" | grep -qE -- "$c" || fail "nightly lacks: $c (only secrets fail it, agents-skills#427)"; ok
+done
+for u in cubbies-nightly.service cubbies-nightly.timer cubbies-nightly-failed.service; do [ -f "scripts/systemd/$u" ] || fail "unit $u not versioned"; ok; done
+[ "$(grep -c '^ExecStart.*PATH="\$HOME/.local/bin:\$PATH"; cd "\$WT" && exec mise x -- just ' scripts/systemd/cubbies-nightly.service)" = 2 ] \
+  && grep -q '^ExecStart=/bin/sh -c .PATH="\$HOME/.local/bin:\$PATH"; cd "\$WT" && exec mise x -- just nightly' scripts/systemd/cubbies-nightly.service && ! grep -q '^WorkingDirectory=' scripts/systemd/cubbies-nightly.service \
+  || fail "the nightly does not run in its clean worktree"; ok
 just --show test | grep -qE 'CI=1 {{ *pio *}} test -e native' || fail "test does not run the native suites under CI=1 (golden images never regenerated)"; ok
 for r in golden flash; do just --show "$r" > /dev/null 2>&1 || fail "recipe $r missing"; ok; done
 # just ruff passes each file name as one quoted argument (a staged name is attacker-chosen in a public repo).
@@ -119,6 +126,21 @@ box_run() { # box_run <expected-exit> <label> <text the output or log must hold|
   ok
 }
 no_line() { ! grep -q "$1" "$LOG" || { cat "$LOG"; fail "$2"; }; ok; }
+
+# nightly: TruffleHog, uvx (pio) and mise stubbed; only a secret fails it.
+ns="$box/nightly-stub"; mkdir -p "$ns"
+printf '#!/bin/sh\necho "trufflehog $*" >> "$LOG"; case "$*" in *--fail*) [ -z "${TH_FAIL:-}" ] ;; esac\n' > "$ns/trufflehog"
+printf '#!/bin/sh\necho "uvx $*" >> "$LOG"; [ -z "${PIO_FAIL:-}" ]\n' > "$ns/uvx"
+printf '#!/bin/sh\n[ -z "${MISE_FAIL:-}" ] || exit 1; printf "%%s" "${MISE_OUT:-}"\n' > "$ns/mise"
+chmod +x "$ns"/*; mkdir -p firmware; npath="$ns:$box/stub:$PATH"
+box_run 0 "nightly: green path" "trufflehog git" -- env PATH="$npath" "$real_just" nightly
+! grep -q WARNING "$work/out" || { cat "$work/out"; fail "nightly: green path warned"; }; ok
+box_run 0 "nightly: red check only warns" "WARNING nightly: just check failed" -- env PATH="$npath" FAIL_STEP=check "$real_just" nightly
+box_run 0 "nightly: pio error only warns" "WARNING nightly: pio pkg outdated failed" -- env PATH="$npath" PIO_FAIL=1 "$real_just" nightly
+box_run 0 "nightly: mise error only warns" "WARNING nightly: mise outdated failed" -- env PATH="$npath" MISE_FAIL=1 "$real_just" nightly
+box_run 0 "nightly: toolchain drift only warns" "toolchain drift" -- env PATH="$npath" MISE_OUT="just 1 2 3 mise.toml" "$real_just" nightly
+box_run 1 "nightly: gitleaks finding fails" - -- env PATH="$npath" FAIL_STEP=secrets "$real_just" nightly
+box_run 1 "nightly: TruffleHog finding fails" - -- env PATH="$npath" TH_FAIL=1 "$real_just" nightly
 
 # gate: refusals first, then the order of the steps, then the two late refusals.
 echo dirty > src/d && box_run 1 "gate: dirty tree refused" "commit or set aside" -- "$real_just" gate main

@@ -1,0 +1,6 @@
+[Unit]
+Description=Desktop notification when the cubbies nightly local CI fails
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/notify-send --urgency=critical "cubbies local CI nightly failed" "journalctl --user -u cubbies-nightly.service"
